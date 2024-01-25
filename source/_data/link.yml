@@ -1,0 +1,38 @@
+- class_name: 友情链接
+  #class_desc: 那些人，那些事
+  link_list:
+    - name: Hexo
+      link: https://hexo.io/zh-tw/
+      avatar: https://d33wubrfki0l68.cloudfront.net/6657ba50e702d84afb32fe846bed54fba1a77add/827ae/logo.svg
+      descr: 快速、简单且强大的网志框架
+    - name: LeviLamina
+      link: https://levilamina.liteldev.com/
+      avatar: https://levilamina.liteldev.com/img/logo.svg
+      descr: LeviLamina是一个非官方的插件加载器，旨在为Minecraft Bedrock Server BDS提供必不可少的API支持
+    - name: MineBBS
+      link: https://www.minebbs.com/
+      avatar: https://www.minebbs.com/styles/uix_pro/images/favicon-porn.png
+      descr: 以我的世界基岩版（MCBE）内容为主的Minecraft中文论坛
+    - name: LiteLDev's blog
+      link: https://blog.litebds.com/
+      avatar: https://blog.litebds.com/assets/avatar.png
+      descr: LiteLDev
+    - name: ShrBox‘s Blog
+      link: https://blog.bibk.top/links/
+      avatar: https://blog.bibk.top/images/avatar.png
+      descr: ShrBox大佬的博客
+    - name: OpenShamrock
+      link: https://whitechi73.github.io/OpenShamrock/
+      avatar: https://ooo.0x0.ooo/2024/01/07/OZZwnp.jpg
+      descr: 一个好用的QQ机器人框架
+- class_name: 网站
+  class_desc: 值得推荐的网站
+  link_list:
+    - name: Youtube
+      link: https://www.youtube.com/
+      avatar: https://i.loli.net/2020/05/14/9ZkGg8v3azHJfM1.png
+      descr: 视频网站
+    - name: BiliBili
+      link: https://www.bilibili.com/
+      avatar: https://s1.aigei.com/src/img/png/e5/e5eaf6d86fb042009553ff178e6014b4.png?imageMogr2/auto-orient/thumbnail/!282x282r/gravity/Center/crop/282x282/quality/85/%7CimageView2/2/w/282&e=1735488000&token=P7S2Xpzfz11vAkASLTkfHN7Fw-oOZBecqeJaxypL:VWiex3sNomjjwRd_hFcyUrYLruc=
+      descr: 知名学习网站
