@@ -107,7 +107,7 @@ markdown:
 deploy:
 - type: baidu_url_submitter
 - type: git
-  repo: https://github.com/ExquisiteCore/ExquisiteCore.github.io.git
+  repo: https://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@github.com/ExquisiteCore/ExquisiteCore.github.io.git
   branch: main
 
 baidu_url_submit:
