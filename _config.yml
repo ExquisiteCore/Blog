@@ -3,9 +3,9 @@
 ## Source: https://github.com/hexojs/hexo/
 
 # Site
-title: ExquisiteCore的博客
-subtitle: 'ExquisiteCore'
-description: ExquisiteCore的博客
+title: ExquisiteCore
+subtitle: 'ExquisiteCore的博客'
+description: ExquisiteCore
 author: ExquisiteCore
 keywords: ExquisiteCore
 language: zh-CN
@@ -96,7 +96,11 @@ ignore:
 # Extensions
 ## Plugins: https://hexo.io/plugins/
 ## Themes: https://hexo.io/themes/
-theme: butterfly
+theme: stellar #butterfly
+
+favicon: https://ooo.0x0.ooo/2023/12/22/OKg1cM.webp
+
+avatar: https://ooo.0x0.ooo/2023/12/22/OKg1cM.webp
 
 markdown:
     plugins:
@@ -107,7 +111,7 @@ markdown:
 deploy:
 - type: baidu_url_submitter
 - type: git
-  repo: https://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@github.com/ExquisiteCore/ExquisiteCore.github.io.git
+  repo: git@github.com:ExquisiteCore/ExquisiteCore.github.io.git
   branch: main
 
 baidu_url_submit:
