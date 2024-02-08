@@ -71,10 +71,10 @@ comments:
   # https://giscus.app/zh-CN
   giscus:
     src: https://giscus.app/client.js
-    data-repo: YuukaPanelNew/YuukaPanelNew.github.io # [在此输入仓库]
-    data-repo-id: R_kgDOLLhJdw # [在此输入仓库 ID]
+    data-repo: ExquisiteCore/ExquisiteCore.github.io # [在此输入仓库]
+    data-repo-id: R_kgDOK71egQ # [在此输入仓库 ID]
     data-category: General # [在此输入分类名]
-    data-category-id: DIC_kwDOLLhJd84CdDnS
+    data-category-id: DIC_kwDOK71egc4CdD3i
     data-mapping: pathname
     data-strict: 0
     data-reactions-enabled: 1
