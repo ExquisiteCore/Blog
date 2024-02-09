@@ -1,4 +1,5 @@
 ---
+menu_id: about
 title: 关于我
 date: 2023-12-20 16:43:59
 type: about

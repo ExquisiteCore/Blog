@@ -1,6 +1,7 @@
 ---
 title: C++ 核心指导方针
 date: 2024-01-06 09:26:48
+menu_id: book
 ---
 >转载于[CppCoreGuidelines-zh-CN](https://github.com/lynnboy/CppCoreGuidelines-zh-CN)
 # <a name="main"></a>C++ 核心指导方针
