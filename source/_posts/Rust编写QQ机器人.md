@@ -1,8 +1,9 @@
 ---
 title: Rust编写QQ机器人
-date: 2023-12-23 14:53:29
 tags: QQ机器人
-cover: https://ooo.0x0.ooo/2023/12/22/OKge71.webp
+cover: 'https://ooo.0x0.ooo/2023/12/22/OKge71.webp'
+abbrlink: 85d7244d
+date: 2023-12-23 14:53:29
 ---
 
 # Rust编写QQ机器人

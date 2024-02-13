@@ -1,8 +1,9 @@
 ---
 title: EC的windows配置流程
-date: 2023-12-20 22:10:51
 tags: windows
-cover: https://ooo.0x0.ooo/2023/12/22/OKge71.webp
+cover: 'https://ooo.0x0.ooo/2023/12/22/OKge71.webp'
+abbrlink: beadb308
+date: 2023-12-20 22:10:51
 ---
 # windows配置流程
 - 记录一下新电脑的配置流程

@@ -1,8 +1,11 @@
 ---
 title: 记一次Github Pages搭建Hexo静态博客
+tags:
+  - 博客
+  - HEXO
+cover: 'https://ooo.0x0.ooo/2023/12/22/OKge71.webp'
+abbrlink: df7e7178
 date: 2023-12-22 12:53:55
-tags: [博客,HEXO]
-cover: https://ooo.0x0.ooo/2023/12/22/OKge71.webp
 ---
 
 # Github Pages搭建Hexo静态博客

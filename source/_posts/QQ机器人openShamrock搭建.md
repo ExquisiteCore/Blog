@@ -1,8 +1,9 @@
 ---
 title: QQ机器人openShamrock搭建
-date: 2023-12-23 14:53:23
 tags: QQ机器人
-cover: https://ooo.0x0.ooo/2023/12/22/OKge71.webp
+cover: 'https://ooo.0x0.ooo/2023/12/22/OKge71.webp'
+abbrlink: 5d41418b
+date: 2023-12-23 14:53:23
 ---
 
 # 搭建QQ机器人
