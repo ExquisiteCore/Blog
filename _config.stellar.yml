@@ -136,3 +136,15 @@ site_tree:
   # 其它自定义页面配置 layout: page
   page:
     sidebar: toc, recent, timeline
+
+footer:
+  social:
+    Github:
+      icon: '<img src="https://github.githubassets.com/assets/github-mark-9be88460eaa6.svg"/>'
+      url: https://github.com/ExquisiteCore
+    bilibili:
+      icon: '<img src="https://ooo.0x0.ooo/2024/02/15/Ov88VI.png"/>'
+      url: https://space.bilibili.com/453875890
+    Email:
+      icon: '<img src="https://ooo.0x0.ooo/2024/02/15/Ov8uqD.png"/>'
+      url: mailto:xiaolongqq1y@163.com
