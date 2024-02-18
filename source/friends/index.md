@@ -5,8 +5,6 @@ menu_id: friends
 title: 友情链接
 updated: '2024-02-18T14:57:46.443+08:00'
 ---
-{% friends link %}
-
 
 <div id="qexo-friends"></div>
 <link rel="stylesheet" href="https://unpkg.com/qexo-friends/friends.css"/>
