@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@renbaoshuo/markdown-it-katex": "^2.0.2",
-    "cheerio": "^0.22.0",
+    "cheerio": "^1.0.0",
     "hexo": "^7.3.0",
     "hexo-abbrlink": "^2.2.1",
     "hexo-baidu-url-submit": "^0.0.6",
