@@ -30,7 +30,7 @@ logo:
   subtitle: 'ExquisiteCore | 精致的咸鱼' # '文字1 | 文字2' (鼠标放上去会切换到文字2)
 
 menubar:
-  columns: 4 # 一行多少个
+  columns: 5 # 一行多少个
   items: # 可按照自己需求增加，符合以下格式即可
     - id: post
       theme: '#1BCDFC'
@@ -49,6 +49,12 @@ menubar:
       title: 友链
       icon: ''
       url: /friends/
+
+    - id: speech
+      theme: ''
+      title: 演讲
+      icon: ''
+      url: /speech/
 
     - id: book
       theme: ''
