@@ -1,6 +1,5 @@
 ---
 title: 犹太建国
-tags: 演讲
 cover: 'https://ooo.0x0.ooo/2023/12/22/OKge71.webp'
 ---
 

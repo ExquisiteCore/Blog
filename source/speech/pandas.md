@@ -1,6 +1,5 @@
 ---
 title: 保护大熊猫
-tags: 演讲
 cover: 'https://ooo.0x0.ooo/2023/12/22/OKge71.webp'
 ---
 1. 大家好！ Hello everyone!
@@ -17,6 +16,6 @@ cover: 'https://ooo.0x0.ooo/2023/12/22/OKge71.webp'
 12. 那么，我们该如何行动呢？ So, how should we act?
 13. 我们要建立自然保护区，并且让大熊猫野生化，让其拥有自己的生存能力。 We need to establish nature reserves and reintroduce giant pandas to the wild, allowing them to have their own survival capabilities.
 14. 其次，我们要加大科研力度，研究大熊猫的生活习性和繁殖机制，为它们的保护提供科学依据。 Second, we must increase research efforts to study the habits and breeding mechanisms of giant pandas, providing a scientific basis for their protection.
-16. 最后，我想强调的是，保护大熊猫是一项长期而艰巨的任务，它需要我们每一个人的参与和努力。 Finally, I want to emphasize that protecting giant pandas is a long-term and arduous task that requires the participation and efforts of each of us.
-17. 让我们携手合作，为了我们共同的家园，为了我们可爱的大熊猫，贡献出自己的一份力量。 Let us work together for our common home, for our lovely giant pandas, and contribute our own strength.
-18. 谢谢大家！ Thank you, everyone!
+15. 最后，我想强调的是，保护大熊猫是一项长期而艰巨的任务，它需要我们每一个人的参与和努力。 Finally, I want to emphasize that protecting giant pandas is a long-term and arduous task that requires the participation and efforts of each of us.
+16. 让我们携手合作，为了我们共同的家园，为了我们可爱的大熊猫，贡献出自己的一份力量。 Let us work together for our common home, for our lovely giant pandas, and contribute our own strength.
+17. 谢谢大家！ Thank you, everyone!
