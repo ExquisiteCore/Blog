@@ -1,7 +1,6 @@
 <template>
-  <div>
-    <h1 class="text-3xl font-bold underline">
-      首页
-    </h1>
+  <div className="relative grid h-[calc(100vh-64px)] place-content-center">
+    <Home />
+
   </div>
 </template>
