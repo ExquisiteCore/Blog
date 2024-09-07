@@ -5,24 +5,24 @@
       你好，我是
     </p>
 
-    <strong :class="[
-      'text-5xl md:text-7xl tracking-widest font-black bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500',
+    <strong :class="cn(
+      `text-5xl md:text-7xl tracking-widest font-black  bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500`,
       'animate-fade-up animate-ease-in-out'
-    ]" :style="{
-      WebkitTextFillColor: 'transparent',
-      animationDelay: `${getDelay()}ms`
-    }">
+    )" :style="{
+          WebkitTextFillColor: 'transparent',
+          animationDelay: `${getDelay()}ms`
+        }">
       ExquisiteCore
     </strong>
 
-    <div :class="['animate-fade-up animate-ease-in-out']" :style="{ animationDelay: `${getDelay()}ms` }">
+    <div :class="cn('animate-fade-up animate-ease-in-out')" :style="{ animationDelay: `${getDelay()}ms` }">
       <TypeIntro />
     </div>
 
-    <p :class="[
+    <p :class="cn(
       'text-2xl md:text-5xl tracking-widest',
       'animate-fade-up animate-ease-in-out'
-    ]" :style="{ animationDelay: `${getDelay()}ms` }">
+    )" :style="{ animationDelay: `${getDelay()}ms` }">
       喜欢
       <span class="font-semibold text-[#f44c7c]">C++</span>、
       <span class="font-semibold text-[#dca484]">Rust</span>和
@@ -30,22 +30,38 @@
       <span class="font-semibold text-[#00d8ff]">Golang</span>
       <span class="ml-4">\qwq/ ~</span>
     </p>
-    <p :class="[
+    <p :class="cn(
       'text-base md:text-2xl text-muted-foreground tracking-widest',
-      'animate-fade-up animate-ease-in-out'
-    ]" :style="{ animationDelay: `${getDelay()}ms` }">
+      'animate-fade-up animate-ease-in-out',
+    )" :style="{ animationDelay: `${getDelay()}ms` }">
       欢迎来到我的个人网站
     </p>
+
+    <div :class="cn('flex space-x-4', 'animate-fade-up animate-ease-in-out')"
+      :style="{ animationDelay: `${getDelay()}ms` }">
+      <NuxtLink to="/blog" :class="buttonVariants('outline')">
+        我的博客
+      </NuxtLink>
+      <NuxtLink to="/about" :class="buttonVariants('outline')">
+        关于我
+      </NuxtLink>
+    </div>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
 
-let delay = ref(0)
+//import { cn } from "~/utils/cn"
 
+let delay = ref(0)
 const getDelay = () => {
   delay.value += 200
   return delay.value
 }
+
+const buttonVariants = (variant: string) => {
+  // 你的 buttonVariants 逻辑
+  return variant === 'outline' ? 'button-outline' : 'button-default'; // 示例返回值
+};
 </script>

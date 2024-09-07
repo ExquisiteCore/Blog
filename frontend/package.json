@@ -10,8 +10,10 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "clsx": "^2.1.1",
     "nuxt": "^3.13.0",
     "nuxt-app": "file:",
+    "tailwind-merge": "^2.5.2",
     "vue": "latest",
     "vue-router": "latest"
   },
