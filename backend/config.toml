@@ -1,0 +1,19 @@
+[server]
+AppMode = "debug"  # 开发模式为 "debug"，生产模式为 "release"
+HttpPort = ":8080" # 应用程序监听的端口号
+JwtKey = "yourKey" # 用于签署 JWT 的密钥
+
+[database]
+Db = "postgres"       # 数据库类型
+DbHost = "localhost"  # 数据库主机地址
+DbPort = 5432         # 数据库端口号
+DbUser = "postgres"   # 数据库用户名
+DbPassWord = "123456" # 数据库密码
+DbName = "postgres"   # 数据库名称
+
+[qiniu]
+Zone = 1        # 七牛云存储的区域，1: 华东，2: 华北，3: 华南
+AccessKey = ""  # 七牛云的访问密钥
+SecretKey = ""  # 七牛云的秘密密钥
+Bucket = ""     # 存储桶名称
+QiniuSever = "" # 七牛云的服务器地址

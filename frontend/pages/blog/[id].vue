@@ -1,3 +1,5 @@
 <template>
-  <h1>11111111111</h1>
+  <div class="max-w-screen-wrapper mx-auto px-6">
+    11
+  </div>
 </template>
