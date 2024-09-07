@@ -11,5 +11,10 @@ export default defineNuxtConfig({
   },
   typescript: {
     shim: false
-  }
+  },
+  modules: [
+    '@nuxt/image',
+    '@element-plus/nuxt'
+  ],
+  elementPlus: {}
 })

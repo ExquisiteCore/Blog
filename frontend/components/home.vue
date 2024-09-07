@@ -9,9 +9,9 @@
       `text-5xl md:text-7xl tracking-widest font-black  bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500`,
       'animate-fade-up animate-ease-in-out'
     )" :style="{
-          WebkitTextFillColor: 'transparent',
-          animationDelay: `${getDelay()}ms`
-        }">
+      WebkitTextFillColor: 'transparent',
+      animationDelay: `${getDelay()}ms`
+    }">
       ExquisiteCore
     </strong>
 
@@ -34,16 +34,16 @@
       'text-base md:text-2xl text-muted-foreground tracking-widest',
       'animate-fade-up animate-ease-in-out',
     )" :style="{ animationDelay: `${getDelay()}ms` }">
-      欢迎来到我的个人网站
+      欢迎来到我的个人网站，这里记录了一些关于我的技术之路、生活之道、感悟之事。
     </p>
 
     <div :class="cn('flex space-x-4', 'animate-fade-up animate-ease-in-out')"
       :style="{ animationDelay: `${getDelay()}ms` }">
-      <NuxtLink to="/blog" :class="buttonVariants('outline')">
-        我的博客
+      <NuxtLink to="/blog">
+        <el-button class="w-15 h-15">我的博客</el-button>
       </NuxtLink>
-      <NuxtLink to="/about" :class="buttonVariants('outline')">
-        关于我
+      <NuxtLink to="/about">
+        <el-button class="w-15 h-15">关于我</el-button>
       </NuxtLink>
     </div>
   </div>
@@ -59,9 +59,4 @@ const getDelay = () => {
   delay.value += 200
   return delay.value
 }
-
-const buttonVariants = (variant: string) => {
-  // 你的 buttonVariants 逻辑
-  return variant === 'outline' ? 'button-outline' : 'button-default'; // 示例返回值
-};
 </script>
