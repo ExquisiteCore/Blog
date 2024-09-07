@@ -2,16 +2,15 @@ package main
 
 import (
 	"backend/config"
-	"backend/model"
 	"backend/routes"
 )
 
 func init() {
-	config.Init()  //配置文件初始化
-	model.InitDb() //数据库初始化
+	config.Init() //配置文件初始化
 }
 
 func main() {
+	r := routes.StartRuter()
 
-	routes.InitRuter() //路由初始化
+	r.Run(config.GlobalConfig.Server.HttpPort)
 }
