@@ -9,4 +9,4 @@ DbHost = "localhost"  # 数据库主机地址
 DbPort = 5432         # 数据库端口号
 DbUser = "postgres"   # 数据库用户名
 DbPassWord = "123456" # 数据库密码
-DbName = "postgres"   # 数据库名称
+DbName = "Blog"       # 数据库名称

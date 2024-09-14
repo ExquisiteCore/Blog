@@ -8,7 +8,6 @@ import (
 type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
-	Qiniu    QiniuConfig
 }
 
 type ServerConfig struct {
@@ -24,14 +23,6 @@ type DatabaseConfig struct {
 	DbUser     string
 	DbPassWord string
 	DbName     string
-}
-
-type QiniuConfig struct {
-	Zone       int
-	AccessKey  string
-	SecretKey  string
-	Bucket     string
-	QiniuSever string
 }
 
 // GlobalConfig 默认全局配置

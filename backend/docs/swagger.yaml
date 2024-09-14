@@ -1,4 +1,29 @@
+basePath: /api
+host: 127.0.0.1:8000
 info:
   contact: {}
-paths: {}
+  description: This is a sample server Blog API.
+  title: Blog API
+  version: 1.0.0
+paths:
+  /api/ping:
+    get:
+      consumes:
+      - application/json
+      description: do ping
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      tags:
+      - api
+securityDefinitions:
+  ApiKeyAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"
