@@ -1,7 +1,7 @@
 <template>
-  <div>
+  <div class="">
     <Navbar />
-    <main className="min-h-[calc(100vh-190px)]">
+    <main class="min-h-[calc(100vh-190px)]">
       <slot />
     </main>
     <Footer />

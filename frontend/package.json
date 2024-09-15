@@ -14,7 +14,7 @@
     "@nuxt/image": "^1.8.0",
     "clsx": "^2.1.1",
     "nuxt": "^3.13.0",
-    "nuxt-app": "file:",
+    "radix-vue": "^1.9.5",
     "tailwind-merge": "^2.5.2",
     "vue": "latest",
     "vue-router": "latest"

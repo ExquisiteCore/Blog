@@ -14,7 +14,8 @@ export default defineNuxtConfig({
   },
   modules: [
     '@nuxt/image',
-    '@element-plus/nuxt'
+    '@element-plus/nuxt',
+    'radix-vue/nuxt'
   ],
   elementPlus: {}
 })

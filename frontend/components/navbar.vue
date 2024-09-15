@@ -21,17 +21,26 @@
         </NuxtLink>
       </div>
       <div class="flex flex-1 items-center justify-end gap-2 sm:flex-none">
+
         <NuxtLink to="https://github.com/exquisitecore/" target="_blank" title="https://github.com/exquisitecore/"
           aria-label="https://github.com/exquisitecore/">
           <el-button class="w-15 h-15" round>github</el-button>
         </NuxtLink>
 
+        <nuxt-link to="/signin" target="_blank" rel="nofollow" title="登录" aria-label="登录">
+          <el-button class="w-15 h-15" aria-label="后台管理">
+            <el-icon>
+              <User />
+            </el-icon>
+          </el-button>
+        </nuxt-link>
       </div>
 
     </div>
   </header>
 </template>
 <script setup lang="ts">
+import { User } from '@element-plus/icons-vue'
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 

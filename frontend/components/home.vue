@@ -6,13 +6,13 @@
     </p>
 
     <strong :class="cn(
-      `text-5xl md:text-7xl tracking-widest font-black  bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500`,
+      `text-5xl md:text-8xl tracking-widest font-black  bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500`,
       'animate-fade-up animate-ease-in-out'
     )" :style="{
       WebkitTextFillColor: 'transparent',
       animationDelay: animationDelays.strong
     }">
-      ExquisiteCore
+      精致的芯
     </strong>
 
     <div v-if="isMounted" :class="cn('animate-fade-up animate-ease-in-out')"
