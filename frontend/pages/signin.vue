@@ -1,25 +1,25 @@
 <template>
 
   <div class="shell">
+    <!-- 注册表单 -->
     <div :class="['container', 'a-container', { 'is-txl': isSignUp }]" id="a-container">
-      <form @submit.prevent class="form" id="a-form">
+      <form @submit.prevent="handleRegister" class="form" id="a-form">
         <h2 class="form_title title">创建账号</h2>
         <span class="form_span">选择注册方式或电子邮箱注册</span>
-        <input type="text" class="form_input" placeholder="姓名">
-        <input type="text" class="form_input" placeholder="邮箱">
-        <input type="password" class="form_input" placeholder="密码">
-        <button class="form_button button submit">注册</button>
+        <input v-model="registerForm.username" type="text" class="form_input" placeholder="用户名">
+        <input v-model="registerForm.password" type="password" class="form_input" placeholder="密码">
+        <button class="form_button button submit" :disabled="isLoading">{{ isLoading ? '注册中...' : '注册' }}</button>
       </form>
     </div>
 
+    <!-- 登录表单 -->
     <div :class="['container', 'b-container', { 'is-txl': isSignUp, 'is-z': isSignUp }]" id="b-container">
-      <form @submit.prevent class="form" id="b-form">
+      <form @submit.prevent="handleLogin" class="form" id="b-form">
         <h2 class="form_title title">登入账号</h2>
         <span class="form_span">选择登录方式或电子邮箱登录</span>
-        <input type="text" class="form_input" placeholder="邮箱">
-        <input type="password" class="form_input" placeholder="密码">
-        <a class="form_link">忘记密码？</a>
-        <button class="form_button button submit">登录</button>
+        <input v-model="loginForm.username" type="text" class="form_input" placeholder="用户名">
+        <input v-model="loginForm.password" type="password" class="form_input" placeholder="密码">
+        <button class="form_button button submit" :disabled="isLoading">{{ isLoading ? '登录中...' : '登录' }}</button>
       </form>
     </div>
 
@@ -42,25 +42,80 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'LoginSignupForm',
-  data() {
-    return {
-      isSignUp: false,
-    };
-  },
-  methods: {
-    toggleForm() {
-      this.isSignUp = !this.isSignUp;
-      this.$nextTick(() => {
-        const switchCtn = document.querySelector("#switch-cnt");
-        switchCtn.classList.add("is-gx");
-        setTimeout(() => {
-          switchCtn.classList.remove("is-gx");
-        }, 1500);
-      });
-    }
+<script setup>
+import { da } from 'element-plus/es/locale/index.mjs';
+import { ref, reactive } from 'vue'
+const isSignUp = ref(false)
+const isLoading = ref(false)
+
+const loginForm = reactive({
+  username: '',
+  password: ''
+})
+
+const registerForm = reactive({
+  username: '',
+  password: '',
+  role: 1
+})
+
+
+const toggleForm = () => {
+  isSignUp.value = !isSignUp.value
+  nextTick(() => {
+    const switchCtn = document.querySelector("#switch-cnt")
+    switchCtn.classList.add("is-gx")
+    setTimeout(() => {
+      switchCtn.classList.remove("is-gx")
+    }, 1500)
+  })
+}
+
+const handleLogin = async () => {
+  isLoading.value = true
+  try {
+    const data = await $fetch('http://localhost:8080/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(loginForm),
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    })
+    useUserStore().setToken(data.token)
+    useUserStore().setUsername(data.username)
+    //console.log(useUserStore().isLoggedIn)
+    useRouter().push('/')
+  } catch (error) {
+    console.error('登录错误:', error)
+    alert('登录失败，请重试')
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const handleRegister = async () => {
+  isLoading.value = true
+  try {
+    // 确保 registerForm 是一个包含必要数据的对象
+    const requestBody = JSON.stringify(registerForm);
+
+    // 配置请求选项
+    const response = await $fetch('http://localhost:8080/api/auth/register', {
+      method: 'POST',
+      body: requestBody, // 转换为 JSON 字符串
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    // 注册成功后的逻辑
+    loginForm.username = registerForm.username;
+    loginForm.password = registerForm.password;
+    await handleLogin();
+  } catch (error) {
+    console.error('注册错误:', error);
+    alert('注册失败，请重试');
+  } finally {
+    isLoading.value = false;
   }
 };
 </script>

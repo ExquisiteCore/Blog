@@ -27,11 +27,10 @@
           <el-button class="w-15 h-15" round>github</el-button>
         </NuxtLink>
 
-        <nuxt-link to="/signin" target="_blank" rel="nofollow" title="登录" aria-label="登录">
-          <el-button class="w-15 h-15" aria-label="后台管理">
-            <el-icon>
-              <User />
-            </el-icon>
+        <nuxt-link :to="isLoggedIn ? '/about' : '/signin'" rel="nofollow" title="登录" aria-label="登录">
+          <el-button class="w-15 h-15" aria-label="登录">
+            <span v-if="!isLoggedIn">未登录</span>
+            <span v-if="isLoggedIn">{{ username }}</span>
           </el-button>
         </nuxt-link>
       </div>
@@ -39,13 +38,26 @@
     </div>
   </header>
 </template>
-<script setup lang="ts">
-import { User } from '@element-plus/icons-vue'
+
+<script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
 const scrollTop = ref(0)
 const route = useRoute()
+
+const userStore = useUserStore()
+const isLoggedIn = ref(userStore.isLoggedIn)
+const username = ref(userStore.getUsername())
+
+// 监听 isLoggedIn 和 username 的变化
+watch(() => userStore.isLoggedIn, (newValue) => {
+  isLoggedIn.value = newValue
+})
+
+watch(() => userStore.getUsername(), (newValue) => {
+  username.value = newValue
+})
 
 const navItems = [
   { label: '首页', link: '/' },

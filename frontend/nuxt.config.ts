@@ -15,7 +15,9 @@ export default defineNuxtConfig({
   modules: [
     '@nuxt/image',
     '@element-plus/nuxt',
-    'radix-vue/nuxt'
+    'radix-vue/nuxt',
+    '@pinia/nuxt',
+    '@pinia-plugin-persistedstate/nuxt',
   ],
   elementPlus: {}
 })

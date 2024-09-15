@@ -10,7 +10,6 @@ import (
 type ReqRegister struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
-	Email    string `json:"email" binding:"required"`
 	Role     int    `json:"role" binding:"required"`
 }
 type ReqLogin struct {
@@ -39,7 +38,8 @@ func Login(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"token": token,
+		"token":    token,
+		"username": u.Username,
 	})
 }
 

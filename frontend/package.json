@@ -12,8 +12,10 @@
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
     "@nuxt/image": "^1.8.0",
+    "@pinia/nuxt": "^0.5.4",
     "clsx": "^2.1.1",
     "nuxt": "^3.13.0",
+    "pinia": "^2.2.2",
     "radix-vue": "^1.9.5",
     "tailwind-merge": "^2.5.2",
     "vue": "latest",
@@ -21,6 +23,7 @@
   },
   "devDependencies": {
     "@element-plus/nuxt": "^1.0.10",
+    "@pinia-plugin-persistedstate/nuxt": "^1.2.1",
     "autoprefixer": "^10.4.20",
     "element-plus": "^2.8.2",
     "postcss": "^8.4.45",
