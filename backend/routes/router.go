@@ -26,11 +26,16 @@ func StartRuter() *gin.Engine {
 		//auth
 		public.POST("/auth/login", controller.Login)
 		public.POST("/auth/register", controller.Register)
+		//Post
+		public.GET("/post/posts", controller.GetPosts)
+		public.GET("/post/:id", controller.GetPostById)
 	}
 	private := r.Group("/api")
 	{
 		private.Use(middlewares.JwtAuthMiddleware())
 		private.GET("/user/currentUser", controller.CurrentUser)
+		//Post
+		private.POST("/post/create", controller.CreatePost)
 	}
 	return r
 }

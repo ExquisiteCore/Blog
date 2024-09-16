@@ -43,7 +43,6 @@
 </template>
 
 <script setup>
-import { da } from 'element-plus/es/locale/index.mjs';
 import { ref, reactive } from 'vue'
 const isSignUp = ref(false)
 const isLoading = ref(false)
