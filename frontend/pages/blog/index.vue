@@ -59,7 +59,6 @@ if (error.value) {
 }
 posts.value = data.value?.data || []
 
-console.log('Posts data:', posts.value);
 
 
 //const sortedPosts = ref(posts.value.sort((a, b) => b.ID - a.ID));
