@@ -73,7 +73,7 @@ const toggleForm = () => {
 const handleLogin = async () => {
   isLoading.value = true
   try {
-    const data = await $fetch('http://localhost:8080/api/auth/login', {
+    const data = await $fetch('http://rack1.raincs.cc:56394/api/auth/login', {
       method: 'POST',
       body: JSON.stringify(loginForm),
       headers: {
@@ -99,7 +99,7 @@ const handleRegister = async () => {
     const requestBody = JSON.stringify(registerForm);
 
     // 配置请求选项
-    const response = await $fetch('http://localhost:8080/api/auth/register', {
+    const response = await $fetch('http://rack1.raincs.cc:56394/api/auth/register', {
       method: 'POST',
       body: requestBody, // 转换为 JSON 字符串
       headers: {
