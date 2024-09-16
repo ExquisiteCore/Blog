@@ -52,7 +52,7 @@ interface FetchData {
 }
 const posts = ref<any[]>([])
 //使用 useFetch 从 API 获取文章数据
-const { data, error } = await useFetch<FetchData>('http://rack1.raincs.cc:56394/api/post/posts')
+const { data, error } = await useFetch<FetchData>('https://blogserver.exquisitecore.xyz/api/post/posts')
 // 检查是否有错误
 if (error.value) {
   console.error('获取文章失败', error.value)
