@@ -1,12 +1,33 @@
 package model
 
-import "gorm.io/gorm"
+import (
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
+
+	"gorm.io/gorm"
+)
+
+type StringArray []string
+
+func (a StringArray) Value() (driver.Value, error) {
+	return json.Marshal(a)
+}
+
+func (a *StringArray) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return errors.New("type assertion to []byte failed")
+	}
+	return json.Unmarshal(b, &a)
+}
 
 type Post struct {
 	gorm.Model
-	Title   string `binding:"required"`
-	Content string `binding:"required"`
-	Preview string `binding:"required"`
+	Title   string      `binding:"required"`
+	Content string      `binding:"required"`
+	Preview string      `binding:"required"`
+	Tags    StringArray `gorm:"type:json"`
 }
 
 func (p *Post) CreatePost() error {

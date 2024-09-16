@@ -14,11 +14,11 @@ func StartRuter() *gin.Engine {
 
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://example.com", "http://localhost:3000"}, // 允许的源
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},     // 允许的请求方法
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},     // 允许的请求头
-		ExposeHeaders:    []string{"Content-Length"},                              // 允许暴露的响应头
-		AllowCredentials: true,                                                    // 是否允许凭证
+		AllowOrigins:     []string{"http://localhost:3835"},                   // 允许的源
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}, // 允许的请求方法
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"}, // 允许的请求头
+		ExposeHeaders:    []string{"Content-Length"},                          // 允许暴露的响应头
+		AllowCredentials: true,                                                // 是否允许凭证
 	}))
 	public := r.Group("/api")
 	{
