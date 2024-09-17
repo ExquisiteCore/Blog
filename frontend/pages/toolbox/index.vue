@@ -33,6 +33,13 @@ const tools = ref([
     link: 'Markdown'
   }
 ])
+
+useHead({
+  title: '工具箱 - Blog',
+  meta: [
+    { name: 'description', content: 'Blog 工具箱，包含常用的工具，如 Markdown 编辑器、代码格式化工具等。' }
+  ]
+})
 </script>
 
 <style scoped>

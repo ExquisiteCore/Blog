@@ -112,4 +112,8 @@ const uploadText = async () => {
 };
 
 onMounted(checkAdmin);
+
+useHead({
+  title: 'Markdown 编辑器'
+})
 </script>

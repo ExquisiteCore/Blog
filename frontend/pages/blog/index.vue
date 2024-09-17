@@ -80,6 +80,12 @@ const formatDate = (dateStr: string) => {
   return new Date(dateStr).toLocaleDateString('zh-CN', options)
 }
 
+useHead({
+  title: 'EC的博客 - 首页',
+  meta: [
+    { name: 'description', content: '博客首页' }
+  ]
+})
 </script>
 
 <style scoped>

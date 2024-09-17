@@ -78,4 +78,11 @@ const getPreviewImage = (preview: string) => {
   return `/images/${preview}.png`
   //return '/images/al.png'
 }
+useHead({
+  title: `${postData.value?.Title} - EC的博客`,
+  meta: [
+    { name: 'description', content: `${postData.value?.Content.slice(0, 150)}...` },
+    { name: 'keywords', content: postData.value?.Tags.join(',') }
+  ]
+})
 </script>
