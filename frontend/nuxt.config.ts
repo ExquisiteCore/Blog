@@ -2,7 +2,7 @@
 export default defineNuxtConfig({
   compatibilityDate: '2024-04-03',
   devtools: { enabled: false },
-  css: ['~/assets/css/main.css'],
+  css: ['~/assets/css/main.css', 'md-editor-v3/lib/style.css'],
   postcss: {
     plugins: {
       tailwindcss: {},

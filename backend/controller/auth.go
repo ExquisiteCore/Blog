@@ -89,9 +89,12 @@ func CurrentUser(c *gin.Context) {
 		})
 		return
 	}
+	// 判断用户是否为管理员
+	isAdmin := u.Role == 10
 
+	// 返回管理员状态
 	c.JSON(http.StatusOK, gin.H{
-		"message": "success",
-		"data":    u,
+		"message":  "success",
+		"is_admin": isAdmin,
 	})
 }

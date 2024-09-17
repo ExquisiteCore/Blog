@@ -62,7 +62,8 @@ watch(() => userStore.getUsername(), (newValue) => {
 const navItems = [
   { label: '首页', link: '/' },
   { label: '博客', link: '/blog' },
-  { label: '关于', link: '/about' }
+  { label: '关于', link: '/about' },
+  { label: '工具箱', link: '/toolbox' },
 ];
 
 onMounted(() => {
