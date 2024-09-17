@@ -18,6 +18,7 @@ export default defineNuxtConfig({
     'radix-vue/nuxt',
     '@pinia/nuxt',
     '@pinia-plugin-persistedstate/nuxt',
+    '@nuxtjs/sitemap'
   ],
   elementPlus: {}
 })
