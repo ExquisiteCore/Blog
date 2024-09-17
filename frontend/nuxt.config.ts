@@ -20,5 +20,9 @@ export default defineNuxtConfig({
     '@pinia-plugin-persistedstate/nuxt',
     '@nuxtjs/sitemap'
   ],
-  elementPlus: {}
+  elementPlus: {},
+app: {
+  head: {
+    meta: [name='baidu-site-verification', content='codeva-bFd8DjRxnG']
+}}
 })
