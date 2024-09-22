@@ -43,6 +43,7 @@
 </template>
 
 <script setup>
+import { config } from 'md-editor-v3';
 import { ref, reactive } from 'vue'
 const isSignUp = ref(false)
 const isLoading = ref(false)
@@ -73,7 +74,7 @@ const toggleForm = () => {
 const handleLogin = async () => {
   isLoading.value = true
   try {
-    const data = await $fetch('https://blogserver.exquisitecore.xyz/api/auth/login', {
+    const data = await $fetch(`${useRuntimeConfig().public.api}/api/auth/login`, {
       method: 'POST',
       body: JSON.stringify(loginForm),
       headers: {
@@ -99,7 +100,7 @@ const handleRegister = async () => {
     const requestBody = JSON.stringify(registerForm);
 
     // 配置请求选项
-    const response = await $fetch('https://blogserver.exquisitecore.xyz/api/auth/register', {
+    const response = await $fetch(`${useRuntimeConfig().public.api}/api/auth/register`, {
       method: 'POST',
       body: requestBody, // 转换为 JSON 字符串
       headers: {

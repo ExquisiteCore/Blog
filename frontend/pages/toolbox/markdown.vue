@@ -52,7 +52,7 @@ interface UploadResponse {
 
 const checkAdmin = async () => {
   try {
-    const response = await $fetch('https://blogserver.exquisitecore.xyz/api/user/currentUser', {
+    const response = await $fetch(`${useRuntimeConfig().public.api}/api/user/currentUser`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${useUserStore().getToken()}`
@@ -87,7 +87,7 @@ const uploadText = async () => {
       Tags: tags.value.split(',').map(tag => tag.trim())
     });
 
-    const response = await $fetch('https://blogserver.exquisitecore.xyz/api/post/create', {
+    const response = await $fetch(`${useRuntimeConfig().public.api}/api/post/create`, {
       method: 'POST',
       body: requestBody,
       headers: {
