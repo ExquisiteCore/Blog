@@ -55,7 +55,8 @@ interface FetchData {
 }
 
 // 使用 useFetch 从 API 获取文章数据
-const { data, error } = await useFetch<FetchData>(`http://localhost:8080/api/post/${route.params.id}`)
+const { data, error } = await useFetch<FetchData>(`https://blogserver.exquisitecore.xyz/api/post/${route.params.id}`)
+//const { data, error } = await useFetch<FetchData>(`https://blogserver.exquisitecore.xyz/api/post/1`)
 if (error.value) {
   console.error('获取文章失败', error.value)
 }
@@ -77,4 +78,11 @@ const getPreviewImage = (preview: string) => {
   return `/images/${preview}.png`
   //return '/images/al.png'
 }
+useHead({
+  title: `${postData.value?.Title} - EC的博客`,
+  meta: [
+    { name: 'description', content: `${postData.value?.Content.slice(0, 150)}...` },
+    { name: 'keywords', content: postData.value?.Tags.join(',') }
+  ]
+})
 </script>

@@ -52,7 +52,7 @@ interface FetchData {
 }
 const posts = ref<any[]>([])
 //使用 useFetch 从 API 获取文章数据
-const { data, error } = await useFetch<FetchData>('http://localhost:8080/api/post/posts')
+const { data, error } = await useFetch<FetchData>('https://blogserver.exquisitecore.xyz/api/post/posts')
 // 检查是否有错误
 if (error.value) {
   console.error('获取文章失败', error.value)
@@ -80,6 +80,12 @@ const formatDate = (dateStr: string) => {
   return new Date(dateStr).toLocaleDateString('zh-CN', options)
 }
 
+useHead({
+  title: 'EC的博客 - 首页',
+  meta: [
+    { name: 'description', content: '博客首页' }
+  ]
+})
 </script>
 
 <style scoped>

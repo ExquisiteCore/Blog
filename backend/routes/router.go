@@ -14,7 +14,11 @@ func StartRuter() *gin.Engine {
 
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
+<<<<<<< HEAD
 		AllowOrigins:     []string{"*"},                   // 允许的源
+=======
+		AllowOrigins:     []string{"*"},                                       // 允许的源
+>>>>>>> 7d9a4e18db07ae37f92396c27df181f1750ee4ad
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}, // 允许的请求方法
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"}, // 允许的请求头
 		ExposeHeaders:    []string{"Content-Length"},                          // 允许暴露的响应头

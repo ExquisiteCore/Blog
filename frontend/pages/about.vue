@@ -48,8 +48,14 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'ExquisiteCore'
-}
+<script setup lang="ts">
+
+useHead({
+  title: '关于我 - ExquisiteCore',
+  meta: [
+    { name: 'description', content: '关于 ExquisiteCore 的介绍，包括我的爱好、我的系统、我的编程语言等。' },
+    { name: 'keywords', content: 'ExquisiteCore, 关于我, 关于, 介绍, 爱好, 系统, 编程语言' }
+  ]
+})
+
 </script>
