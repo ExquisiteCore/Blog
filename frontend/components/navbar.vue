@@ -24,14 +24,16 @@
 
         <NuxtLink to="https://github.com/exquisitecore/" target="_blank" title="https://github.com/exquisitecore/"
           aria-label="https://github.com/exquisitecore/">
-          <el-button class="w-15 h-15" round>github</el-button>
+          <Button variant="outline" size="icon">
+            <GithubLogoIcon class="w-4 h-4" />
+          </Button>
         </NuxtLink>
 
         <nuxt-link :to="isLoggedIn ? '/about' : '/signin'" rel="nofollow" title="登录" aria-label="登录">
-          <el-button class="w-15 h-15" aria-label="登录">
+          <Button variant="outline" class="w-9 h-9" aria-label="登录">
             <span v-if="!isLoggedIn">未登录</span>
             <span v-if="isLoggedIn">{{ username }}</span>
-          </el-button>
+          </Button>
         </nuxt-link>
       </div>
 
@@ -39,9 +41,12 @@
   </header>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { cn } from "@/lib/utils";
+import { Button } from '@/components/ui/button'
+import { GithubLogoIcon } from '@radix-icons/vue'
 
 const scrollTop = ref(0)
 const route = useRoute()

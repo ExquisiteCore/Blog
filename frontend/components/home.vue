@@ -42,10 +42,10 @@
     <div v-if="isMounted" :class="cn('flex space-x-4', 'animate-fade-up animate-ease-in-out')"
       :style="{ animationDelay: animationDelays.buttons }">
       <NuxtLink to="/blog">
-        <el-button class="w-20 h-10">我的博客</el-button>
+        <Button variant="outline">我的博客</Button>
       </NuxtLink>
       <NuxtLink to="/about">
-        <el-button class="w-20 h-10">关于我</el-button>
+        <Button variant="outline">关于我</Button>
       </NuxtLink>
     </div>
   </div>
@@ -53,6 +53,8 @@
 
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 const baseDelay = 200
 const delay = ref(baseDelay * 5) // 初始化 delay 值

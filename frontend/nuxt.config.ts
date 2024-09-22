@@ -2,7 +2,7 @@
 export default defineNuxtConfig({
   compatibilityDate: '2024-04-03',
   devtools: {
-    enabled: false
+    enabled: true
   },
   css: [
     '~/assets/css/main.css',
@@ -19,13 +19,24 @@ export default defineNuxtConfig({
   },
   modules: [
     '@nuxt/image',
-    '@element-plus/nuxt',
     'radix-vue/nuxt',
     '@pinia/nuxt',
     '@pinia-plugin-persistedstate/nuxt',
-    '@nuxtjs/sitemap'
+    '@nuxtjs/sitemap',
+    'shadcn-nuxt',
+    'radix-vue/nuxt'
   ],
-  elementPlus: {},
+  shadcn: {
+    /**
+     * Prefix for all the imported component
+     */
+    prefix: '',
+    /**
+     * Directory that the component lives in.
+     * @default "./components/ui"
+     */
+    componentDir: './components/ui'
+  },
   app: {
     head: {
       meta: [
