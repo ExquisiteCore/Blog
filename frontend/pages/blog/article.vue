@@ -23,15 +23,16 @@
       <div v-html="renderedContent"></div>
     </div>
   </div>
-
 </template>
 
-
 <script setup lang="ts">
-import { useRoute } from 'vue-router'
+import { useRoute } from 'vue-router';
+import { onMounted } from 'vue';
 import MarkdownIt from 'markdown-it';
 
-const route = useRoute()
+const route = useRoute();
+const seq = route.query.seq || '';
+
 const postData = ref<Post | null>(null) // 定义 ref 来存储文章数据
 
 
@@ -54,8 +55,7 @@ interface FetchData {
   message: string
 }
 
-// 使用 useFetch 从 API 获取文章数据
-const { data, error } = await useFetch<FetchData>(`${useRuntimeConfig().public.api}/api/post/${route.params.id}`)
+const { data, error } = await useFetch<FetchData>(`${useRuntimeConfig().public.api}/api/post/${seq}`)
 if (error.value) {
   console.error('获取文章失败', error.value)
 }
@@ -70,13 +70,13 @@ if (data.value?.data) {
   renderedContent.value = md.render(data.value.data.Content) // 渲染文章内容
 }
 
-
 // 将 Preview 字段转换为图片路径的函数
 const getPreviewImage = (preview: string) => {
   // 返回图片路径，假设 preview 是图片名
   return `/images/${preview}.png`
   //return '/images/al.png'
 }
+
 useHead({
   title: `${postData.value?.Title} - EC的博客`,
   meta: [

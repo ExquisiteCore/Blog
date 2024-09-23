@@ -5,7 +5,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       <div v-for="post in sortedPosts" :key="post.ID"
         class="shadow-3xl bg-white shadow-lg rounded-lg overflow-hidden transform transition-transform hover:scale-105 duration-300 ease-in-out">
-        <NuxtLink :to="'/blog/' + post.ID.toString()">
+        <NuxtLink :to="'/blog/article?seq=' + post.ID.toString()">
           <!-- 图片区域 -->
           <img :src="getPreviewImage(post.Preview)" alt="preview" class="w-full h-48 object-cover">
 
