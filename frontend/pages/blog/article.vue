@@ -18,21 +18,18 @@
       </span>
     </div>
     <!-- 文章内容 -->
-    <div class="custom-markdown-content" v-html="renderedContent || '内容加载中...'"> </div>
+    <MdPreview v-model="renderedContent" previewTheme="github" editorId="article-markdown-editor" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { useRoute } from 'vue-router';
-import { onMounted } from 'vue';
-import { marked } from 'marked';
+import { MdPreview } from 'md-editor-v3';
 
 const route = useRoute();
 const seq = route.query.seq || '';
 
 const postData = ref<Post | null>(null) // 定义 ref 来存储文章数据
-
-
 
 const renderedContent = ref()
 // 定义接口以匹配 API 数据结构
@@ -58,14 +55,7 @@ if (error.value) {
 }
 if (data.value?.data) {
   postData.value = data.value.data // 仅在数据存在时赋值
-  //renderedContent.value = md.render(data.value.data.Content) // 渲染文章内容
-
-  renderedContent.value = marked(data.value.data.Content,
-    {
-      gfm: true,
-      breaks: true,
-    }) // 解析文章内容
-  console.log(renderedContent.value);
+  renderedContent.value = data.value.data.Content
 }
 
 // 将 Preview 字段转换为图片路径的函数

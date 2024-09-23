@@ -1,5 +1,5 @@
 <template>
-  <div class="">
+  <div>
     <Navbar />
     <main class="min-h-[calc(100vh-190px)]">
       <slot />
