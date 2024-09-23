@@ -81,7 +81,7 @@ const formatDate = (dateStr: string) => {
 }
 
 useHead({
-  title: 'EC的博客 - 首页',
+  title: 'EC的小站 - 博客',
   meta: [
     { name: 'description', content: '博客首页' }
   ]

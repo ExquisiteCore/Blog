@@ -39,9 +39,25 @@ export default defineNuxtConfig({
   },
   app: {
     head: {
+      title: 'EC的小站',
       meta: [
-        { name: 'baidu-site-verification', content: 'codeva-bFd8DjRxnG' }
+        { charset: 'utf-8' },
+        { name: 'baidu-site-verification', content: 'codeva-bFd8DjRxnG' },
+        { hid: 'description', name: 'description', content: 'EC的小站' }
+      ],
+      link: [
+        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
       ]
+    }
+  },
+  site: {
+    url: 'https://exquisitecore.xyz'
+  },
+  sitemap: {
+    xsl: false,
+    defaults: {
+      changefreq: 'daily',
+      priority: 0.8
     }
   },
   runtimeConfig: {

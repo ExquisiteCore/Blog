@@ -35,9 +35,9 @@ const tools = ref([
 ])
 
 useHead({
-  title: '工具箱 - Blog',
+  title: '工具箱 - EC的小站',
   meta: [
-    { name: 'description', content: 'Blog 工具箱，包含常用的工具，如 Markdown 编辑器、代码格式化工具等。' }
+    { name: 'description', content: 'EC的工具箱，包含常用的工具，如 Markdown 编辑器、代码格式化工具等。' }
   ]
 })
 </script>

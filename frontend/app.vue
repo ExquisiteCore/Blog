@@ -6,7 +6,6 @@
 
 <script setup lang="ts">
 useHead({
-  title: 'EC的博客',
   meta: [
     { name: 'keywords', content: 'blog,vue,nuxt,rust,cpp,c++,golang,IT,IT技术,编程,技术博客,个人网站,前端,后端,全栈,计算机' },
     { name: 'author', content: 'EC' },
