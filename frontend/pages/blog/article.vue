@@ -18,17 +18,14 @@
       </span>
     </div>
     <!-- 文章内容 -->
-    <div class="prose max-w-none text-gray-700 text-center">
-
-      <div v-html="renderedContent"></div>
-    </div>
+    <div class="custom-markdown-content" v-html="renderedContent || '内容加载中...'"> </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useRoute } from 'vue-router';
 import { onMounted } from 'vue';
-import MarkdownIt from 'markdown-it';
+import { marked } from 'marked';
 
 const route = useRoute();
 const seq = route.query.seq || '';
@@ -61,13 +58,14 @@ if (error.value) {
 }
 if (data.value?.data) {
   postData.value = data.value.data // 仅在数据存在时赋值
-  const md = new MarkdownIt({
-    html: true,
-    linkify: true,
-    typographer: true
-  })
+  //renderedContent.value = md.render(data.value.data.Content) // 渲染文章内容
 
-  renderedContent.value = md.render(data.value.data.Content) // 渲染文章内容
+  renderedContent.value = marked(data.value.data.Content,
+    {
+      gfm: true,
+      breaks: true,
+    }) // 解析文章内容
+  console.log(renderedContent.value);
 }
 
 // 将 Preview 字段转换为图片路径的函数

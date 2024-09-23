@@ -11,7 +11,7 @@
           精致的芯
         </span>
       </NuxtLink>
-      <div class="mr-8 hidden h-16 flex-1 items-center justify-end text-base font-medium sm:flex">
+      <div class="mr-8 hidden h-16 flex-1 items-center justify-start text-base font-medium sm:flex">
         <NuxtLink v-for="el in navItems" :key="el.link" :to="el.link" :class="cn(
           'font-normal text-sm text-muted-foreground transition-colors px-4 py-2',
           'hover:font-semibold hover:text-primary',
@@ -28,6 +28,12 @@
             <GithubLogoIcon class="w-4 h-4" />
           </Button>
         </NuxtLink>
+
+        <nuxt-link to="/toolbox/Markdown" rel="nofollow" title="写作" aria-label="写作">
+          <Button variant="outline" size="icon">
+            <Pencil1Icon class="w-4 h-4" />
+          </Button>
+        </nuxt-link>
 
         <nuxt-link :to="isLoggedIn ? '/about' : '/signin'" rel="nofollow" title="登录" aria-label="登录">
           <Button variant="outline" class="w-9 h-9" aria-label="登录">
@@ -46,7 +52,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { cn } from "@/lib/utils";
 import { Button } from '@/components/ui/button'
-import { GithubLogoIcon } from '@radix-icons/vue'
+import { GithubLogoIcon, Pencil1Icon } from '@radix-icons/vue'
 
 const scrollTop = ref(0)
 const route = useRoute()
