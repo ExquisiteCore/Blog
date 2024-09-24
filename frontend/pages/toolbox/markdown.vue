@@ -83,7 +83,7 @@ const uploadText = async () => {
     const requestBody = JSON.stringify({
       Title: title.value,
       Content: text.value,
-      Preview: "hover-css-preview",
+      Preview: "https://t.mwm.moe/pc",
       Tags: tags.value.split(',').map(tag => tag.trim())
     });
 

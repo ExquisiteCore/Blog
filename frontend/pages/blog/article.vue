@@ -72,11 +72,10 @@ if (data.value?.data) {
   renderedContent.value = data.value.data.Content
 }
 
-// 将 Preview 字段转换为图片路径的函数
 const getPreviewImage = (preview: string) => {
   // 返回图片路径，假设 preview 是图片名
-  return `/images/${preview}.png`
-  //return '/images/al.png'
+  return preview
+  //return 'https://t.mwm.moe/pc'
 }
 
 useHead({
