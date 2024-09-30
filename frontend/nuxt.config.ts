@@ -62,7 +62,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      api: 'https://blogserver.exquisitecore.xyz'
+      api: 'http://rack1.raincs.cc:56394'
     }
   }
 })
