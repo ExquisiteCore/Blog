@@ -24,5 +24,6 @@ func init() {
 func main() {
 	r := routes.StartRuter()
 	routes.InitSwaggerRouter(r)
-	r.Run(config.GlobalConfig.Server.HttpPort)
+	//r.Run(config.GlobalConfig.Server.HttpPort)
+	r.RunTLS(config.GlobalConfig.Server.HttpPort, "full_chain.pem", "private.key")
 }
