@@ -64,6 +64,5 @@ export default defineNuxtConfig({
     public: {
       api: 'https://blogserver.exquisitecore.xyz'
     }
-  },
-  ogImage: { enabled: false }
+  }
 })
