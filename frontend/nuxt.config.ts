@@ -22,9 +22,9 @@ export default defineNuxtConfig({
     'radix-vue/nuxt',
     '@pinia/nuxt',
     '@pinia-plugin-persistedstate/nuxt',
-    '@nuxtjs/sitemap',
     'shadcn-nuxt',
-    'radix-vue/nuxt'
+    'radix-vue/nuxt',
+    '@nuxtjs/seo',
   ],
   shadcn: {
     /**
@@ -51,14 +51,14 @@ export default defineNuxtConfig({
     }
   },
   site: {
-    url: 'https://exquisitecore.xyz'
+    url: 'https://exquisitecore.xyz/',
+    name: 'EC的小站',
+    description: 'EC的个人网站',
+    defaultLocale: 'zh-cn', // not needed if you have @nuxtjs/i18n installed
   },
   sitemap: {
-    xsl: false,
-    defaults: {
-      changefreq: 'daily',
-      priority: 0.8
-    }
+    cacheMaxAgeSeconds: 6 * 60 * 60, //6小时缓存
+    autoLastmod: true // 用于爬虫抓取
   },
   runtimeConfig: {
     public: {

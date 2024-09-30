@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@nuxt/image": "^1.8.0",
-    "@nuxtjs/sitemap": "^6.0.1",
+    "@nuxtjs/seo": "^2.0.0-rc.23",
     "@pinia/nuxt": "^0.5.4",
     "@radix-icons/vue": "^1.0.0",
     "@vavt/cm-extension": "^1.5.0",
