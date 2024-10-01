@@ -23,7 +23,6 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     '@pinia-plugin-persistedstate/nuxt',
     'shadcn-nuxt',
-    'radix-vue/nuxt',
     '@nuxtjs/seo',
   ],
   shadcn: {
@@ -51,14 +50,22 @@ export default defineNuxtConfig({
     }
   },
   site: {
-    url: 'https://exquisitecore.xyz/',
+    url: 'https://exquisitecore.xyz',
     name: 'EC的小站',
     description: 'EC的个人网站',
     defaultLocale: 'zh-cn', // not needed if you have @nuxtjs/i18n installed
   },
   sitemap: {
     cacheMaxAgeSeconds: 6 * 60 * 60, //6小时缓存
-    autoLastmod: true // 用于爬虫抓取
+    autoLastmod: true, // 用于爬虫抓取
+    exclude: [ // 排除不需要的页面
+      '/404',
+      '/signin',
+    ],
+    sources: [
+      '/api/__sitemap__/urls',
+    ]
+
   },
   runtimeConfig: {
     public: {
