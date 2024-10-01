@@ -30,7 +30,19 @@ func GetPosts(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "get post success",
+			"data":    posts,
+		})
+	}
+}
 
+func GetPostsList(c *gin.Context) {
+	var postInstance model.Post
+	if posts, err := postInstance.GetPostList(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	} else {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "get post success",
 			"data":    posts,

@@ -47,6 +47,15 @@ func (p *Post) GetPosts() ([]Post, error) {
 	return posts, nil
 }
 
+func (p *Post) GetPostList() ([]Post, error) {
+	var posts []Post
+	err := db.Model(&Post{}).Select("id, title").Find(&posts).Error
+	if err != nil {
+		return nil, err
+	}
+	return posts, nil
+}
+
 func (p *Post) GetPostById(id string) (Post, error) {
 	var post Post
 

@@ -27,6 +27,7 @@ func StartRuter() *gin.Engine {
 		public.POST("/auth/login", controller.Login)
 		public.POST("/auth/register", controller.Register)
 		//Post
+		public.GET("/post/list", controller.GetPostsList)
 		public.GET("/post/posts", controller.GetPosts)
 		public.GET("/post/:id", controller.GetPostById)
 	}
