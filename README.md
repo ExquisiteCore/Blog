@@ -21,3 +21,4 @@
 -  [付小晨](https://fuxiaochen.com/)
 
 ## LICENCE
+MIT
