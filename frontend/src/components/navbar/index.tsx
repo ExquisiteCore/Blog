@@ -7,7 +7,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React from "react";
 import { PATHS, PATHS_MAP } from "@/lib/path"
-import {ModeToggle} from "../mode-toggle"
+import { ModeToggle } from "../mode-toggle"
 import { Button } from "../ui/button";
 import { IconBrandGithub } from "../icons/githubicon";
 import { IconBrandBilibili } from "../icons/bilibiliicon";
@@ -23,7 +23,7 @@ export const Navbar = () => {
   const [isHideHeader, setIsHideHeader] = React.useState(false);
   const throttledIsHideHeader = useThrottle(isHideHeader, { wait: 500 });
 
-    React.useEffect(() => {
+  React.useEffect(() => {
     const _top = scroll?.top ?? 0;
 
     if (_top - throttledPreviousScrollTop < 0) {
@@ -36,13 +36,13 @@ export const Navbar = () => {
     if (_top) {
       setPreviousScrollTop(_top);
     }
-    }, [scroll?.top, throttledPreviousScrollTop]);
+  }, [scroll?.top, throttledPreviousScrollTop]);
   return (
     <header
-    className={cn(
+      className={cn(
         "w-full sticky top-0 backdrop-blur transition-all border-x-0  flex justify-center z-10",
         throttledPreviousScrollTop > 60 &&
-          "bg-background/50 border-b border-border/50",
+        "bg-background/50 border-b border-border/50",
         {
           "-translate-y-20":
             throttledPreviousScrollTop > 300 ? throttledIsHideHeader : false,
@@ -59,7 +59,7 @@ export const Navbar = () => {
           </span>
         </NextLink>
         <div className="mr-8 hidden h-16 flex-1 items-center justify-end text-base font-medium sm:flex">
-            {navItems.map((el) => (
+          {navItems.map((el) => (
             <Link
               href={el.link}
               key={el.link}
@@ -107,7 +107,7 @@ export const Navbar = () => {
             aria-label="/signin"
           >
             <Button variant="outline" size={"icon"} aria-label="登录">
-                <UserCog className="size-4" />
+              <UserCog className="size-4" />
             </Button>
           </Link>
         </div>
@@ -121,20 +121,20 @@ export const navItems: {
   link: string;
   external?: boolean;
 }[] = [
-  {
-    label: PATHS_MAP[PATHS.SITE_HOME],
-    link: PATHS.SITE_HOME,
-  },
-  {
-    label: PATHS_MAP[PATHS.SITE_BLOG],
-    link: PATHS.SITE_BLOG,
-  },
-  {
-    label: PATHS_MAP[PATHS.SITE_SNIPPET],
-    link: PATHS.SITE_SNIPPET,
-  },
-  {
-    label: PATHS_MAP[PATHS.SITE_ABOUT],
-    link: PATHS.SITE_ABOUT,
-  },
-];
+    {
+      label: PATHS_MAP[PATHS.SITE_HOME],
+      link: PATHS.SITE_HOME,
+    },
+    {
+      label: PATHS_MAP[PATHS.SITE_BLOG],
+      link: PATHS.SITE_BLOG,
+    },
+    {
+      label: PATHS_MAP[PATHS.SITE_SNIPPET],
+      link: PATHS.SITE_SNIPPET,
+    },
+    {
+      label: PATHS_MAP[PATHS.SITE_ABOUT],
+      link: PATHS.SITE_ABOUT,
+    },
+  ];

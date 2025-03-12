@@ -5,10 +5,10 @@ import { Navbar } from "@/components/navbar";
 export default function Layout({ children }: React.PropsWithChildren) {
   return (
     <>
-      <Navbar/>
+      <Navbar />
       <main className="min-h-[calc(100vh-190px)]">{children}</main>
-      <Footer/>
-      <BackToTop/>
+      <Footer />
+      <BackToTop />
     </>
   );
 }

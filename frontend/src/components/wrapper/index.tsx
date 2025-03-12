@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 
 interface WrapperProps
   extends React.HTMLAttributes<HTMLDivElement>,
-    React.PropsWithChildren {}
+  React.PropsWithChildren { }
 
 export const Wrapper = ({ className, children, ...props }: WrapperProps) => {
   return (

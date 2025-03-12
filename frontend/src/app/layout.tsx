@@ -17,11 +17,11 @@ export default function RootLayout({ children }: Readonly<{
   return (
     <html lang="zh-CN" suppressHydrationWarning>
       <body className="overflow-x-clip scroll-smooth">
-      <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
         >
           <TooltipProvider>
             {children}
