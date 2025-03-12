@@ -7,6 +7,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React from "react";
 import { PATHS, PATHS_MAP } from "@/lib/path"
+import {ModeToggle} from "../mode-toggle"
+import { Button } from "../ui/button";
+import { IconBrandGithub } from "../icons/githubicon";
+import { IconBrandBilibili } from "../icons/bilibiliicon";
+import { UserCog } from "lucide-react";
 
 export const Navbar = () => {
   const scroll = useScroll(() => document);
@@ -67,6 +72,44 @@ export const Navbar = () => {
               {el.label}
             </Link>
           ))}
+        </div>
+        <div className="flex flex-1 items-center justify-end gap-2 sm:flex-none">
+
+          <ModeToggle />
+
+          <Link
+            href="https://github.com/ExquisiteCore"
+            target="_blank"
+            title="https://github.com/ExquisiteCore"
+            aria-label="https://github.com/ExquisiteCore"
+          >
+            <Button variant="outline" size={"icon"} aria-label="Github Icon">
+              <IconBrandGithub className="text-base" />
+            </Button>
+          </Link>
+
+          <Link
+            href="https://space.bilibili.com/453875890"
+            target="_blank"
+            title="https://space.bilibili.com/453875890"
+            aria-label="https://space.bilibili.com/453875890"
+          >
+            <Button variant="outline" size={"icon"} aria-label="BiliBili Icon">
+              <IconBrandBilibili className="text-base" />
+            </Button>
+          </Link>
+
+          <Link
+            href="/signin"
+            target="_blank"
+            rel="nofollow"
+            title="登录"
+            aria-label="/signin"
+          >
+            <Button variant="outline" size={"icon"} aria-label="登录">
+                <UserCog className="size-4" />
+            </Button>
+          </Link>
         </div>
       </div>
     </header>
