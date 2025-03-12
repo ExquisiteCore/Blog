@@ -1,12 +1,9 @@
-import { Button } from "@/components/ui/button"
+import { HomeSection } from "@/components/home";
 
 export default function Home() {
   return (
-    <div className="">
-      <main className="">
-        <div>HelloWorld</div>
-      <Button>Click me</Button>
-      </main>
+    <div className="relative grid h-[calc(100vh-64px)] place-content-center">
+      <HomeSection/>
     </div>
   );
 }
