@@ -19,74 +19,19 @@ export function Images() {
   }, []);
 
   return (
-    <div className="imgs">
+    <div className="fixed inset-0 w-full h-screen -z-10 bg-[#363636] overflow-hidden before:content-[''] before:block before:absolute before:inset-0 before:bg-black/20 before:transition-all before:duration-200 before:ease-in-out">
       <ul>
         {imageList.map((image, index) => (
           <li
             key={index}
-            className="item"
+            className={`absolute inset-0 w-full h-full bg-no-repeat bg-center bg-cover opacity-0 animate-[imageAnimation_30s_linear_infinite] backface-hidden preserve-3d ${index === 1 ? 'animation-delay-6s' : ''} ${index === 2 ? 'animation-delay-12s' : ''} ${index === 3 ? 'animation-delay-18s' : ''} ${index === 4 ? 'animation-delay-24s' : ''} ${index === 5 ? 'animation-delay-30s' : ''}`}
             style={{ backgroundImage: `url(${image})` }}
           ></li>
         ))}
       </ul>
 
-      <style jsx>{`
-        .imgs {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100vh;
-          z-index: -9;
-          background-color: #363636;
-          overflow: hidden;
-        }
-
-        .imgs::before {
-          content: '';
-          display: block;
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background-color: rgba(0, 0, 0, 0.2);
-          transition: all 0.2s ease-in-out 0s;
-        }
-
-        .item {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: no-repeat 50% 50% / cover;
-          opacity: 0;
-          animation: imageAnimation 30s linear infinite 0s;
-          backface-visibility: hidden;
-          transform-style: preserve-3d;
-        }
-
-        .item:nth-child(2) {
-          animation-delay: 6s;
-        }
-
-        .item:nth-child(3) {
-          animation-delay: 12s;
-        }
-
-        .item:nth-child(4) {
-          animation-delay: 18s;
-        }
-
-        .item:nth-child(5) {
-          animation-delay: 24s;
-        }
-
-        .item:nth-child(6) {
-          animation-delay: 30s;
-        }
-
+      {/* 添加全局样式 */}
+      <style jsx global>{`
         @keyframes imageAnimation {
           0% {
             opacity: 0;
@@ -116,6 +61,34 @@ export function Images() {
           100% {
             opacity: 0;
           }
+        }
+
+        .backface-hidden {
+          backface-visibility: hidden;
+        }
+
+        .preserve-3d {
+          transform-style: preserve-3d;
+        }
+
+        .animation-delay-6s {
+          animation-delay: 6s;
+        }
+
+        .animation-delay-12s {
+          animation-delay: 12s;
+        }
+
+        .animation-delay-18s {
+          animation-delay: 18s;
+        }
+
+        .animation-delay-24s {
+          animation-delay: 24s;
+        }
+
+        .animation-delay-30s {
+          animation-delay: 30s;
         }
       `}</style>
     </div>
