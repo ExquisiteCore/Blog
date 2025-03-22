@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { IconBrandGithub } from '@/components/icons/githubicon';
+import { Clock } from '@/components/clock';
 
 export default function Page() {
   return (
@@ -17,28 +18,35 @@ export default function Page() {
 
         {/* 个人信息部分 */}
         <div className="bg-card p-6 rounded-lg shadow-sm">
-          <h2 className="text-2xl font-semibold mb-4">关于我</h2>
-          <ul className="space-y-3 list-disc list-inside">
-            <li>一名热爱开源的中国学生</li>
-            <li>动漫爱好者</li>
-            <li>喜欢生电但不精通的Minecraft玩家</li>
-            <li className="flex flex-wrap items-center">
-              <span className="mr-2">喜欢的编程语言</span>
-              <div className="flex flex-wrap gap-2">
-                <img src="https://img.shields.io/badge/-Csharp-purple?style=flat-square&logo=Csharp&logoColor=fff" alt="C#" />
-                <img src="https://img.shields.io/badge/-C++-blue?style=flat-square&logo=c%2B%2B&logoColor=fff" alt="C++" />
-                <img src="https://img.shields.io/badge/-Rust-tan?style=flat-square&logo=Rust&logoColor=fff" alt="Rust" />
-              </div>
-            </li>
-            <li className="flex flex-wrap items-center">
-              <span className="mr-2">我的系统</span>
-              <div className="flex flex-wrap gap-2">
-                <img src="https://img.shields.io/badge/-windows-blue?style=flat-square&logo=windows&logoColor=fff" alt="Windows" />
-                <img src="https://img.shields.io/badge/-ubuntu-orange?style=flat-square&logo=ubuntu&logoColor=fff" alt="Ubuntu" />
-              </div>
-            </li>
-          </ul>
-          <p className="mt-4">喜欢写一些简单的代码和一些好玩的小东西</p>
+          <div className="flex flex-col md:flex-row justify-between">
+            <div className="flex-1">
+              <h2 className="text-2xl font-semibold mb-4">关于我</h2>
+              <ul className="space-y-3 list-disc list-inside">
+                <li>一名热爱开源的中国学生</li>
+                <li>动漫爱好者</li>
+                <li>喜欢生电但不精通的Minecraft玩家</li>
+                <li className="flex flex-wrap items-center">
+                  <span className="mr-2">喜欢的编程语言</span>
+                  <div className="flex flex-wrap gap-2">
+                    <img src="https://img.shields.io/badge/-Csharp-purple?style=flat-square&logo=Csharp&logoColor=fff" alt="C#" />
+                    <img src="https://img.shields.io/badge/-C++-blue?style=flat-square&logo=c%2B%2B&logoColor=fff" alt="C++" />
+                    <img src="https://img.shields.io/badge/-Rust-tan?style=flat-square&logo=Rust&logoColor=fff" alt="Rust" />
+                  </div>
+                </li>
+                <li className="flex flex-wrap items-center">
+                  <span className="mr-2">我的系统</span>
+                  <div className="flex flex-wrap gap-2">
+                    <img src="https://img.shields.io/badge/-windows-blue?style=flat-square&logo=windows&logoColor=fff" alt="Windows" />
+                    <img src="https://img.shields.io/badge/-ubuntu-orange?style=flat-square&logo=ubuntu&logoColor=fff" alt="Ubuntu" />
+                  </div>
+                </li>
+              </ul>
+              <p className="mt-4">喜欢写一些简单的代码和一些好玩的小东西</p>
+            </div>
+            <div className="md:ml-8 mt-6 md:mt-0 flex justify-center">
+              <Clock />
+            </div>
+          </div>
         </div>
 
         {/* 爱好部分 */}
