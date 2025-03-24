@@ -1,7 +1,7 @@
 mod config;
 mod logger;
+mod routes;
 
-use axum::{Router, routing::get};
 use std::net::SocketAddr;
 use std::path::Path;
 use std::sync::Arc;
@@ -25,7 +25,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = Arc::new(config);
 
     // 创建应用路由
-    let app = Router::new().route("/test", get(|| async { "Hello, Blog API!" }));
+    let app = routes::create_routes();
 
     // 启动服务器
     let addr = SocketAddr::new(config.server.host.parse()?, config.server.port);
