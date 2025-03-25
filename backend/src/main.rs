@@ -1,5 +1,7 @@
 mod config;
 mod logger;
+mod middleware;
+mod model;
 mod routes;
 
 use std::net::SocketAddr;
@@ -11,7 +13,7 @@ use tracing::info;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 初始化日志系统
-    logger::init_logger()?;
+    let _log_guard = logger::init_logger()?;
 
     // 加载配置文件
     let config_path = Path::new("config.toml");
@@ -24,8 +26,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     let config = Arc::new(config);
 
+    // 初始化数据库连接池
+    let pool = model::get_db_pool(&config).await?;
+    let pool = Arc::new(pool);
+
     // 创建应用路由
-    let app = routes::create_routes();
+    let app = routes::create_routes(pool);
 
     // 启动服务器
     let addr = SocketAddr::new(config.server.host.parse()?, config.server.port);
