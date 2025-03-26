@@ -1,9 +1,4 @@
-mod config;
-mod logger;
-mod middleware;
-mod model;
-mod routes;
-
+use backend::{config, logger, model, routes};
 use std::net::SocketAddr;
 use std::path::Path;
 use std::sync::Arc;
