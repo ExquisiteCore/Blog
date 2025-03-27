@@ -171,7 +171,7 @@ impl Label {
             r#"
             SELECT l.id, l.name, l.slug, l.description, l.created_at, l.updated_at
             FROM label l
-            JOIN post_tags pt ON l.id = pt.tag_id
+            JOIN post_label pt ON l.id = pt.label_id
             WHERE pt.post_id = $1
             ORDER BY l.name ASC
             "#,
@@ -187,9 +187,9 @@ impl Label {
     pub async fn add_to_post(pool: &PgPool, post_id: Uuid, tag_id: Uuid) -> Result<(), Error> {
         sqlx::query!(
             r#"
-            INSERT INTO post_tags (post_id, tag_id)
+            INSERT INTO post_label (post_id, label_id)
             VALUES ($1, $2)
-            ON CONFLICT (post_id, tag_id) DO NOTHING
+            ON CONFLICT (post_id, label_id) DO NOTHING
             "#,
             post_id,
             tag_id
@@ -208,8 +208,8 @@ impl Label {
     ) -> Result<bool, Error> {
         let result = sqlx::query!(
             r#"
-            DELETE FROM post_tags
-            WHERE post_id = $1 AND tag_id = $2
+            DELETE FROM post_label
+            WHERE post_id = $1 AND label_id = $2
             "#,
             post_id,
             tag_id

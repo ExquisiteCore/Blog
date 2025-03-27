@@ -89,10 +89,10 @@ async fn init_db(pool: &PgPool) -> Result<(), sqlx::Error> {
     // 创建文章标签关联表
     sqlx::query(
         "
-        CREATE TABLE IF NOT EXISTS post_tags (
+        CREATE TABLE IF NOT EXISTS post_label (
             post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
-            tag_id UUID NOT NULL REFERENCES label(id) ON DELETE CASCADE,
-            PRIMARY KEY (post_id, tag_id)
+            label_id UUID NOT NULL REFERENCES label(id) ON DELETE CASCADE,
+            PRIMARY KEY (post_id, label_id)
         )
     ",
     )
@@ -132,7 +132,7 @@ async fn is_db_empty(pool: &PgPool) -> Result<bool, sqlx::Error> {
         "
         SELECT COUNT(*) as count FROM information_schema.tables 
         WHERE table_schema = 'public' 
-        AND table_name IN ('users', 'posts', 'label', 'post_tags', 'comments')
+        AND table_name IN ('users', 'posts', 'label', 'post_label', 'comments')
         ",
     )
     .fetch_one(pool)
