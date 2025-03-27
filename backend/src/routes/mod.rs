@@ -13,8 +13,7 @@ use tower::ServiceBuilder;
 /// 创建应用的所有路由
 pub fn create_routes(pool: Arc<Pool<Postgres>>) -> Router {
     Router::new()
-        .with_state(pool)
-        .nest("/api", api::create_routes())
+        .nest("/api", api::create_routes().with_state(pool))
         //中间件
         .layer(
             ServiceBuilder::new()
