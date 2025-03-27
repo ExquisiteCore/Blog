@@ -4,7 +4,6 @@ use axum::response::IntoResponse;
 #[derive(Debug)]
 pub enum AppErrorType {
     Db,
-    Template,
     Notfound,
     Duplicate,
     Crypt,
@@ -61,12 +60,6 @@ impl std::error::Error for AppError {}
 impl From<sqlx::Error> for AppError {
     fn from(err: sqlx::Error) -> Self {
         Self::from_err(Box::new(err), AppErrorType::Db)
-    }
-}
-
-impl From<askama::Error> for AppError {
-    fn from(err: askama::Error) -> Self {
-        Self::from_err(Box::new(err), AppErrorType::Template)
     }
 }
 

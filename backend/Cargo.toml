@@ -43,4 +43,3 @@ toml = "0.8.8"
 # 认证
 jsonwebtoken = "9.2"
 bcrypt = "0.17.0"
-askama = "0.12.1"
