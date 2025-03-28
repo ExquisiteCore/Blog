@@ -2,6 +2,7 @@
 //!
 //! 提供用户的数据结构和数据库操作方法
 
+use bcrypt;
 use serde::{Deserialize, Serialize};
 use sqlx::{Error, postgres::PgPool};
 use time::OffsetDateTime;
@@ -121,9 +122,8 @@ impl User {
         let now = OffsetDateTime::now_utc();
         let role = req.role.unwrap_or_else(|| "user".to_string());
 
-        // 在实际应用中，这里应该对密码进行哈希处理
-        // 这里简化处理，实际应用中应使用如bcrypt等安全哈希算法
-        let password_hash = req.password; // 实际应用中应该是哈希后的密码
+        // 使用已经哈希处理过的密码
+        let password_hash = req.password;
 
         let user = sqlx::query_as!(
             Self,
@@ -244,7 +244,13 @@ impl User {
             let username = req.username.unwrap_or(user.username);
             let email = req.email.unwrap_or(user.email);
             let password_hash = match req.password {
-                Some(password) => password, // 实际应用中应该是哈希后的密码
+                Some(password) => {
+                    // 对新密码进行哈希处理
+                    match bcrypt::hash(&password, bcrypt::DEFAULT_COST) {
+                        Ok(hashed) => hashed,
+                        Err(_) => return Err(Error::ColumnNotFound("密码加密失败".to_string())),
+                    }
+                }
                 None => user.password_hash,
             };
             let display_name = req.display_name.or(user.display_name);
@@ -291,10 +297,11 @@ impl User {
 
     /// 验证用户密码
     pub async fn verify_password(&self, password: &str) -> bool {
-        // 在实际应用中，这里应该使用安全的密码验证方法
-        // 例如使用bcrypt等库来验证哈希密码
-        // 这里简化处理，直接比较字符串
-        self.password_hash == password
+        // 使用bcrypt验证密码
+        match bcrypt::verify(password, &self.password_hash) {
+            Ok(result) => result,
+            Err(_) => false, // 验证过程出错，返回验证失败
+        }
     }
 
     /// 用户登录

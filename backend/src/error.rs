@@ -16,6 +16,7 @@ pub enum AppErrorType {
     IncorrectLogin,
     Forbidden,
     Time,
+    Internal,
 }
 
 #[derive(Debug)]
@@ -37,7 +38,10 @@ impl AppError {
 
     pub fn new_message(msg: &str, types: AppErrorType) -> Self {
         Self {
-            cause: Some(Box::new(anyhow::anyhow!(msg.to_string()))),
+            cause: Some(Box::new(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                msg.to_string(),
+            ))),
             types,
         }
     }
@@ -90,6 +94,7 @@ impl std::fmt::Display for AppErrorType {
             AppErrorType::IncorrectLogin => "登录信息错误",
             AppErrorType::Forbidden => "权限不足",
             AppErrorType::Time => "时间解析错误",
+            AppErrorType::Internal => "内部错误",
         };
         write!(f, "{}", msg)
     }
@@ -111,6 +116,6 @@ impl From<sqlx::Error> for AppError {
 
 impl From<anyhow::Error> for AppError {
     fn from(err: anyhow::Error) -> Self {
-        AppError::new(err, AppErrorType::Db)
+        AppError::new_message(&err.to_string(), AppErrorType::Db)
     }
 }
