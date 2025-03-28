@@ -1,7 +1,23 @@
+use once_cell::sync::OnceCell;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
+use std::sync::Arc;
+
+// 全局配置单例
+static CONFIG: OnceCell<Arc<Config>> = OnceCell::new();
+
+/// 获取全局配置实例
+pub fn get_config() -> &'static Arc<Config> {
+    CONFIG.get().expect("配置未初始化")
+}
+
+/// 初始化全局配置
+pub fn init_config(config: Config) {
+    let config = Arc::new(config);
+    CONFIG.set(config).expect("配置已经初始化过");
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {

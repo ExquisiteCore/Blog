@@ -19,17 +19,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         info!("使用默认配置");
         config::Config::default()
     };
-    let config = Arc::new(config);
+
+    // 初始化全局配置
+    config::init_config(config.clone());
 
     // 初始化数据库连接池
-    let pool = model::get_db_pool(&config).await?;
+    let pool = model::get_db_pool(config::get_config()).await?;
     let pool = Arc::new(pool);
 
     // 创建应用路由
     let app = routes::create_routes(pool);
 
     // 启动服务器
-    let addr = SocketAddr::new(config.server.host.parse()?, config.server.port);
+    let addr = SocketAddr::new(
+        config::get_config().server.host.parse()?,
+        config::get_config().server.port,
+    );
     info!("服务器启动在 {}", addr);
 
     let listener = TcpListener::bind(addr).await?;
