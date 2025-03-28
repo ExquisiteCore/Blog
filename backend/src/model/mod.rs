@@ -4,7 +4,7 @@
 
 mod db;
 mod dbtools;
-mod models;
+pub mod models;
 
 // 导出公共组件
 pub use db::get_db_pool;

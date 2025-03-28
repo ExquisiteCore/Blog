@@ -1,7 +1,13 @@
-use axum::response::IntoResponse;
+use anyhow;
+use axum::{
+    Json,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
+use serde::{Deserialize, Serialize};
+use serde_json::json;
 
-/// 应用程序错误类型
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum AppErrorType {
     Db,
     Notfound,
@@ -9,46 +15,38 @@ pub enum AppErrorType {
     Crypt,
     IncorrectLogin,
     Forbidden,
-    Chrono,
+    Time,
 }
 
-/// 应用程序错误
 #[derive(Debug)]
 pub struct AppError {
-    pub message: Option<String>,
-    pub cause: Option<Box<dyn std::error::Error>>,
+    pub cause: Option<Box<dyn std::error::Error + Send + Sync>>,
     pub types: AppErrorType,
 }
 
 impl AppError {
-    fn new(
-        message: Option<String>,
-        cause: Option<Box<dyn std::error::Error>>,
+    pub fn new<E: std::error::Error + Send + Sync + 'static>(
+        cause: E,
         types: AppErrorType,
     ) -> Self {
         Self {
-            message,
-            cause,
+            cause: Some(Box::new(cause)),
             types,
         }
     }
-    fn from_err(cause: Box<dyn std::error::Error>, types: AppErrorType) -> Self {
-        Self::new(None, Some(cause), types)
+
+    pub fn new_message(msg: &str, types: AppErrorType) -> Self {
+        Self {
+            cause: Some(Box::new(anyhow::anyhow!(msg.to_string()))),
+            types,
+        }
     }
-    fn from_str(msg: &str, types: AppErrorType) -> Self {
-        Self::new(Some(msg.to_string()), None, types)
-    }
-    pub fn notfound_opt(message: Option<String>) -> Self {
-        Self::new(message, None, AppErrorType::Notfound)
-    }
-    pub fn notfound_msg(msg: &str) -> Self {
-        Self::notfound_opt(Some(msg.to_string()))
-    }
+
     pub fn notfound() -> Self {
-        Self::notfound_msg("没有找到符合条件的数据")
+        Self::new_message("没有找到符合条件的数据", AppErrorType::Notfound)
     }
 }
-//兼容标准库的Error
+
 impl std::fmt::Display for AppError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self)
@@ -57,18 +55,62 @@ impl std::fmt::Display for AppError {
 
 impl std::error::Error for AppError {}
 
-impl From<sqlx::Error> for AppError {
-    fn from(err: sqlx::Error) -> Self {
-        Self::from_err(Box::new(err), AppErrorType::Db)
+impl IntoResponse for AppError {
+    fn into_response(self) -> Response {
+        let status = match self.types {
+            AppErrorType::Notfound => StatusCode::NOT_FOUND,
+            AppErrorType::Duplicate => StatusCode::CONFLICT,
+            AppErrorType::IncorrectLogin => StatusCode::UNAUTHORIZED,
+            AppErrorType::Forbidden => StatusCode::FORBIDDEN,
+            _ => StatusCode::INTERNAL_SERVER_ERROR,
+        };
+
+        let msg = self
+            .cause
+            .as_ref()
+            .map_or("有错误发生".to_string(), |e| e.to_string());
+
+        let body = json!({
+            "code": format!("{:?}", self.types), // 例如 "Notfound"
+            "error": self.types.to_string(),    // 例如 "资源未找到"
+            "message": msg
+        });
+
+        (status, Json(body)).into_response()
     }
 }
 
-impl IntoResponse for AppError {
-    fn into_response(self) -> axum::response::Response {
-        let msg = match self.message {
-            Some(msg) => msg.clone(),
-            None => "有错误发生".to_string(),
+impl std::fmt::Display for AppErrorType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let msg = match self {
+            AppErrorType::Db => "数据库错误",
+            AppErrorType::Notfound => "资源未找到",
+            AppErrorType::Duplicate => "数据重复",
+            AppErrorType::Crypt => "加密/解密错误",
+            AppErrorType::IncorrectLogin => "登录信息错误",
+            AppErrorType::Forbidden => "权限不足",
+            AppErrorType::Time => "时间解析错误",
         };
-        msg.into_response()
+        write!(f, "{}", msg)
+    }
+}
+
+impl From<sqlx::Error> for AppError {
+    fn from(err: sqlx::Error) -> Self {
+        match err {
+            sqlx::Error::RowNotFound => {
+                AppError::new_message("查询的数据不存在", AppErrorType::Notfound)
+            }
+            sqlx::Error::Database(db_err) if db_err.is_unique_violation() => {
+                AppError::new_message("数据已存在", AppErrorType::Duplicate)
+            }
+            _ => AppError::new(err, AppErrorType::Db),
+        }
+    }
+}
+
+impl From<anyhow::Error> for AppError {
+    fn from(err: anyhow::Error) -> Self {
+        AppError::new(err, AppErrorType::Db)
     }
 }

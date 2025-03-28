@@ -2,6 +2,8 @@
 //!
 //! 包含所有API端点的路由定义
 
+mod postapi;
+
 use axum::{Json, Router, extract::State, routing::get};
 use serde::Serialize;
 use sqlx::{Pool, Postgres};
