@@ -11,6 +11,7 @@ tokio = { version = "1", features = ["full"] }
 axum = { version = "0.8", features = ["macros", "multipart", "tracing"] }
 tower = "0.5.2"
 tower-http = { version = "0.6.2", features = ["cors", "trace"] }
+axum-extra = "0.10.0"
 
 # 数据库
 sqlx = { version = "0.8", features = [

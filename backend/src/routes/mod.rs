@@ -2,8 +2,7 @@
 //!
 //! 这个模块包含所有API路由的定义
 
-mod api;
-
+use crate::api;
 use crate::middleware;
 use axum::Router;
 use sqlx::{Pool, Postgres};
