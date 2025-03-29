@@ -2,6 +2,7 @@
 //!
 //! 这个模块包含所有的中间件
 //!
+pub mod auth;
 pub mod cors;
 pub mod trace_layer;
 // use std::boxed::Box;
