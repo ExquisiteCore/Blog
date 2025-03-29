@@ -4,11 +4,9 @@ export const PATHS = {
   SITE_BLOG: "/blog",
   SITE_SNIPPET: "/snippet",
   SITE_ABOUT: "/about",
-  SITEMAP: "/sitemap.xml",
 
   /** ************* AUTH ****************** */
-  AUTH_SIGN_IN: "/auth/sign_in",
-  NEXT_AUTH_SIGN_IN: "/api/auth/sign_in",
+  AUTH_SIGN_IN: "/auth",
 };
 
 export const PATHS_MAP: Record<string, string> = {
@@ -17,7 +15,6 @@ export const PATHS_MAP: Record<string, string> = {
   [PATHS.SITE_BLOG]: "博客",
   [PATHS.SITE_SNIPPET]: "片段",
   [PATHS.SITE_ABOUT]: "关于",
-  [PATHS.SITEMAP]: "站点地图",
   /** ************* AUTH ****************** */
   [PATHS.AUTH_SIGN_IN]: "登录",
 };

@@ -100,11 +100,11 @@ export const Navbar = () => {
           </Link>
 
           <Link
-            href="/signin"
+            href={PATHS.AUTH_SIGN_IN}
             target="_blank"
             rel="nofollow"
             title="登录"
-            aria-label="/signin"
+            aria-label={PATHS.AUTH_SIGN_IN}
           >
             <Button variant="outline" size={"icon"} aria-label="登录">
               <UserCog className="size-4" />
