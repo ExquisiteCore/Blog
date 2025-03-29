@@ -109,7 +109,7 @@ export default function SignInPage() {
                 </FormItem>
               )}
             />
-            <Button type="submit" variant="default" className="!w-full">
+            <Button type="submit" variant="default" className="w-full gap-4 flex justify-center">
               登录
             </Button>
           </form>
@@ -126,14 +126,16 @@ export default function SignInPage() {
                 </span>
               </div>
             </div>
-            <Button
-              variant="default"
-              className="!w-full"
-              type="button"
-              onClick={handleGoHome}
-            >
-              回首页
-            </Button>
+            <div className="flex justify-center">
+              <Button
+                variant="default"
+                className="w-full"
+                type="button"
+                onClick={handleGoHome}
+              >
+                回首页
+              </Button>
+            </div>
           </div>
         </CardFooter>
       </Card>
