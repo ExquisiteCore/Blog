@@ -147,19 +147,25 @@ export const Navbar = () => {
                   title={authState.user.username || "已登录"}
                   className="overflow-hidden p-0"
                 >
-                  <img
-                    src={authState.user.avatar_url}
-                    alt="用户头像"
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      // 头像加载失败时显示默认图标
-                      e.currentTarget.style.display = "none";
-                      const iconElement = document.createElement("span");
-                      iconElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
-                      iconElement.className = "flex items-center justify-center w-full h-full";
-                      e.currentTarget.parentNode?.appendChild(iconElement);
-                    }}
-                  />
+                  {authState.user.avatar_url ? (
+                    <img
+                      src={authState.user.avatar_url}
+                      alt="用户头像"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // 头像加载失败时显示默认图标
+                        e.currentTarget.style.display = "none";
+                        const iconElement = document.createElement("span");
+                        iconElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
+                        iconElement.className = "flex items-center justify-center w-full h-full";
+                        e.currentTarget.parentNode?.appendChild(iconElement);
+                      }}
+                    />
+                  ) : (
+                    <span className="flex items-center justify-center w-full h-full">
+                      <UserCog className="size-4" />
+                    </span>
+                  )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -201,8 +207,8 @@ export const navItems: {
       link: PATHS.SITE_BLOG,
     },
     {
-      label: PATHS_MAP[PATHS.SITE_SNIPPET],
-      link: PATHS.SITE_SNIPPET,
+      label: PATHS_MAP[PATHS.SITE_LABER],
+      link: PATHS.SITE_LABER,
     },
     {
       label: PATHS_MAP[PATHS.SITE_ABOUT],

@@ -39,8 +39,6 @@ export default function SignInPage() {
       // 使用封装的axios post方法替代fetch，指定返回类型为LoginResponse
       const data = await post<LoginResponse>("/users/login", values, { withToken: false });
       // 处理返回的token和用户数据
-      console.log('登录成功:', data);
-
       // 将token和用户信息存储到localStorage
       if (data && data.token && data.user) {
         const { token, user } = data;

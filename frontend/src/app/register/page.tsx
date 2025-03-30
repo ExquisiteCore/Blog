@@ -22,10 +22,7 @@ const formSchema = z.object({
   username: z.string().min(5, { message: "用户名至少需要5个字符" }),
   email: z.string().email({ message: "请输入有效的邮箱地址" }),
   password: z.string().min(6, { message: "密码至少需要6个字符" }),
-  confirm_password: z.string().min(6, { message: "确认密码至少需要6个字符" })
-}).refine((data) => data.password === data.confirm_password, {
-  message: "两次输入的密码不一致",
-  path: ["confirm_password"],
+  avatar_url: z.string().url({ message: "请输入有效的URL地址" }).optional()
 });
 
 export default function RegisterPage() {
@@ -36,7 +33,7 @@ export default function RegisterPage() {
       username: "",
       email: "",
       password: "",
-      confirm_password: ""
+      avatar_url: ""
     }
   });
 
@@ -47,9 +44,7 @@ export default function RegisterPage() {
 
       // 调用注册API
       await post("/users/register", registerData, { withToken: false });
-
       // 注册成功后跳转到登录页面
-      console.log('注册成功');
       router.push(PATHS.AUTH_SIGN_IN);
     } catch (error) {
       console.error('注册错误:', error);
@@ -59,7 +54,7 @@ export default function RegisterPage() {
       });
       // 清除密码字段
       form.setValue('password', '');
-      form.setValue('confirm_password', '');
+      form.setValue('avatar_url', '');
     }
   }
 
@@ -113,11 +108,11 @@ export default function RegisterPage() {
             />
             <FormField
               control={form.control}
-              name="confirm_password"
+              name="avatar_url"
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
-                    <Input type="password" placeholder="请确认密码" {...field} />
+                    <Input placeholder="请输入头像URL（可选）" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
