@@ -22,7 +22,8 @@ pub fn create_routes() -> Router<Arc<Pool<Postgres>>> {
     let public_routes = Router::new()
         .route("/users/register", post(userapi::register_user))
         .route("/users/login", post(userapi::login_user))
-        .route("/posts", get(postapi::get_posts));
+        .route("/posts", get(postapi::get_posts))
+        .route("/posts/{id}", get(postapi::get_post_by_id));
 
     // 用户路由 - 需要用户认证
     let user_routes = Router::new().layer(from_fn(auth::auth_middleware));

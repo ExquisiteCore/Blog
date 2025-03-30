@@ -34,6 +34,31 @@ pub struct Post {
     pub published_at: Option<OffsetDateTime>,
 }
 
+/// 文章摘要结构体（不包含content字段）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PostSummary {
+    /// 文章ID
+    pub id: Uuid,
+    /// 文章标题
+    pub title: String,
+    /// 文章别名(URL友好)
+    pub slug: String,
+    /// 文章摘要
+    pub excerpt: Option<String>,
+    /// 特色图片
+    pub featured_image: Option<String>,
+    /// 是否发布
+    pub published: bool,
+    /// 作者ID
+    pub author_id: Uuid,
+    /// 创建时间
+    pub created_at: OffsetDateTime,
+    /// 更新时间
+    pub updated_at: OffsetDateTime,
+    /// 发布时间
+    pub published_at: Option<OffsetDateTime>,
+}
+
 /// 创建文章的请求数据结构
 #[derive(Debug, Deserialize)]
 pub struct CreatePostRequest {
@@ -136,13 +161,13 @@ impl Post {
         Ok(post)
     }
 
-    /// 获取所有文章
-    pub async fn find_all(pool: &PgPool, published_only: bool) -> Result<Vec<Self>, Error> {
+    /// 获取所有文章（不包含content字段）
+    pub async fn find_all(pool: &PgPool, published_only: bool) -> Result<Vec<PostSummary>, Error> {
         let posts = if published_only {
             sqlx::query_as!(
-                Self,
+                PostSummary,
                 r#"
-                SELECT id, title, slug, content, excerpt, featured_image, published, author_id, created_at, updated_at, published_at
+                SELECT id, title, slug, excerpt, featured_image, published, author_id, created_at, updated_at, published_at
                 FROM posts
                 WHERE published = true
                 ORDER BY published_at DESC
@@ -152,9 +177,9 @@ impl Post {
             .await?
         } else {
             sqlx::query_as!(
-                Self,
+                PostSummary,
                 r#"
-                SELECT id, title, slug, content, excerpt, featured_image, published, author_id, created_at, updated_at, published_at
+                SELECT id, title, slug, excerpt, featured_image, published, author_id, created_at, updated_at, published_at
                 FROM posts
                 ORDER BY updated_at DESC
                 "#
