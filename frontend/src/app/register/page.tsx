@@ -4,7 +4,6 @@ import { PATHS } from "@/lib/path";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { post } from "@/lib/http";
-import { LoginResponse, AuthState } from "@/lib/types";
 import {
   Card,
   CardDescription,
@@ -20,48 +19,47 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from "@/component
 import { Input } from "@/components/ui/input";
 
 const formSchema = z.object({
-  username_or_email: z.string().min(5, { message: "用户名或邮箱至少需要5个字符" }),
-  password: z.string().min(6, { message: "密码至少需要6个字符" })
+  username: z.string().min(5, { message: "用户名至少需要5个字符" }),
+  email: z.string().email({ message: "请输入有效的邮箱地址" }),
+  password: z.string().min(6, { message: "密码至少需要6个字符" }),
+  confirm_password: z.string().min(6, { message: "确认密码至少需要6个字符" })
+}).refine((data) => data.password === data.confirm_password, {
+  message: "两次输入的密码不一致",
+  path: ["confirm_password"],
 });
 
-export default function SignInPage() {
+export default function RegisterPage() {
   const router = useRouter();
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username_or_email: "",
-      password: ""
+      username: "",
+      email: "",
+      password: "",
+      confirm_password: ""
     }
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      // 使用封装的axios post方法替代fetch，指定返回类型为LoginResponse
-      const data = await post<LoginResponse>("/users/login", values, { withToken: false });
-      // 处理返回的token和用户数据
-      console.log('登录成功:', data);
+      // 移除确认密码字段，后端API不需要
+      const { ...registerData } = values;
 
-      // 将token和用户信息存储到localStorage
-      if (data && data.token && data.user) {
-        const { token, user } = data;
+      // 调用注册API
+      await post("/users/register", registerData, { withToken: false });
 
-        // 存储用户信息，使用AuthState类型
-        const authState: AuthState = {
-          token,
-          user
-        };
-        localStorage.setItem('auth', JSON.stringify(authState));
-      }
-
-      router.push(PATHS.SITE_HOME);
+      // 注册成功后跳转到登录页面
+      console.log('注册成功');
+      router.push(PATHS.AUTH_SIGN_IN);
     } catch (error) {
-      console.error('登录错误:', error);
+      console.error('注册错误:', error);
       form.setError('root', {
         type: 'manual',
-        message: error instanceof Error ? error.message : '登录失败'
+        message: error instanceof Error ? error.message : '注册失败'
       });
       // 清除密码字段
       form.setValue('password', '');
+      form.setValue('confirm_password', '');
     }
   }
 
@@ -70,20 +68,32 @@ export default function SignInPage() {
       <Card className="relative w-[320px] max-w-[95vw] animate-fade rounded-3xl py-4 sm:w-full sm:min-w-[360px] sm:max-w-[500px]">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            <span>用户登录</span>
+            <span>用户注册</span>
             <ModeToggle />
           </CardTitle>
-          <CardDescription>欢迎来到EC的博客</CardDescription>
+          <CardDescription>欢迎注册EC的博客</CardDescription>
         </CardHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 px-6 w-full max-w-full">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-6 w-full max-w-full">
             <FormField
               control={form.control}
-              name="username_or_email"
+              name="username"
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
-                    <Input placeholder="请输入用户名或邮箱" {...field} />
+                    <Input placeholder="请输入用户名" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Input placeholder="请输入邮箱" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -101,8 +111,25 @@ export default function SignInPage() {
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="confirm_password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Input type="password" placeholder="请确认密码" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            {form.formState.errors.root && (
+              <div className="text-sm font-medium text-destructive">
+                {form.formState.errors.root.message}
+              </div>
+            )}
             <Button type="submit" variant="default" className="w-full gap-4 flex justify-center">
-              登录
+              注册
             </Button>
           </form>
         </Form>
@@ -120,7 +147,7 @@ export default function SignInPage() {
             </div>
             <div className="grid grid-cols-2 gap-3 w-full">
               <Button
-                variant="outline"
+                variant="secondary"
                 className="w-full"
                 type="button"
                 onClick={handleGoHome}
@@ -128,12 +155,12 @@ export default function SignInPage() {
                 回首页
               </Button>
               <Button
-                variant="secondary"
+                variant="outline"
                 className="w-full"
                 type="button"
-                onClick={handleGoRegister}
+                onClick={handleGoLogin}
               >
-                去注册
+                去登录
               </Button>
             </div>
           </div>
@@ -146,7 +173,7 @@ export default function SignInPage() {
     router.push(PATHS.SITE_HOME);
   }
 
-  function handleGoRegister() {
-    router.push(PATHS.AUTH_REGISTER);
+  function handleGoLogin() {
+    router.push(PATHS.AUTH_SIGN_IN);
   }
 }

@@ -11,7 +11,14 @@ import { ModeToggle } from "../mode-toggle"
 import { Button } from "../ui/button";
 import { IconBrandGithub } from "../icons/githubicon";
 import { IconBrandBilibili } from "../icons/bilibiliicon";
-import { UserCog } from "lucide-react";
+import { UserCog, LogOut } from "lucide-react";
+import { AuthState } from "@/lib/types";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 
 export const Navbar = () => {
   const scroll = useScroll(() => document);
@@ -22,6 +29,37 @@ export const Navbar = () => {
   });
   const [isHideHeader, setIsHideHeader] = React.useState(false);
   const throttledIsHideHeader = useThrottle(isHideHeader, { wait: 500 });
+  const [isLoggedIn, setIsLoggedIn] = React.useState(false);
+  const [authState, setAuthState] = React.useState<AuthState | null>(null);
+
+  // 处理退出登录
+  const handleLogout = () => {
+    // 清除localStorage中的auth数据
+    localStorage.removeItem("auth");
+    // 重置状态
+    setIsLoggedIn(false);
+    setAuthState(null);
+  };
+
+  // 检查用户是否已登录
+  React.useEffect(() => {
+    // 在客户端检查localStorage
+    if (typeof window !== "undefined") {
+      const authData = localStorage.getItem("auth");
+      if (authData) {
+        try {
+          const parsedAuth = JSON.parse(authData) as AuthState;
+          setAuthState(parsedAuth);
+          setIsLoggedIn(true);
+        } catch (error) {
+          console.error("Failed to parse auth data:", error);
+          setIsLoggedIn(false);
+        }
+      } else {
+        setIsLoggedIn(false);
+      }
+    }
+  }, []);
 
   React.useEffect(() => {
     const _top = scroll?.top ?? 0;
@@ -99,17 +137,50 @@ export const Navbar = () => {
             </Button>
           </Link>
 
-          <Link
-            href={PATHS.AUTH_SIGN_IN}
-            target="_blank"
-            rel="nofollow"
-            title="登录"
-            aria-label={PATHS.AUTH_SIGN_IN}
-          >
-            <Button variant="outline" size={"icon"} aria-label="登录">
-              <UserCog className="size-4" />
-            </Button>
-          </Link>
+          {isLoggedIn && authState?.user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size={"icon"}
+                  aria-label="用户头像"
+                  title={authState.user.username || "已登录"}
+                  className="overflow-hidden p-0"
+                >
+                  <img
+                    src={authState.user.avatar_url}
+                    alt="用户头像"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // 头像加载失败时显示默认图标
+                      e.currentTarget.style.display = "none";
+                      const iconElement = document.createElement("span");
+                      iconElement.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
+                      iconElement.className = "flex items-center justify-center w-full h-full";
+                      e.currentTarget.parentNode?.appendChild(iconElement);
+                    }}
+                  />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  退出登录
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Link
+              href={PATHS.AUTH_SIGN_IN}
+              rel="nofollow"
+              title="登录"
+              aria-label={PATHS.AUTH_SIGN_IN}
+            >
+              <Button variant="outline" size={"icon"} aria-label="登录">
+                <UserCog className="size-4" />
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
     </header>

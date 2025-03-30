@@ -7,6 +7,7 @@ export const PATHS = {
 
   /** ************* AUTH ****************** */
   AUTH_SIGN_IN: "/auth",
+  AUTH_REGISTER: "/register",
 };
 
 export const PATHS_MAP: Record<string, string> = {
@@ -17,6 +18,7 @@ export const PATHS_MAP: Record<string, string> = {
   [PATHS.SITE_ABOUT]: "关于",
   /** ************* AUTH ****************** */
   [PATHS.AUTH_SIGN_IN]: "登录",
+  [PATHS.AUTH_REGISTER]: "注册",
 };
 
 export const PATH_DESCRIPTION_MAP: Record<string, string> = {
@@ -27,4 +29,5 @@ export const PATH_DESCRIPTION_MAP: Record<string, string> = {
   [PATHS.SITE_ABOUT]: `叮～ 你有一份关于EC的简介，请查收～`,
   /** ************* AUTH ****************** */
   [PATHS.AUTH_SIGN_IN]: "登录",
+  [PATHS.AUTH_REGISTER]: "注册",
 };
