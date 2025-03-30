@@ -5,22 +5,76 @@
 use sqlx::Row;
 use sqlx::postgres::{PgPool, PgPoolOptions};
 use std::sync::Arc;
-use tracing::info;
+use std::time::Duration;
+use tracing::{error, info, warn};
 
 use crate::config::Config;
 
 /// 获取数据库连接池
+///
+/// 尝试连接数据库，如果连接失败会进行重试
+/// 最多重试3次，每次重试间隔时间递增
 pub async fn get_db_pool(config: &Arc<Config>) -> Result<PgPool, sqlx::Error> {
-    let pool = PgPoolOptions::new()
-        .max_connections(config.database.max_connections)
-        .connect(&config.database.url)
-        .await?;
+    const MAX_RETRIES: u32 = 3;
+    let mut retry_count = 0;
+    let mut last_error = None;
 
-    info!("数据库连接成功");
-    if is_db_empty(&pool).await? {
-        init_db(&pool).await?;
+    while retry_count < MAX_RETRIES {
+        match PgPoolOptions::new()
+            .max_connections(config.database.max_connections)
+            .connect(&config.database.url)
+            .await
+        {
+            Ok(pool) => {
+                info!("数据库连接成功");
+                if is_db_empty(&pool).await? {
+                    init_db(&pool).await?
+                }
+                return Ok(pool);
+            }
+            Err(err) => {
+                retry_count += 1;
+                let retry_delay = Duration::from_secs(retry_count.into());
+
+                match &err {
+                    sqlx::Error::Database(db_err) => {
+                        error!("数据库连接错误: {}, 错误代码: {:?}", db_err, db_err.code());
+                    }
+                    sqlx::Error::PoolTimedOut => {
+                        error!("数据库连接池超时");
+                    }
+                    sqlx::Error::PoolClosed => {
+                        error!("数据库连接池已关闭");
+                    }
+                    sqlx::Error::Configuration(config_err) => {
+                        error!("数据库配置错误: {}", config_err);
+                    }
+                    sqlx::Error::Io(io_err) => {
+                        error!("数据库IO错误: {}", io_err);
+                    }
+                    _ => {
+                        error!("数据库连接错误: {}", err);
+                    }
+                }
+
+                if retry_count < MAX_RETRIES {
+                    warn!(
+                        "尝试重新连接数据库，第{}次重试，等待{}秒...",
+                        retry_count,
+                        retry_delay.as_secs()
+                    );
+                    tokio::time::sleep(retry_delay).await;
+                } else {
+                    error!("数据库连接失败，已达到最大重试次数: {}", MAX_RETRIES);
+                }
+
+                last_error = Some(err);
+            }
+        }
     }
-    Ok(pool)
+
+    // 所有重试都失败，返回最后一个错误
+    Err(last_error.unwrap_or_else(|| sqlx::Error::Configuration("未知数据库连接错误".into())))
 }
 
 /// 初始化数据库
