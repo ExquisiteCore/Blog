@@ -3,7 +3,8 @@
 import { PATHS } from "@/lib/path";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { BASE_API_URL } from "@/lib/constants"
+import { post } from "@/lib/http";
+import { LoginResponse, AuthState } from "@/lib/types";
 import {
   Card,
   CardDescription,
@@ -35,30 +36,23 @@ export default function SignInPage() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      const response = await fetch(BASE_API_URL + "users/login", {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(values),
-      });
+      // 使用封装的axios post方法替代fetch，指定返回类型为LoginResponse
+      const data = await post<LoginResponse>("/users/login", values, { withToken: false });
+      // 处理返回的token和用户数据
+      console.log('登录成功:', data);
 
-      if (!response.ok) {
-        let errorMessage = '登录失败';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
-        } catch {
-          if (response.status === 422) {
-            errorMessage = '用户名或密码格式不正确';
-          }
-        }
-        throw new Error(errorMessage);
+      // 将token和用户信息存储到localStorage
+      if (data && data.token && data.user) {
+        const { token, user } = data;
+
+        // 存储用户信息，使用AuthState类型
+        const authState: AuthState = {
+          token,
+          user
+        };
+        localStorage.setItem('auth', JSON.stringify(authState));
       }
 
-      const data = await response.json();
-      // 这里可以处理返回的token和用户数据
-      console.log('登录成功:', data);
       router.push(PATHS.SITE_HOME);
     } catch (error) {
       console.error('登录错误:', error);
