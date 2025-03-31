@@ -2,6 +2,7 @@
 //!
 //! 包含所有API端点的路由定义
 
+mod labelapi;
 mod postapi;
 mod userapi;
 
@@ -23,7 +24,10 @@ pub fn create_routes() -> Router<Arc<Pool<Postgres>>> {
         .route("/users/register", post(userapi::register_user))
         .route("/users/login", post(userapi::login_user))
         .route("/posts", get(postapi::get_posts))
-        .route("/posts/{id}", get(postapi::get_post_by_id));
+        .route("/posts/{id}", get(postapi::get_post_by_id))
+        .route("/posts/{id}/labels", get(postapi::get_post_labels))
+        .route("/labels", get(labelapi::get_labels))
+        .route("/labels/{id}/posts", get(labelapi::get_posts_by_label));
 
     // 用户路由 - 需要用户认证
     let user_routes = Router::new().layer(from_fn(auth::auth_middleware));
@@ -31,6 +35,7 @@ pub fn create_routes() -> Router<Arc<Pool<Postgres>>> {
     // 管理员路由 - 需要管理员权限
     let admin_routes = Router::new()
         .route("/posts", post(postapi::create_post))
+        .route("/labels", post(labelapi::create_label))
         .layer(from_fn(auth::admin_middleware));
 
     // 合并所有路由

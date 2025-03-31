@@ -59,6 +59,33 @@ pub struct PostSummary {
     pub published_at: Option<OffsetDateTime>,
 }
 
+/// 带标签的文章摘要结构体
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PostSummaryWithLabels {
+    /// 文章ID
+    pub id: Uuid,
+    /// 文章标题
+    pub title: String,
+    /// 文章别名(URL友好)
+    pub slug: String,
+    /// 文章摘要
+    pub excerpt: Option<String>,
+    /// 特色图片
+    pub featured_image: Option<String>,
+    /// 是否发布
+    pub published: bool,
+    /// 作者ID
+    pub author_id: Uuid,
+    /// 创建时间
+    pub created_at: OffsetDateTime,
+    /// 更新时间
+    pub updated_at: OffsetDateTime,
+    /// 发布时间
+    pub published_at: Option<OffsetDateTime>,
+    /// 文章标签
+    pub labels: Vec<crate::model::models::label::Label>,
+}
+
 /// 创建文章的请求数据结构
 #[derive(Debug, Deserialize)]
 pub struct CreatePostRequest {
@@ -76,6 +103,8 @@ pub struct CreatePostRequest {
     pub published: bool,
     /// 作者ID
     pub author_id: Uuid,
+    /// 文章标签ID列表
+    pub labels: Option<Vec<Uuid>>,
 }
 
 /// 更新文章的请求数据结构
@@ -123,6 +152,13 @@ impl Post {
         )
         .fetch_one(pool)
         .await?;
+
+        // 如果提供了标签列表，则为文章添加标签
+        if let Some(labels) = req.labels {
+            for label_id in labels {
+                Self::add_label(pool, post.id, label_id).await?;
+            }
+        }
 
         Ok(post)
     }
@@ -370,5 +406,80 @@ impl Post {
         .await?;
 
         Ok(result.rows_affected())
+    }
+
+    /// 获取所有文章（包含标签信息）
+    pub async fn find_all_with_labels(
+        pool: &PgPool,
+        published_only: bool,
+    ) -> Result<Vec<PostSummaryWithLabels>, Error> {
+        // 先获取所有文章
+        let post_summaries = Self::find_all(pool, published_only).await?;
+
+        // 创建带标签的文章列表
+        let mut posts_with_labels = Vec::with_capacity(post_summaries.len());
+
+        // 为每篇文章获取标签
+        for post in post_summaries {
+            // 获取文章的标签
+            let labels = crate::model::models::label::Label::find_by_post_id(pool, post.id).await?;
+
+            // 创建带标签的文章摘要
+            let post_with_labels = PostSummaryWithLabels {
+                id: post.id,
+                title: post.title,
+                slug: post.slug,
+                excerpt: post.excerpt,
+                featured_image: post.featured_image,
+                published: post.published,
+                author_id: post.author_id,
+                created_at: post.created_at,
+                updated_at: post.updated_at,
+                published_at: post.published_at,
+                labels,
+            };
+
+            posts_with_labels.push(post_with_labels);
+        }
+
+        Ok(posts_with_labels)
+    }
+    /// 获取标签下的所有文章
+    pub async fn find_by_label_id(
+        pool: &PgPool,
+        label_id: Uuid,
+        published_only: bool,
+    ) -> Result<Vec<PostSummary>, Error> {
+        let posts = if published_only {
+            sqlx::query_as!(
+                PostSummary,
+                r#"
+                SELECT p.id, p.title, p.slug, p.excerpt, p.featured_image, p.published, p.author_id, p.created_at, p.updated_at, p.published_at
+                FROM posts p
+                JOIN post_label pl ON p.id = pl.post_id
+                WHERE pl.label_id = $1 AND p.published = true
+                ORDER BY p.published_at DESC
+                "#,
+                label_id
+            )
+            .fetch_all(pool)
+            .await?
+        } else {
+            sqlx::query_as!(
+                PostSummary,
+                r#"
+                SELECT p.id, p.title, p.slug, p.excerpt, p.featured_image, p.published, p.author_id, p.created_at, p.updated_at, p.published_at
+                FROM posts p
+                JOIN post_label pl ON p.id = pl.post_id
+                WHERE pl.label_id = $1
+                ORDER BY p.updated_at DESC
+                "#,
+                label_id
+            )
+            .fetch_all(pool)
+            .await?
+        };
+
+        Ok(posts)
     }
 }

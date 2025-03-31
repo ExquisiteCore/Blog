@@ -8,17 +8,17 @@ use uuid::Uuid;
 
 use crate::{
     error::{AppError, AppErrorType},
-    model::models::post,
+    model::models::{label, post},
 };
 
 /// 获取所有文章
 ///
-/// 返回所有已发布的文章列表
+/// 返回所有已发布的文章列表，包含标签信息
 pub async fn get_posts(
     State(pool): State<Arc<Pool<Postgres>>>,
-) -> Result<Json<Vec<post::PostSummary>>, AppError> {
-    // 获取所有已发布的文章
-    let posts = post::Post::find_all(pool.as_ref(), true).await?;
+) -> Result<Json<Vec<post::PostSummaryWithLabels>>, AppError> {
+    // 获取所有已发布的文章（包含标签）
+    let posts = post::Post::find_all_with_labels(pool.as_ref(), true).await?;
 
     // 返回文章列表
     Ok(Json(posts))
@@ -53,4 +53,31 @@ pub async fn get_post_by_id(
             AppErrorType::Notfound,
         )),
     }
+}
+
+/// 获取文章的标签
+///
+/// 返回指定文章ID的所有标签
+pub async fn get_post_labels(
+    State(pool): State<Arc<Pool<Postgres>>>,
+    Path(post_id): Path<Uuid>,
+) -> Result<Json<Vec<label::Label>>, AppError> {
+    // 首先检查文章是否存在
+    let post = post::Post::find_by_id(pool.as_ref(), post_id).await?;
+    if post.is_none() {
+        return Err(AppError::new_message(
+            &format!("未找到ID为{}的文章", post_id),
+            AppErrorType::Notfound,
+        ));
+    }
+
+    // 获取文章的所有标签
+    let labels = label::Label::find_by_post_id(pool.as_ref(), post_id)
+        .await
+        .map_err(|e| {
+            AppError::new_message(&format!("获取文章标签失败: {}", e), AppErrorType::Internal)
+        })?;
+
+    // 返回标签列表
+    Ok(Json(labels))
 }
