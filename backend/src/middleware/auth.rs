@@ -1,11 +1,12 @@
 //! 认证中间件模块
 //!
 //! 提供JWT认证和权限验证功能
-use axum::extract::Request;
+use axum::extract::{Json, Request};
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
+use std::time::{SystemTime, UNIX_EPOCH};
 use time::{Duration, OffsetDateTime};
 
 use crate::config;
@@ -25,6 +26,20 @@ pub struct Claims {
     pub exp: u64,
     /// 签发时间（Unix时间戳）
     pub iat: u64,
+}
+
+/// 刷新令牌请求结构
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RefreshTokenRequest {
+    /// 旧令牌
+    pub token: String,
+}
+
+/// 刷新令牌响应结构
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RefreshTokenResponse {
+    /// 新令牌
+    pub token: String,
 }
 
 /// 生成JWT令牌
@@ -81,6 +96,80 @@ pub fn verify_token(token: &str) -> Result<Claims, AppError> {
     Ok(token_data.claims)
 }
 
+/// 验证JWT令牌（用于刷新，允许已过期但在刷新窗口内的令牌）
+pub fn verify_token_for_refresh(token: &str) -> Result<Claims, AppError> {
+    let config = config::get_config();
+
+    // 创建自定义验证，忽略过期检查
+    let mut validation = Validation::default();
+    validation.validate_exp = false;
+
+    // 解码令牌，忽略过期检查
+    let token_data = decode::<Claims>(
+        token,
+        &DecodingKey::from_secret(config.jwt.secret.as_bytes()),
+        &validation,
+    )
+    .map_err(|e| match e.kind() {
+        jsonwebtoken::errors::ErrorKind::InvalidSignature => {
+            AppError::new_message("无效的令牌签名", AppErrorType::Forbidden)
+        }
+        _ => AppError::new(e, AppErrorType::Crypt),
+    })?;
+
+    let claims = token_data.claims;
+
+    // 获取当前时间戳
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("时间获取错误")
+        .as_secs();
+
+    // 检查令牌是否在刷新窗口内（过期后的30分钟内）
+    if claims.exp < now && now - claims.exp > 30 * 60 {
+        return Err(AppError::new_message(
+            "令牌已过期且超出刷新窗口",
+            AppErrorType::Forbidden,
+        ));
+    }
+
+    Ok(claims)
+}
+
+/// 刷新JWT令牌
+pub fn refresh_token(old_token: &str) -> Result<String, AppError> {
+    // 验证旧令牌（允许已过期但在刷新窗口内的令牌）
+    let claims = verify_token_for_refresh(old_token)?;
+
+    let config = config::get_config();
+
+    // 获取当前时间
+    let now = OffsetDateTime::now_utc();
+    let iat = now.unix_timestamp() as u64;
+
+    // 计算新的过期时间
+    let exp = (now + Duration::minutes(config.jwt.expiration as i64)).unix_timestamp() as u64;
+
+    // 创建新的JWT声明，保留用户信息
+    let new_claims = Claims {
+        sub: claims.sub,
+        username: claims.username,
+        role: claims.role,
+        exp,
+        iat,
+    };
+
+    // 创建新的JWT令牌
+    let token = encode(
+        &Header::default(),
+        &new_claims,
+        &EncodingKey::from_secret(config.jwt.secret.as_bytes()),
+    )
+    .map_err(|e| AppError::new(e, AppErrorType::Crypt))?;
+
+    Ok(token)
+}
+
 /// 从认证头中提取令牌
 pub fn extract_token_from_header(auth_header: &str) -> Option<&str> {
     if auth_header.starts_with("Bearer ") {
@@ -130,6 +219,17 @@ pub async fn auth_middleware(req: Request, next: Next) -> Result<Response, Respo
             Err(AppError::new_message("需要认证", AppErrorType::Forbidden).into_response())
         }
     }
+}
+
+/// 刷新令牌处理函数
+pub async fn refresh_token_handler(
+    Json(req): Json<RefreshTokenRequest>,
+) -> Result<Json<RefreshTokenResponse>, AppError> {
+    // 刷新令牌
+    let new_token = refresh_token(&req.token)?;
+
+    // 返回新令牌
+    Ok(Json(RefreshTokenResponse { token: new_token }))
 }
 
 /// 管理员权限中间件

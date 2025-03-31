@@ -23,6 +23,7 @@ pub fn create_routes() -> Router<Arc<Pool<Postgres>>> {
     let public_routes = Router::new()
         .route("/users/register", post(userapi::register_user))
         .route("/users/login", post(userapi::login_user))
+        .route("/auth/refresh", post(auth::refresh_token_handler))
         .route("/posts", get(postapi::get_posts))
         .route("/posts/{id}", get(postapi::get_post_by_id))
         .route("/posts/{id}/labels", get(postapi::get_post_labels))

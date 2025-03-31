@@ -11,4 +11,4 @@ max_connections = 5
 # JWT配置
 [jwt]
 secret = "your_secret_key_change_this_in_production"
-expiration = 60                                      # 过期时间（分钟）
+expiration = 1140                                    # 过期时间（分钟）
