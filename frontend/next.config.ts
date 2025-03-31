@@ -4,7 +4,11 @@ const nextConfig: NextConfig = {
   /* config options here */
   images: {
     remotePatterns: [
-      // 已删除moe-counter.glitch.me的配置
+      {
+        protocol: "https",
+        hostname: "ooo.0x0.ooo",
+        pathname: "/**",
+      },
     ],
   },
 };

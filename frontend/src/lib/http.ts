@@ -30,21 +30,21 @@ http.interceptors.request.use(
     // 默认添加token，除非明确设置withToken为false
     const withToken = config.withToken !== false;
 
-    if (withToken) {
-      // 添加token等认证信息
-      const authData = localStorage.getItem("auth");
-      let token = null;
-      if (authData) {
-        try {
+    // 只有当withToken为true且在浏览器环境中才尝试获取和添加token
+    if (withToken && typeof window !== "undefined") {
+      try {
+        // 添加token等认证信息 - 仅在浏览器环境中执行
+        const authData = localStorage.getItem("auth");
+        if (authData) {
           const authObj = JSON.parse(authData);
-          token = authObj.token;
-        } catch (e) {
-          console.error("解析auth数据失败:", e);
+          const token = authObj.token;
+          if (token) {
+            config.headers = config.headers || {};
+            config.headers["Authorization"] = `Bearer ${token}`;
+          }
         }
-      }
-      if (token) {
-        config.headers = config.headers || {};
-        config.headers["Authorization"] = `Bearer ${token}`;
+      } catch (e) {
+        console.error("处理认证信息失败:", e);
       }
     }
     return config;
