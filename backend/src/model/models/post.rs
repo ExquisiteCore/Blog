@@ -82,8 +82,8 @@ pub struct PostSummaryWithLabels {
     pub updated_at: OffsetDateTime,
     /// 发布时间
     pub published_at: Option<OffsetDateTime>,
-    /// 文章标签
-    pub labels: Vec<crate::model::models::label::Label>,
+    /// 文章标签名列表
+    pub labels: Vec<String>,
 }
 
 /// 创建文章的请求数据结构
@@ -422,7 +422,11 @@ impl Post {
         // 为每篇文章获取标签
         for post in post_summaries {
             // 获取文章的标签
-            let labels = crate::model::models::label::Label::find_by_post_id(pool, post.id).await?;
+            let labels_objects =
+                crate::model::models::label::Label::find_by_post_id(pool, post.id).await?;
+
+            // 只提取标签名
+            let labels = labels_objects.into_iter().map(|label| label.name).collect();
 
             // 创建带标签的文章摘要
             let post_with_labels = PostSummaryWithLabels {
