@@ -1,14 +1,19 @@
+'use client'
+
 import { Post } from "@/lib/types";
 import { Wrapper } from "@/components/wrapper";
 import Image from "next/image";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
+import { MdPreview } from "md-editor-rt";
+import '@vavt/cm-extension/dist/previewTheme/arknights.css';
 
 interface BlogDetailPageProps {
   blog: Post;
 }
 
 export function BlogDetailPage({ blog }: BlogDetailPageProps) {
+
   // 格式化日期
   const formatDate = (dateArray: number[]) => {
     if (!dateArray || dateArray.length < 3) return "";
@@ -40,9 +45,10 @@ export function BlogDetailPage({ blog }: BlogDetailPageProps) {
           </div>
         )}
 
-        <div
+        <MdPreview
+          value={blog.content}
+          previewTheme="arknights"
           className="prose prose-lg max-w-none dark:prose-invert"
-          dangerouslySetInnerHTML={{ __html: blog.content }}
         />
       </article>
     </Wrapper>
