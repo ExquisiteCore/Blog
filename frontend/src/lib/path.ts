@@ -5,6 +5,7 @@ export const PATHS = {
   SITE_LABER: "/label",
   SITE_ABOUT: "/about",
   SITE_ECTOOLS: "/ectools",
+  SITE_MARKDOWN: "/ectools/markdownrender",
   /** ************* AUTH ****************** */
   AUTH_SIGN_IN: "/auth",
   AUTH_REGISTER: "/register",
@@ -17,6 +18,7 @@ export const PATHS_MAP: Record<string, string> = {
   [PATHS.SITE_LABER]: "标签",
   [PATHS.SITE_ABOUT]: "关于",
   [PATHS.SITE_ECTOOLS]: "工具箱",
+  [PATHS.SITE_MARKDOWN]: "Markdown渲染",
   /** ************* AUTH ****************** */
   [PATHS.AUTH_SIGN_IN]: "登录",
   [PATHS.AUTH_REGISTER]: "注册",
@@ -29,6 +31,7 @@ export const PATH_DESCRIPTION_MAP: Record<string, string> = {
   [PATHS.SITE_LABER]: "标签",
   [PATHS.SITE_ABOUT]: `叮～ 你有一份关于EC的简介，请查收～`,
   [PATHS.SITE_ECTOOLS]: "工具箱",
+  [PATHS.SITE_MARKDOWN]: "Markdown渲染",
   /** ************* AUTH ****************** */
   [PATHS.AUTH_SIGN_IN]: "登录",
   [PATHS.AUTH_REGISTER]: "注册",

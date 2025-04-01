@@ -11,7 +11,7 @@ import { ModeToggle } from "../mode-toggle"
 import { Button } from "../ui/button";
 import { IconBrandGithub } from "../icons/githubicon";
 import { IconBrandBilibili } from "../icons/bilibiliicon";
-import { UserCog, LogOut } from "lucide-react";
+import { UserCog, LogOut, PenLine } from "lucide-react";
 import { AuthState } from "@/lib/types";
 import {
   DropdownMenu,
@@ -134,6 +134,17 @@ export const Navbar = () => {
           >
             <Button variant="outline" size={"icon"} aria-label="BiliBili Icon">
               <IconBrandBilibili className="text-base" />
+            </Button>
+          </Link>
+
+          <Link
+            href={PATHS.SITE_MARKDOWN}
+            rel="nofollow"
+            title="写作"
+            aria-label={PATHS.SITE_MARKDOWN}
+          >
+            <Button variant="outline" size={"icon"} aria-label="写作">
+              <PenLine className="size-4" />
             </Button>
           </Link>
 
