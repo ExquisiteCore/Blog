@@ -1,10 +1,12 @@
 // 定义API响应的类型接口
 
+import { UUID } from "crypto";
+
 // 用户信息接口
 export interface User {
   avatar_url: string;
   email: string;
-  id: string;
+  id: UUID;
   username: string;
 }
 
@@ -22,7 +24,7 @@ export interface AuthState {
 
 // 标签接口
 export interface Label {
-  id: string;
+  id: UUID;
   name: string;
   slug: string;
   description: string;
@@ -31,14 +33,14 @@ export interface Label {
 }
 
 export interface Post {
-  id: string;
+  id: UUID;
   title: string;
   slug: string;
   content: string;
   excerpt: string | null;
   featured_image: string;
   published: boolean;
-  author_id: string;
+  author_id: UUID;
   created_at: number[];
   updated_at: number[];
   published_at: number[];

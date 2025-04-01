@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import { Label } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 // 标签颜色列表
 const labelColors = [
@@ -33,18 +34,20 @@ export function LabelCard({ label, className }: LabelCardProps) {
   const colorClass = labelColors[colorIndex];
 
   return (
-    <Card
-      className={cn(
-        'cursor-pointer transition-all hover:shadow-md hover:-translate-y-1 py-3 px-2 max-w-[150px] mx-auto',
-        colorClass,
-        className
-      )}
-    >
-      <CardContent className="flex items-center justify-center p-2">
-        <CardTitle className="text-center text-base font-bold">
-          {label.name}
-        </CardTitle>
-      </CardContent>
-    </Card>
+    <Link href={`/label/${label.id}`}>
+      <Card
+        className={cn(
+          'cursor-pointer transition-all hover:shadow-md hover:-translate-y-1 py-3 px-2 max-w-[150px] mx-auto',
+          colorClass,
+          className
+        )}
+      >
+        <CardContent className="flex items-center justify-center p-2">
+          <CardTitle className="text-center text-base font-bold">
+            {label.name}
+          </CardTitle>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
