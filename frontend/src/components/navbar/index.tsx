@@ -214,4 +214,8 @@ export const navItems: {
       label: PATHS_MAP[PATHS.SITE_ABOUT],
       link: PATHS.SITE_ABOUT,
     },
+    {
+      label: PATHS_MAP[PATHS.SITE_ECTOOLS],
+      link: PATHS.SITE_ECTOOLS,
+    }
   ];
