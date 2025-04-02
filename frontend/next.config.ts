@@ -9,6 +9,11 @@ const nextConfig: NextConfig = {
         hostname: "ooo.0x0.ooo",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "www.dmoe.cc",
+        pathname: "/**",
+      },
     ],
   },
 };
