@@ -1,6 +1,6 @@
 import { Images } from "../images";
 import { Brand } from "../brand";
-import { FeaturesSection } from "./features-section";
+import { MainPage } from "./main";
 
 export function HomeSection() {
   return (
@@ -12,7 +12,7 @@ export function HomeSection() {
         </div>
       </div>
       <div className="w-full -mt-16"> {/* 增加负margin值以完全消除空隙 */}
-        <FeaturesSection />
+        <MainPage />
       </div>
     </>
   );
