@@ -4,9 +4,9 @@ export function MainPage() {
 
   return (
     <div
-      className="w-full py-16"
+      className="w-full py-8 pb-0" // 修改上下内边距，减少顶部内边距并移除底部内边距
     >
-      <div className="w-full px-6 md:px-10 py-16 bg-card">
+      <div className="w-full px-6 md:px-10 py-8 pb-0 bg-card">
         <h2 className="text-3xl font-bold mb-6 text-center bg-gradient-to-r from-[#6fba82] via-[#3b82f6] to-[#9333ea] bg-clip-text text-transparent">
           我的技术栈
         </h2>
