@@ -19,7 +19,7 @@ export function Images() {
   }, []);
 
   return (
-    <div className="fixed inset-0 w-full h-screen -z-10 bg-[#363636] overflow-hidden before:content-[''] before:block before:absolute before:inset-0 before:bg-black/20 before:transition-all before:duration-200 before:ease-in-out">
+    <div className="absolute inset-0 w-full h-full bg-[#363636] overflow-hidden before:content-[''] before:block before:absolute before:inset-0 before:bg-black/20 before:transition-all before:duration-200 before:ease-in-out">
       <ul>
         {imageList.map((image, index) => (
           <li

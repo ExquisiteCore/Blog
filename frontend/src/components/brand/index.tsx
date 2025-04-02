@@ -6,7 +6,7 @@ import { TypeAnimation } from 'react-type-animation';
 export function Brand() {
   return (
     <div className="flex justify-center items-center flex-col relative w-full h-screen min-h-40 text-foreground">
-      <div className="flex justify-center items-center flex-col fixed -z-10 top-60">
+      <div className="flex justify-center items-center flex-col absolute inset-0 z-10">
         {/* 标题 */}
         <p className="font-['Fredericka_the_Great',Mulish,-apple-system,'PingFang_SC','Microsoft_YaHei',sans-serif] text-[4.5em] leading-normal animate-titleScale text-white shadow-title">
           ExquisiteCore

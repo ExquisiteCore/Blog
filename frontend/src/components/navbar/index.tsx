@@ -75,10 +75,15 @@ export const Navbar = () => {
       setPreviousScrollTop(_top);
     }
   }, [scroll?.top, throttledPreviousScrollTop]);
+  // 判断是否为首页，只有首页使用fixed定位，其他页面使用sticky定位
+  const isHomePage = pathname === PATHS.SITE_HOME;
+
   return (
     <header
       className={cn(
-        "w-full sticky top-0 backdrop-blur transition-all border-x-0  flex justify-center z-10",
+        "w-full backdrop-blur transition-all border-x-0 flex justify-center z-50",
+        // 根据是否为首页应用不同的定位样式
+        isHomePage ? "fixed top-0" : "sticky top-0",
         throttledPreviousScrollTop > 60 &&
         "bg-background/50 border-b border-border/50",
         {
