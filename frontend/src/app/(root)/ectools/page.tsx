@@ -13,19 +13,17 @@ const categories = [
 // 工具列表
 const tools = [
   {
-    id: "markdown",
+    id: "markdownrender",
     name: "md编辑器",
     description: "一款基于React的Markdown编辑器，支持实时预览、导出、导入、复制、粘贴、撤销、重做、全屏、快捷键等功能。",
-    category: "text",
+    category: ["text", "markdown"],
     image: "/images/tools/md.png"
   }
 ];
 
 export default function Page() {
   return (
-    <div className="relative min-h-screen" style={{
-      background: "linear-gradient(135deg, #f8dae9 0%, #e2f0fb 100%)"
-    }}>
+    <div className="relative min-h-screen">
       <div className="container mx-auto px-4 py-8">
         {/* 标题 */}
         <h1 className="text-5xl font-bold mb-6 text-gray-800">ECTools</h1>
@@ -67,9 +65,19 @@ export default function Page() {
                     <div className="flex items-center justify-center w-6 h-6 bg-purple-600 text-white rounded-md font-bold text-xs">
                       EC
                     </div>
-                    <span className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 text-xs px-2 py-1 rounded-full">
-                      {tool.category}
-                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      {Array.isArray(tool.category) ? (
+                        tool.category.map((cat, index) => (
+                          <span key={index} className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 text-xs px-2 py-1 rounded-full">
+                            {cat}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 text-xs px-2 py-1 rounded-full">
+                          {tool.category}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <CardTitle className="text-xl mb-2 mt-1">{tool.name}</CardTitle>
                   <CardDescription className="text-gray-600">{tool.description}</CardDescription>
