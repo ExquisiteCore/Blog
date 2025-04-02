@@ -6,7 +6,7 @@ import { NextLink } from "../next-link";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React from "react";
-import { PATHS, PATHS_MAP } from "@/lib/path"
+import { PATHS } from "@/lib/path"
 import { ModeToggle } from "../mode-toggle"
 import { Button } from "../ui/button";
 import { IconBrandGithub } from "../icons/githubicon";
@@ -19,6 +19,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import { navItems } from "./navItems";
+import { MobileNav } from "./mobile-nav";
 
 export const Navbar = () => {
   const scroll = useScroll(() => document);
@@ -116,10 +118,9 @@ export const Navbar = () => {
             </Link>
           ))}
         </div>
+        <MobileNav />
         <div className="flex flex-1 items-center justify-end gap-2 sm:flex-none">
-
           <ModeToggle />
-
           <Link
             href="https://github.com/ExquisiteCore"
             target="_blank"
@@ -209,30 +210,3 @@ export const Navbar = () => {
     </header>
   )
 }
-
-export const navItems: {
-  label?: string;
-  link: string;
-  external?: boolean;
-}[] = [
-    {
-      label: PATHS_MAP[PATHS.SITE_HOME],
-      link: PATHS.SITE_HOME,
-    },
-    {
-      label: PATHS_MAP[PATHS.SITE_BLOG],
-      link: PATHS.SITE_BLOG,
-    },
-    {
-      label: PATHS_MAP[PATHS.SITE_LABER],
-      link: PATHS.SITE_LABER,
-    },
-    {
-      label: PATHS_MAP[PATHS.SITE_ABOUT],
-      link: PATHS.SITE_ABOUT,
-    },
-    {
-      label: PATHS_MAP[PATHS.SITE_ECTOOLS],
-      link: PATHS.SITE_ECTOOLS,
-    }
-  ];
