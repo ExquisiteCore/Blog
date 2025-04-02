@@ -20,6 +20,10 @@ interface Label {
 }
 
 export default function Page() {
+  // 为编辑器设置唯一ID
+  const [editorId] = useState('editor-1');
+  // 是否已挂载标志
+  const [isMounted, setIsMounted] = useState(false);
   // 编辑器内容
   const [text, setText] = useState('EC is too lazy to write a refresh button, because he thinks \'refresh\' = \'edit\' + \'preview\'. Actually, that makes sense :D');
   // 编辑器模式：edit - 编辑模式，preview - 预览模式
@@ -43,22 +47,25 @@ export default function Page() {
   // 发布状态
   const [isPublishing, setIsPublishing] = useState<boolean>(false);
 
-  // 获取所有标签
-  useEffect(() => {
-    const fetchLabels = async () => {
-      try {
-        const response = await get('/labels');
-        if (Array.isArray(response)) {
-          setAvailableLabels(response as Label[]);
-        } else {
-          throw new Error('标签数据格式错误');
-        }
-      } catch (error) {
-        console.error('获取标签失败:', error);
-      }
-    };
 
-    fetchLabels();
+  const fetchLabels = async () => {
+    try {
+      const response = await get('/labels');
+      if (Array.isArray(response)) {
+        setAvailableLabels(response as Label[]);
+      } else {
+        throw new Error('标签数据格式错误');
+      }
+    } catch (error) {
+      console.error('获取标签失败:', error);
+    }
+  };
+  // 获取所有标签
+  useEffect(() => { fetchLabels() }, []);
+
+  // 设置已挂载标志
+  useEffect(() => {
+    setIsMounted(true);
   }, []);
 
   // 处理导出文档
@@ -108,7 +115,6 @@ export default function Page() {
       };
 
       const response = await post('/labels', labelData);
-
       if (response && typeof response === 'object' && 'id' in response) {
         const newLabel = response as Label;
         setAvailableLabels([...availableLabels, newLabel]);
@@ -148,7 +154,7 @@ export default function Page() {
 
     // 检查标签是否存在于可用标签列表中
     let labelId: string | null = null;
-    const existingLabel = availableLabels.find(label => label.name.toLowerCase() === tagName.toLowerCase());
+    const existingLabel = availableLabels.find(label => label.name === tagName);
 
     if (existingLabel) {
       // 如果标签已存在，使用现有标签ID
@@ -284,14 +290,16 @@ export default function Page() {
 
         {/* 编辑器区域 */}
         <div className="flex-1">
-          <MdEditor
-            value={text}
-            onChange={setText}
-            id="editor"
-            previewTheme="arknights"
-            showCodeRowNumber={true}
-            className="h-[calc(100vh-300px)] rounded-md border border-input bg-background shadow-sm"
-          />
+          {isMounted && (
+            <MdEditor
+              value={text}
+              onChange={setText}
+              id={editorId}
+              previewTheme="arknights"
+              showCodeRowNumber={true}
+              className="h-[calc(100vh-300px)] rounded-md border border-input bg-background shadow-sm"
+            />
+          )}
         </div>
 
         {/* 底部区域 - 封面图片和标签 */}
