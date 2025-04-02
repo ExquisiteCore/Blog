@@ -10,7 +10,7 @@ import { Image, Edit, Eye, Download, Settings } from 'lucide-react';
 import { get, post } from '@/lib/http';
 import { AuthState } from '@/lib/types';
 import { toast } from 'sonner';
-
+import { pinyin } from 'pinyin-pro';
 // 标签接口定义
 interface Label {
   id: string;
@@ -88,7 +88,21 @@ export default function Page() {
 
   // 生成slug
   const generateSlug = (text: string) => {
-    return text
+    // 检测是否包含中文字符
+    const hasChinese = /[\u4e00-\u9fa5]/.test(text);
+    
+    let convertedText = text;
+    if (hasChinese) {
+      // 使用pinyin-pro将中文转换为拼音
+      convertedText = pinyin(text, {
+        toneType: 'none', // 去除声调
+        pattern: 'pinyin', // 拼音模式
+        type: 'string',   // 返回字符串格式
+        nonZh: 'consecutive' // 非中文字符保持连续
+      }).replace(/\s+/g, '-'); // 将空格替换为连字符
+    }
+
+    return convertedText
       .toLowerCase()
       .replace(/[^\w\s-]/g, '') // 移除特殊字符
       .replace(/[\s_-]+/g, '-') // 将空格和下划线替换为连字符
