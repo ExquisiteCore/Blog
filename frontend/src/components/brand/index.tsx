@@ -1,6 +1,7 @@
 'use client';
 import React from 'react';
 import { TypeAnimation } from 'react-type-animation';
+import { Wave } from '../wave';
 
 
 export function Brand() {
@@ -72,6 +73,11 @@ export function Brand() {
           }
         }
       `}</style>
+
+      {/* 添加波浪动画效果 */}
+      <div className="absolute bottom-0 left-0 right-0 z-20">
+        <Wave />
+      </div>
     </div>
   );
 }
