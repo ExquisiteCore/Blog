@@ -11,7 +11,7 @@ export function HomeSection() {
           <Brand />
         </div>
       </div>
-      <div className="w-full -mt-2"> {/* 增加负margin值以完全消除空隙 */}
+      <div className="w-full -mt-16"> {/* 增加负margin值以完全消除空隙 */}
         <FeaturesSection />
       </div>
     </>

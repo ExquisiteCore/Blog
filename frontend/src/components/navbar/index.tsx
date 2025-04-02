@@ -164,6 +164,7 @@ export const Navbar = () => {
                   className="overflow-hidden p-0"
                 >
                   {authState.user.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={authState.user.avatar_url}
                       alt="用户头像"
