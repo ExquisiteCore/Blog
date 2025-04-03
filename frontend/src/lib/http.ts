@@ -13,9 +13,7 @@ declare module "axios" {
     withToken?: boolean;
   }
 }
-
-const BASE_API_URL = "http://localhost:8080/api";
-
+const BASE_API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 // 创建axios实例
 const http: AxiosInstance = axios.create({
   baseURL: BASE_API_URL,
