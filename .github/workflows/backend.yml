@@ -6,7 +6,8 @@ on:
   pull_request:
     branches: ["dev"]
   release:
-    types: [published]
+    types:
+      - published  # 当发布版本时触发
 
 env:
   CARGO_TERM_COLOR: always
@@ -16,7 +17,7 @@ env:
 
 jobs:
   test:
-    name: Run Tests
+    name: Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,7 +29,7 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Cache Dependencies
+      - name: Cache Rust dependencies
         uses: actions/cache@v3
         with:
           path: |
@@ -36,30 +37,35 @@ jobs:
             ~/.cargo/git
             backend/target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
 
-      - name: Cache SQLx Data
+      - name: Cache SQLx metadata
         uses: actions/cache@v3
         with:
           path: backend/.sqlx
           key: ${{ runner.os }}-sqlx-${{ hashFiles('**/*.rs', '**/migrations/**') }}
+          restore-keys: ${{ runner.os }}-sqlx-
 
       - name: Install SQLx CLI
         run: cargo install sqlx-cli --no-default-features --features postgres
 
-      - name: Prepare SQLx
-        run: cd backend && cargo sqlx prepare -- --tests
+      - name: Prepare SQLx metadata
+        run: |
+          cd backend
+          cargo sqlx prepare -- --tests
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           SQLX_OFFLINE: true
 
-      - name: Execute Tests
+      - name: Run tests
         run: cd backend && cargo test --verbose
 
   build:
-    name: Build (${{ matrix.target.name }})
+    name: Build ${{ matrix.target.name }}
     needs: test
     runs-on: ${{ matrix.target.os }}
     strategy:
+      fail-fast: false
       matrix:
         target:
           - name: Linux x86_64
@@ -81,13 +87,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup ARM Toolchain
-        if: matrix.target.target == 'aarch64-unknown-linux-gnu'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu
-
-      - name: Configure Rust
+      - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -95,7 +95,7 @@ jobs:
           target: ${{ matrix.target.target }}
           override: true
 
-      - name: Cache Build
+      - name: Cache Rust dependencies
         uses: actions/cache@v3
         with:
           path: |
@@ -103,65 +103,92 @@ jobs:
             ~/.cargo/git
             backend/target
           key: ${{ runner.os }}-${{ matrix.target.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-${{ matrix.target.target }}-cargo-
 
-      - name: Compile Release
-        run: cd backend && cargo build --release --target ${{ matrix.target.target }}
+      - name: Cache SQLx metadata
+        uses: actions/cache@v3
+        with:
+          path: backend/.sqlx
+          key: ${{ runner.os }}-sqlx-${{ hashFiles('**/*.rs', '**/migrations/**') }}
+          restore-keys: ${{ runner.os }}-sqlx-
 
-      - name: Package Artifact
+      - name: Install SQLx CLI
+        run: cargo install sqlx-cli --no-default-features --features postgres
+
+      - name: Prepare SQLx metadata
         run: |
-          mkdir -p release
-          cp backend/target/${{ matrix.target.target }}/release/${{ matrix.target.bin }} release/${{ matrix.target.asset_name }}
+          cd backend
+          cargo sqlx prepare -- --tests
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SQLX_OFFLINE: true
 
-      - name: Upload Artifact
+      - name: Build release binary
+        run: |
+          cd backend
+          cargo build --release --target ${{ matrix.target.target }}
+      - name: Prepare binary
+        shell: bash
+        run: |
+          cd backend
+          mkdir -p release
+          cp target/${{ matrix.target.target }}/release/${{ matrix.target.bin }} release/${{ matrix.target.asset_name }}
+      - name: Upload binary as artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target.asset_name }}
-          path: release/${{ matrix.target.asset_name }}
+          path: backend/release/${{ matrix.target.asset_name }}
+          if-no-files-found: error
 
-  release:
-    name: Publish Release
-    needs: build
+  update-release-notes:
     permissions:
       contents: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
+      - name: Extract release notes
+        id: extract-release-notes
+        uses: ffurrer2/extract-release-notes@v2
+
+      - uses: softprops/action-gh-release@v2
         with:
-          path: artifacts
+          body: |-
+            ${{ steps.extract-release-notes.outputs.release_notes }}
+            | File | SHA256 |
+            | ---- | ------ |
+  upload-to-release:
+    needs:
+      - build
+      - update-release-notes
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        mode:
+          - debug
+          - release
+    steps:
+      - uses: actions/checkout@v4
 
-      - name: Generate Version
-        id: version
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.target.asset_name }}
+          path: artifact
+
+      - run: |
+          zip -r ../${{ matrix.asset_name }} *
+        working-directory: artifact
+      - id: calculate-sha256
         run: |
-          if [ "$GITHUB_EVENT_NAME" = "release" ]; then
-            echo "version=$(jq -r .release.tag_name $GITHUB_EVENT_PATH)" >> $GITHUB_OUTPUT
-          else
-            echo "version=dev-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Calculate Checksums
-        id: checksums
-        run: |
-          echo "HASHES=| File | SHA256 |" >> $GITHUB_OUTPUT
-          echo "HASHES+=| ---- | ------ |" >> $GITHUB_OUTPUT
-          cd artifacts
-          for file in *; do
-            if [ -f "$file" ]; then
-              sha=$(sha256sum "$file" | awk '{print $1}')
-              echo "HASHES+=| $file | $sha |" >> $GITHUB_OUTPUT
-            fi
-          done
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
+          echo sha256=$(sha256sum ${{ matrix.asset_name }} | awk '{print $1}') >> $GITHUB_OUTPUT
+      - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.version }}
           name: ${{ steps.version.outputs.version }}
           body: |
             ${{ github.event.release.body }}
-
             ## Checksums
             ${{ steps.checksums.outputs.HASHES }}
           files: artifacts/*
