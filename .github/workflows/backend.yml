@@ -10,7 +10,6 @@ env:
   CARGO_TERM_COLOR: always
   BINARY_NAME: backend
   DATABASE_URL: ${{ secrets.DATABASE_URL }}
-  # Enable SQLx offline mode to avoid requiring a database connection during compilation
   SQLX_OFFLINE: true
 
 jobs:
@@ -19,12 +18,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
           override: true
+
       - name: Cache Rust dependencies
         uses: actions/cache@v3
         with:
@@ -34,18 +35,26 @@ jobs:
             backend/target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Cache SQLx metadata
+        uses: actions/cache@v3
+        with:
+          path: backend/.sqlx
+          key: ${{ runner.os }}-sqlx-${{ hashFiles('**/*.rs', '**/migrations/**') }}
+          restore-keys: ${{ runner.os }}-sqlx-
+
       - name: Install SQLx CLI
         run: cargo install sqlx-cli --no-default-features --features postgres
-      - name: Create .sqlx directory if it doesn't exist
-        run: mkdir -p backend/.sqlx
-      - name: Generate SQLx metadata
+
+      - name: Prepare SQLx metadata
         run: |
+          mkdir -p backend/.sqlx
           cd backend
-          cargo install sqlx-cli --no-default-features --features postgres
           cargo sqlx prepare -- --tests
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           SQLX_OFFLINE: true
+
       - name: Run tests
         run: cd backend && cargo test --verbose
 
@@ -89,13 +98,20 @@ jobs:
           key: ${{ runner.os }}-${{ matrix.target.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-${{ matrix.target.target }}-cargo-
 
-      - name: Create .sqlx directory if it doesn't exist
-        run: mkdir -p backend/.sqlx
+      - name: Cache SQLx metadata
+        uses: actions/cache@v3
+        with:
+          path: backend/.sqlx
+          key: ${{ runner.os }}-sqlx-${{ hashFiles('**/*.rs', '**/migrations/**') }}
+          restore-keys: ${{ runner.os }}-sqlx-
 
-      - name: Generate SQLx metadata
+      - name: Install SQLx CLI
+        run: cargo install sqlx-cli --no-default-features --features postgres
+
+      - name: Prepare SQLx metadata
         run: |
+          mkdir -p backend/.sqlx
           cd backend
-          cargo install sqlx-cli --no-default-features --features postgres
           cargo sqlx prepare -- --tests
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -111,11 +127,7 @@ jobs:
         run: |
           cd backend
           mkdir -p release
-          if [ "${{ matrix.target.os }}" = "windows-latest" ]; then
-            cp target/${{ matrix.target.target }}/release/${{ matrix.target.bin }} release/${{ matrix.target.asset_name }}
-          else
-            cp target/${{ matrix.target.target }}/release/${{ matrix.target.bin }} release/${{ matrix.target.asset_name }}
-          fi
+          cp target/${{ matrix.target.target }}/release/${{ matrix.target.bin }} release/${{ matrix.target.asset_name }}
 
       - name: Upload binary as artifact
         uses: actions/upload-artifact@v4
@@ -140,7 +152,7 @@ jobs:
       - name: List downloaded artifacts (for debugging)
         run: ls -R artifacts
 
-      - name: Create Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           files: artifacts/**
