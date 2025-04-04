@@ -5,6 +5,9 @@ on:
     branches: ["dev"]
   pull_request:
     branches: ["dev"]
+  release:
+    types:
+      - published  # 当发布版本时触发
 
 env:
   CARGO_TERM_COLOR: always
@@ -48,7 +51,6 @@ jobs:
 
       - name: Prepare SQLx metadata
         run: |
-          mkdir -p backend/.sqlx
           cd backend
           cargo sqlx prepare -- --tests
         env:
@@ -66,11 +68,16 @@ jobs:
       fail-fast: false
       matrix:
         target:
-          - name: Linux
+          - name: Linux x86_64
             os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             bin: backend
             asset_name: backend-linux-amd64
+          - name: Linux ARM64
+            os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            bin: backend
+            asset_name: backend-linux-arm64
           - name: Windows
             os: windows-latest
             target: x86_64-pc-windows-msvc
@@ -110,7 +117,6 @@ jobs:
 
       - name: Prepare SQLx metadata
         run: |
-          mkdir -p backend/.sqlx
           cd backend
           cargo sqlx prepare -- --tests
         env:
@@ -136,25 +142,56 @@ jobs:
           path: backend/release/${{ matrix.target.asset_name }}
           if-no-files-found: error
 
-  create-release:
-    name: Create Release
-    needs: build
+  update-release-notes:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
+      - name: Extract release notes
+        id: extract-release-notes
+        uses: ffurrer2/extract-release-notes@v2
 
-      - name: List downloaded artifacts (for debugging)
-        run: ls -R artifacts
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+      - uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/**
-          draft: false
-          prerelease: false
+          body: |-
+            ${{ steps.extract-release-notes.outputs.release_notes }}
+            | File | SHA256 |
+            | ---- | ------ |
+
+  upload-to-release:
+    needs:
+      - build
+      - update-release-notes
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        mode:
+          - debug
+          - release
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.target.asset_name }}
+          path: artifact
+
+      - run: |
+          zip -r ../${{ matrix.asset_name }} *
+        working-directory: artifact
+
+      - id: calculate-sha256
+        run: |
+          echo sha256=$(sha256sum ${{ matrix.asset_name }} | awk '{print $1}') >> $GITHUB_OUTPUT
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          append_body: true
+          body: |-
+            | ${{ matrix.asset_name }} | ${{ steps.calculate-sha256.outputs.sha256 }} |
+          files: |
+            ${{ matrix.asset_name }}
