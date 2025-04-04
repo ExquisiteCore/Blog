@@ -1,0 +1,101 @@
+name: Rust Backend CI
+
+on:
+  push:
+    branches: ["dev"]
+  pull_request:
+    branches: ["dev"]
+
+env:
+  CARGO_TERM_COLOR: always
+  BINARY_NAME: backend
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - name: Run tests
+        run: cd backend && cargo test --verbose
+
+  build:
+    name: Build ${{ matrix.target.name }}
+    needs: test
+    runs-on: ${{ matrix.target.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - name: Linux
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            bin: backend
+            asset_name: backend-linux-amd64
+          - name: Windows
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            bin: backend.exe
+            asset_name: backend-windows-amd64.exe
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: ${{ matrix.target.target }}
+          override: true
+
+      - name: Build release binary
+        run: |
+          cd backend
+          cargo build --release --target ${{ matrix.target.target }}
+
+      - name: Prepare binary
+        shell: bash
+        run: |
+          cd backend
+          mkdir -p release
+          if [ "${{ matrix.target.os }}" = "windows-latest" ]; then
+            cp target/${{ matrix.target.target }}/release/${{ matrix.target.bin }} release/${{ matrix.target.asset_name }}
+          else
+            cp target/${{ matrix.target.target }}/release/${{ matrix.target.bin }} release/${{ matrix.target.asset_name }}
+          fi
+
+      - name: Upload binary as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.target.asset_name }}
+          path: backend/release/${{ matrix.target.asset_name }}
+          if-no-files-found: error
+
+  create-release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/backend-linux-amd64/backend-linux-amd64
+            artifacts/backend-windows-amd64.exe/backend-windows-amd64.exe
+          draft: false
+          prerelease: false
