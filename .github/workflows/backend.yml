@@ -44,7 +44,7 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           SQLX_OFFLINE: true
       - name: Run tests
-        run: cd backend && cargo test --verbose --features offline
+        run: cd backend && cargo test --verbose
 
   build:
     name: Build ${{ matrix.target.name }}
@@ -98,7 +98,7 @@ jobs:
       - name: Build release binary
         run: |
           cd backend
-          cargo build --release --target ${{ matrix.target.target }} --features offline
+          cargo build --release --target ${{ matrix.target.target }}
 
       - name: Prepare binary
         shell: bash
