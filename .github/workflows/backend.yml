@@ -165,4 +165,5 @@ jobs:
             ## Checksums
             ${{ steps.checksums.outputs.HASHES }}
           files: artifacts/*
+          generate_release_notes: false # 添加了这一行
         if: ${{ github.event_name == 'release' }}
