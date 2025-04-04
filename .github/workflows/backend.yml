@@ -9,6 +9,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   BINARY_NAME: backend
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
 jobs:
   test:
@@ -22,6 +23,10 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+      - name: Install SQLx CLI
+        run: cargo install sqlx-cli --no-default-features --features postgres
+      - name: Generate SQLx metadata
+        run: cd backend && cargo sqlx prepare --check -- --tests
       - name: Run tests
         run: cd backend && cargo test --verbose
 
@@ -55,10 +60,13 @@ jobs:
           target: ${{ matrix.target.target }}
           override: true
 
+      - name: Generate SQLx metadata
+        run: cd backend && cargo sqlx prepare --check -- --tests
+
       - name: Build release binary
         run: |
           cd backend
-          cargo build --release --target ${{ matrix.target.target }}
+          cargo build --release --target ${{ matrix.target.target }} --features sqlx/offline
 
       - name: Prepare binary
         shell: bash
