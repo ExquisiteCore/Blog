@@ -39,7 +39,10 @@ jobs:
       - name: Create .sqlx directory if it doesn't exist
         run: mkdir -p backend/.sqlx
       - name: Generate SQLx metadata
-        run: cd backend && cargo sqlx prepare -- --tests
+        run: |
+          cd backend
+          cargo install sqlx-cli --no-default-features --features postgres
+          cargo sqlx prepare -- --tests
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           SQLX_OFFLINE: true
@@ -90,7 +93,10 @@ jobs:
         run: mkdir -p backend/.sqlx
 
       - name: Generate SQLx metadata
-        run: cd backend && cargo sqlx prepare -- --tests
+        run: |
+          cd backend
+          cargo install sqlx-cli --no-default-features --features postgres
+          cargo sqlx prepare -- --tests
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           SQLX_OFFLINE: true
