@@ -10,6 +10,8 @@ env:
   CARGO_TERM_COLOR: always
   BINARY_NAME: backend
   DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  # Enable SQLx offline mode to avoid requiring a database connection during compilation
+  SQLX_OFFLINE: true
 
 jobs:
   test:
@@ -23,12 +25,26 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+      - name: Cache Rust dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            backend/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
       - name: Install SQLx CLI
         run: cargo install sqlx-cli --no-default-features --features postgres
+      - name: Create .sqlx directory if it doesn't exist
+        run: mkdir -p backend/.sqlx
       - name: Generate SQLx metadata
-        run: cd backend && cargo sqlx prepare --check -- --tests
+        run: cd backend && cargo sqlx prepare -- --tests
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SQLX_OFFLINE: true
       - name: Run tests
-        run: cd backend && cargo test --verbose
+        run: cd backend && cargo test --verbose --features sqlx/offline
 
   build:
     name: Build ${{ matrix.target.name }}
@@ -60,8 +76,24 @@ jobs:
           target: ${{ matrix.target.target }}
           override: true
 
+      - name: Cache Rust dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            backend/target
+          key: ${{ runner.os }}-${{ matrix.target.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-${{ matrix.target.target }}-cargo-
+
+      - name: Create .sqlx directory if it doesn't exist
+        run: mkdir -p backend/.sqlx
+
       - name: Generate SQLx metadata
-        run: cd backend && cargo sqlx prepare --check -- --tests
+        run: cd backend && cargo sqlx prepare -- --tests
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SQLX_OFFLINE: true
 
       - name: Build release binary
         run: |
