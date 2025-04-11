@@ -6,7 +6,8 @@
     "dev": "next dev ",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "build:wasm": "wasm-pack build ec_renderer_wasm"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.3",
