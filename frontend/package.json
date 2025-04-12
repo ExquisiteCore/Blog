@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "build:wasm": "wasm-pack build ec_renderer_wasm"
+    "build:wasm": "wasm-pack build ec_renderer_wasm && pnpm install ./ec_renderer_wasm/pkg"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.3",
@@ -22,6 +22,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "ec_renderer_wasm": "link:ec_renderer_wasm\\pkg",
     "jwt-decode": "^4.0.0",
     "md-editor-rt": "^5.4.5",
     "next": "15.2.4",

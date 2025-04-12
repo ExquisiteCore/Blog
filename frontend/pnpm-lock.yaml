@@ -44,6 +44,9 @@ importers:
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
+      ec_renderer_wasm:
+        specifier: link:ec_renderer_wasm\pkg
+        version: link:ec_renderer_wasm/pkg
       jwt-decode:
         specifier: ^4.0.0
         version: 4.0.0
