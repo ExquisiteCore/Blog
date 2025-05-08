@@ -41,7 +41,7 @@ export interface Post {
   featured_image: string;
   published: boolean;
   author_id: UUID;
-  created_at: number[];
-  updated_at: number[];
-  published_at: number[];
+  created_at: number[] | string;
+  updated_at: number[] | string;
+  published_at: number[] | string;
 }

@@ -17,10 +17,24 @@ function groupPostsByYearAndMonth(posts: Post[]) {
 
   posts.forEach(post => {
     const publishedDate = post.published_at || post.created_at;
-    if (!publishedDate || publishedDate.length < 2) return;
+    if (!publishedDate) return;
 
-    const year = publishedDate[0];
-    const month = publishedDate[1];
+    let year: number;
+    let month: number;
+
+    if (typeof publishedDate === 'string') {
+      // 处理ISO格式的日期字符串
+      const date = new Date(publishedDate);
+      year = date.getFullYear();
+      month = date.getMonth() + 1; // JavaScript月份从0开始，需要+1
+    } else if (Array.isArray(publishedDate) && publishedDate.length >= 2) {
+      // 处理数组格式的日期
+      year = publishedDate[0];
+      // 修复异常月份值问题：如果月份值大于12，则取模获取实际月份
+      month = publishedDate[1] > 12 ? (publishedDate[1] % 12 || 12) : publishedDate[1];
+    } else {
+      return;
+    }
 
     if (!groupedPosts[year]) {
       groupedPosts[year] = {};
@@ -48,9 +62,26 @@ function groupPostsByYearAndMonth(posts: Post[]) {
 }
 
 // 格式化日期
-function formatDate(dateArray: number[]) {
-  if (!dateArray || dateArray.length < 3) return "";
-  const date = new Date(dateArray[0], dateArray[1] - 1, dateArray[2]);
+function formatDate(dateValue: number[] | string) {
+  if (!dateValue) return "";
+
+  let date: Date;
+
+  if (typeof dateValue === 'string') {
+    // 处理ISO格式的日期字符串
+    date = new Date(dateValue);
+  } else if (Array.isArray(dateValue) && dateValue.length >= 3) {
+    // 处理数组格式的日期 [年, 月, 日]
+    // 注意：JavaScript的月份是从0开始的（0=一月），而后端传来的数组是从1开始
+    // 修复异常月份值问题：如果月份值大于12，则取模获取实际月份
+    const year = dateValue[0];
+    const month = dateValue[1] > 12 ? (dateValue[1] % 12 || 12) - 1 : dateValue[1] - 1;
+    const day = dateValue[2];
+    date = new Date(year, month, day);
+  } else {
+    return "";
+  }
+
   return format(date, "yyyy年MM月dd日", { locale: zhCN });
 }
 
