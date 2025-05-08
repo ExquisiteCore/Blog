@@ -4,10 +4,9 @@
 use axum::extract::{Json, Request};
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
+use chrono::{Duration, Utc};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
-use std::time::{SystemTime, UNIX_EPOCH};
-use time::{Duration, OffsetDateTime};
 
 use crate::config;
 use crate::error::{AppError, AppErrorType};
@@ -46,14 +45,10 @@ pub struct RefreshTokenResponse {
 pub fn generate_token(user: &User) -> Result<String, AppError> {
     let config = config::get_config();
 
-    // 获取当前时间
-    let now = OffsetDateTime::now_utc();
-    let iat = now.unix_timestamp() as u64;
+    let now = Utc::now();
+    let iat = now.timestamp() as u64;
+    let exp = (now + Duration::minutes(config.jwt.expiration as i64)).timestamp() as u64;
 
-    // 计算过期时间
-    let exp = (now + Duration::minutes(config.jwt.expiration as i64)).unix_timestamp() as u64;
-
-    // 创建JWT声明
     let claims = Claims {
         sub: user.id.to_string(),
         username: user.username.clone(),
@@ -62,7 +57,6 @@ pub fn generate_token(user: &User) -> Result<String, AppError> {
         iat,
     };
 
-    // 创建JWT令牌
     let token = encode(
         &Header::default(),
         &claims,
@@ -77,7 +71,6 @@ pub fn generate_token(user: &User) -> Result<String, AppError> {
 pub fn verify_token(token: &str) -> Result<Claims, AppError> {
     let config = config::get_config();
 
-    // 解码并验证JWT令牌
     let token_data = decode::<Claims>(
         token,
         &DecodingKey::from_secret(config.jwt.secret.as_bytes()),
@@ -100,11 +93,9 @@ pub fn verify_token(token: &str) -> Result<Claims, AppError> {
 pub fn verify_token_for_refresh(token: &str) -> Result<Claims, AppError> {
     let config = config::get_config();
 
-    // 创建自定义验证，忽略过期检查
     let mut validation = Validation::default();
     validation.validate_exp = false;
 
-    // 解码令牌，忽略过期检查
     let token_data = decode::<Claims>(
         token,
         &DecodingKey::from_secret(config.jwt.secret.as_bytes()),
@@ -118,14 +109,8 @@ pub fn verify_token_for_refresh(token: &str) -> Result<Claims, AppError> {
     })?;
 
     let claims = token_data.claims;
+    let now = Utc::now().timestamp() as u64;
 
-    // 获取当前时间戳
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("时间获取错误")
-        .as_secs();
-
-    // 检查令牌是否在刷新窗口内（过期后的30分钟内）
     if claims.exp < now && now - claims.exp > 30 * 60 {
         return Err(AppError::new_message(
             "令牌已过期且超出刷新窗口",
@@ -138,19 +123,13 @@ pub fn verify_token_for_refresh(token: &str) -> Result<Claims, AppError> {
 
 /// 刷新JWT令牌
 pub fn refresh_token(old_token: &str) -> Result<String, AppError> {
-    // 验证旧令牌（允许已过期但在刷新窗口内的令牌）
     let claims = verify_token_for_refresh(old_token)?;
-
     let config = config::get_config();
 
-    // 获取当前时间
-    let now = OffsetDateTime::now_utc();
-    let iat = now.unix_timestamp() as u64;
+    let now = Utc::now();
+    let iat = now.timestamp() as u64;
+    let exp = (now + Duration::minutes(config.jwt.expiration as i64)).timestamp() as u64;
 
-    // 计算新的过期时间
-    let exp = (now + Duration::minutes(config.jwt.expiration as i64)).unix_timestamp() as u64;
-
-    // 创建新的JWT声明，保留用户信息
     let new_claims = Claims {
         sub: claims.sub,
         username: claims.username,
@@ -159,7 +138,6 @@ pub fn refresh_token(old_token: &str) -> Result<String, AppError> {
         iat,
     };
 
-    // 创建新的JWT令牌
     let token = encode(
         &Header::default(),
         &new_claims,
@@ -181,7 +159,6 @@ pub fn extract_token_from_header(auth_header: &str) -> Option<&str> {
 
 /// 认证中间件
 pub async fn auth_middleware(req: Request, next: Next) -> Result<Response, Response> {
-    // 从请求头中获取认证信息
     let auth_header = req
         .headers()
         .get("Authorization")
@@ -189,35 +166,23 @@ pub async fn auth_middleware(req: Request, next: Next) -> Result<Response, Respo
 
     match auth_header {
         Some(auth_header) => {
-            // 从认证头中提取令牌
             if let Some(token) = extract_token_from_header(auth_header) {
-                // 验证令牌
                 match verify_token(token) {
                     Ok(claims) => {
-                        // 将用户信息添加到请求扩展中
                         let mut req = req;
                         req.extensions_mut().insert(claims);
-
-                        // 继续处理请求
                         Ok(next.run(req).await)
                     }
-                    Err(e) => {
-                        // 令牌验证失败
-                        Err(e.into_response())
-                    }
+                    Err(e) => Err(e.into_response()),
                 }
             } else {
-                // 认证头格式错误
                 Err(
                     AppError::new_message("无效的认证头格式", AppErrorType::Forbidden)
                         .into_response(),
                 )
             }
         }
-        None => {
-            // 缺少认证头
-            Err(AppError::new_message("需要认证", AppErrorType::Forbidden).into_response())
-        }
+        None => Err(AppError::new_message("需要认证", AppErrorType::Forbidden).into_response()),
     }
 }
 
@@ -225,16 +190,12 @@ pub async fn auth_middleware(req: Request, next: Next) -> Result<Response, Respo
 pub async fn refresh_token_handler(
     Json(req): Json<RefreshTokenRequest>,
 ) -> Result<Json<RefreshTokenResponse>, AppError> {
-    // 刷新令牌
     let new_token = refresh_token(&req.token)?;
-
-    // 返回新令牌
     Ok(Json(RefreshTokenResponse { token: new_token }))
 }
 
 /// 管理员权限中间件
 pub async fn admin_middleware(req: Request, next: Next) -> Result<Response, Response> {
-    // 先进行基本的认证
     let auth_header = req
         .headers()
         .get("Authorization")
@@ -242,43 +203,29 @@ pub async fn admin_middleware(req: Request, next: Next) -> Result<Response, Resp
 
     match auth_header {
         Some(auth_header) => {
-            // 从认证头中提取令牌
             if let Some(token) = extract_token_from_header(auth_header) {
-                // 验证令牌
                 match verify_token(token) {
                     Ok(claims) => {
-                        // 检查用户角色
                         if claims.role == "admin" {
-                            // 将用户信息添加到请求扩展中
                             let mut req = req;
                             req.extensions_mut().insert(claims);
-
-                            // 继续处理请求
                             Ok(next.run(req).await)
                         } else {
-                            // 用户不具有管理员角色
                             Err(
                                 AppError::new_message("需要管理员权限", AppErrorType::Forbidden)
                                     .into_response(),
                             )
                         }
                     }
-                    Err(e) => {
-                        // 令牌验证失败
-                        Err(e.into_response())
-                    }
+                    Err(e) => Err(e.into_response()),
                 }
             } else {
-                // 认证头格式错误
                 Err(
                     AppError::new_message("无效的认证头格式", AppErrorType::Forbidden)
                         .into_response(),
                 )
             }
         }
-        None => {
-            // 缺少认证头
-            Err(AppError::new_message("需要认证", AppErrorType::Forbidden).into_response())
-        }
+        None => Err(AppError::new_message("需要认证", AppErrorType::Forbidden).into_response()),
     }
 }
