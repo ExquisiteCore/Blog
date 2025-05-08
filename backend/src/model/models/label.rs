@@ -1,10 +1,6 @@
-//! 标签模型
-//!
-//! 提供博客标签的数据结构和数据库操作方法
-
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{Error, postgres::PgPool};
-use time::OffsetDateTime;
 use uuid::Uuid;
 
 /// 标签结构体
@@ -19,9 +15,9 @@ pub struct Label {
     /// 标签描述
     pub description: Option<String>,
     /// 创建时间
-    pub created_at: OffsetDateTime,
+    pub created_at: DateTime<Utc>, // 修改为 DateTime<Utc>
     /// 更新时间
-    pub updated_at: OffsetDateTime,
+    pub updated_at: DateTime<Utc>, // 修改为 DateTime<Utc>
 }
 
 /// 创建标签的请求数据结构
@@ -50,7 +46,7 @@ impl Label {
     /// 创建新标签
     pub async fn create(pool: &PgPool, req: CreateLabelRequest) -> Result<Self, Error> {
         let id = Uuid::new_v4();
-        let now = OffsetDateTime::now_utc();
+        let now = Utc::now();
 
         let label = sqlx::query_as!(
             Self,
@@ -130,7 +126,7 @@ impl Label {
             let name = req.name.unwrap_or(label.name);
             let slug = req.slug.unwrap_or(label.slug);
             let description = req.description.or(label.description);
-            let now = OffsetDateTime::now_utc();
+            let now = Utc::now();
 
             let updated_label = sqlx::query_as!(
                 Self,

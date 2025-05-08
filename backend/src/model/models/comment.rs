@@ -2,9 +2,9 @@
 //!
 //! 提供博客评论的数据结构和数据库操作方法
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{Error, postgres::PgPool};
-use time::OffsetDateTime;
 use uuid::Uuid;
 
 /// 评论结构体
@@ -21,9 +21,9 @@ pub struct Comment {
     /// 父评论ID（回复的评论）
     pub parent_id: Option<Uuid>,
     /// 创建时间
-    pub created_at: OffsetDateTime,
+    pub created_at: DateTime<Utc>,
     /// 更新时间
-    pub updated_at: OffsetDateTime,
+    pub updated_at: DateTime<Utc>,
 }
 
 /// 创建评论的请求数据结构
@@ -50,7 +50,7 @@ impl Comment {
     /// 创建新评论
     pub async fn create(pool: &PgPool, req: CreateCommentRequest) -> Result<Self, Error> {
         let id = Uuid::new_v4();
-        let now = OffsetDateTime::now_utc();
+        let now = Utc::now();
 
         let comment = sqlx::query_as!(
             Self,
@@ -167,7 +167,7 @@ impl Comment {
         let comment = Self::find_by_id(pool, id).await?;
 
         if let Some(_) = comment {
-            let now = OffsetDateTime::now_utc();
+            let now = Utc::now();
 
             let updated_comment = sqlx::query_as!(
                 Self,

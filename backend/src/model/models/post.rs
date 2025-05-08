@@ -2,9 +2,9 @@
 //!
 //! 提供博客文章的数据结构和数据库操作方法
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{Error, postgres::PgPool};
-use time::OffsetDateTime;
 use uuid::Uuid;
 
 /// 文章结构体
@@ -27,11 +27,11 @@ pub struct Post {
     /// 作者ID
     pub author_id: Uuid,
     /// 创建时间
-    pub created_at: OffsetDateTime,
+    pub created_at: DateTime<Utc>,
     /// 更新时间
-    pub updated_at: OffsetDateTime,
+    pub updated_at: DateTime<Utc>,
     /// 发布时间
-    pub published_at: Option<OffsetDateTime>,
+    pub published_at: Option<DateTime<Utc>>,
 }
 
 /// 文章摘要结构体（不包含content字段）
@@ -52,11 +52,11 @@ pub struct PostSummary {
     /// 作者ID
     pub author_id: Uuid,
     /// 创建时间
-    pub created_at: OffsetDateTime,
+    pub created_at: DateTime<Utc>,
     /// 更新时间
-    pub updated_at: OffsetDateTime,
+    pub updated_at: DateTime<Utc>,
     /// 发布时间
-    pub published_at: Option<OffsetDateTime>,
+    pub published_at: Option<DateTime<Utc>>,
 }
 
 /// 带标签的文章摘要结构体
@@ -77,11 +77,11 @@ pub struct PostSummaryWithLabels {
     /// 作者ID
     pub author_id: Uuid,
     /// 创建时间
-    pub created_at: OffsetDateTime,
+    pub created_at: DateTime<Utc>,
     /// 更新时间
-    pub updated_at: OffsetDateTime,
+    pub updated_at: DateTime<Utc>,
     /// 发布时间
-    pub published_at: Option<OffsetDateTime>,
+    pub published_at: Option<DateTime<Utc>>,
     /// 文章标签名列表
     pub labels: Vec<String>,
 }
@@ -128,7 +128,7 @@ impl Post {
     /// 创建新文章
     pub async fn create(pool: &PgPool, req: CreatePostRequest) -> Result<Self, Error> {
         let id = Uuid::new_v4();
-        let now = OffsetDateTime::now_utc();
+        let now = Utc::now();
         let published_at = if req.published { Some(now) } else { None };
 
         let post = sqlx::query_as!(
@@ -313,7 +313,7 @@ impl Post {
             let content = req.content.unwrap_or(post.content);
             let excerpt = req.excerpt.or(post.excerpt);
             let featured_image = req.featured_image.or(post.featured_image);
-            let now = OffsetDateTime::now_utc();
+            let now = Utc::now();
 
             // 处理发布状态变更
             let (published, published_at) = match (req.published, post.published, post.published_at)
