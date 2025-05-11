@@ -1,0 +1,66 @@
+---
+interface Props {
+  variant?: 'default' | 'primary' | 'outline' | 'text';
+  size?: 'sm' | 'md' | 'lg';
+  class?: string;
+  asChild?: boolean;
+  href?: string;
+  target?: string;
+  rel?: string;
+  disabled?: boolean;
+}
+
+const {
+  variant = 'default',
+  size = 'md',
+  class: className = '',
+  asChild = false,
+  href,
+  target,
+  rel,
+  disabled = false,
+} = Astro.props;
+
+// 定义样式映射
+const variantStyles = {
+  default: 'bg-gray-100 text-gray-900 hover:bg-gray-200',
+  primary: 'bg-blue-600 text-white hover:bg-blue-700',
+  outline: 'border border-gray-300 bg-white hover:bg-gray-50 text-gray-800',
+  text: 'text-gray-800 hover:underline'
+};
+
+const sizeStyles = {
+  sm: 'text-sm px-2 py-1 rounded',
+  md: 'px-4 py-2 rounded-md',
+  lg: 'text-lg px-6 py-3 rounded-lg'
+};
+
+const buttonStyles = `
+  inline-flex items-center justify-center
+  font-medium
+  transition-colors duration-200
+  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50
+  ${variantStyles[variant]}
+  ${sizeStyles[size]}
+  ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+  ${className}
+`.trim().replace(/\s+/g, ' ');
+
+// 根据asChild属性决定使用何种标签
+const Element = asChild && href ? 'a' : asChild ? 'button' : href ? 'a' : 'button';
+---
+
+{asChild ? (
+  <slot />
+) : (
+  <Element
+    class={buttonStyles}
+    href={href}
+    target={href && target ? target : undefined}
+    rel={href && rel ? rel : undefined}
+    disabled={Element === 'button' ? disabled : undefined}
+    aria-disabled={disabled}
+  >
+    <slot />
+  </Element>
+)}

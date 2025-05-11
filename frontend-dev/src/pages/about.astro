@@ -1,60 +1,89 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import Clock from "../components/Clock.astro";
+import Button from "../components/ui/Button.astro";
+import Tooltip from "../components/ui/Tooltip.astro";
+import GithubIcon from "../components/icons/GithubIcon.astro";
 ---
 
 <Layout>
-  <div class="max-w-4xl mx-auto">
-    <div class="bg-white shadow-md rounded-lg overflow-hidden mb-8">
-      <div class="bg-blue-600 h-48 flex items-center justify-center">
-        <h1 class="text-3xl md:text-4xl font-bold text-white">关于我们</h1>
+  <div class="container mx-auto py-12 px-4 md:px-6 min-h-[calc(100vh-64px)]">
+    <div class="max-w-4xl mx-auto space-y-8">
+      {/* 标题部分 */}
+      <div class="text-center space-y-4">
+        <h1 class="text-3xl md:text-4xl font-bold tracking-tight">你好，我是 ExquisiteCore 👋</h1>
       </div>
-      <div class="p-6 md:p-8">
-        <p class="text-gray-700 leading-relaxed mb-6">
-          欢迎来到我们的网站！我们是一个充满激情的团队，致力于为用户提供最好的体验。我们的使命是通过创新和卓越的设计，为用户创造有价值的内容和服务。
-        </p>
-        
-        <h2 class="text-2xl font-semibold text-gray-800 mb-4">我们的愿景</h2>
-        <p class="text-gray-700 leading-relaxed mb-6">
-          我们希望通过我们的产品和服务，改变人们与技术互动的方式。我们相信，好的设计不仅仅是外观美观，更重要的是能够解决实际问题，提升用户体验。
-        </p>
-        
-        <h2 class="text-2xl font-semibold text-gray-800 mb-4">我们的团队</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div class="text-center">
-            <div class="w-32 h-32 rounded-full bg-gray-300 mx-auto mb-4 overflow-hidden flex items-center justify-center">
-              <span class="text-gray-600 text-5xl">👩</span>
-            </div>
-            <h3 class="text-lg font-medium text-gray-800">张小明</h3>
-            <p class="text-gray-600">创始人 &amp; CEO</p>
+
+      {/* 个人信息部分 */}
+      <div class="bg-white p-6 rounded-lg shadow-sm">
+        <div class="flex flex-col md:flex-row justify-between">
+          <div class="flex-1">
+            <h2 class="text-2xl font-semibold mb-4">关于我</h2>
+            <ul class="space-y-3 list-disc list-inside">
+              <li>一名热爱开源的中国学生</li>
+              <li>动漫爱好者</li>
+              <li>喜欢生电但不精通的Minecraft玩家</li>
+              <li class="flex flex-wrap items-center">
+                <span class="mr-2">喜欢的编程语言</span>
+                <div class="flex flex-wrap gap-2">
+                  <img src="https://img.shields.io/badge/-Csharp-purple?style=flat-square&logo=Csharp&logoColor=fff" alt="C#" />
+                  <img src="https://img.shields.io/badge/-C++-blue?style=flat-square&logo=c%2B%2B&logoColor=fff" alt="C++" />
+                  <img src="https://img.shields.io/badge/-Rust-tan?style=flat-square&logo=Rust&logoColor=fff" alt="Rust" />
+                </div>
+              </li>
+              <li class="flex flex-wrap items-center">
+                <span class="mr-2">我的系统</span>
+                <div class="flex flex-wrap gap-2">
+                  <img src="https://img.shields.io/badge/-windows-blue?style=flat-square&logo=windows&logoColor=fff" alt="Windows" />
+                  <img src="https://img.shields.io/badge/-ubuntu-orange?style=flat-square&logo=ubuntu&logoColor=fff" alt="Ubuntu" />
+                </div>
+              </li>
+            </ul>
+            <p class="mt-4">喜欢写一些简单的代码和一些好玩的小东西</p>
           </div>
-          <div class="text-center">
-            <div class="w-32 h-32 rounded-full bg-gray-300 mx-auto mb-4 overflow-hidden flex items-center justify-center">
-              <span class="text-gray-600 text-5xl">👨</span>
-            </div>
-            <h3 class="text-lg font-medium text-gray-800">李小华</h3>
-            <p class="text-gray-600">首席技术官</p>
-          </div>
-          <div class="text-center">
-            <div class="w-32 h-32 rounded-full bg-gray-300 mx-auto mb-4 overflow-hidden flex items-center justify-center">
-              <span class="text-gray-600 text-5xl">👩</span>
-            </div>
-            <h3 class="text-lg font-medium text-gray-800">王小红</h3>
-            <p class="text-gray-600">设计总监</p>
+          <div class="md:ml-8 mt-6 md:mt-0 flex justify-center">
+            <!-- 时钟组件 -->
+            <Clock size="8rem" />
           </div>
         </div>
-        
-        <h2 class="text-2xl font-semibold text-gray-800 mb-4">联系我们</h2>
-        <p class="text-gray-700 leading-relaxed mb-2">如果您有任何问题或建议，请随时联系我们：</p>
-        <ul class="text-gray-700 leading-relaxed list-disc pl-5 mb-6">
-          <li>电子邮件：info@example.com</li>
-          <li>电话：(123) 456-7890</li>
-          <li>地址：某某市某某区某某街道123号</li>
+      </div>
+
+      {/* 爱好部分 */}
+      <div class="bg-white p-6 rounded-lg shadow-sm">
+        <h2 class="text-2xl font-semibold mb-4">我的爱好</h2>
+        <ul class="grid grid-cols-1 md:grid-cols-2 gap-3 list-disc list-inside">
+          <li>喜欢尝试各种新鲜事物和折腾</li>
+          <li>动漫and二刺螈</li>
+          <li>水群</li>
+          <li>来点Music</li>
+          <li>美味的东西</li>
+          <li>打游戏</li>
+          <li>喜欢计算机，目前主要是C#，C++和Rust。进一步的东西还在学习中。。。</li>
+          <li>刷机(才不是大变活砖)</li>
+          <li>目前正在写一些好玩的项目(鸽子)，快来给我点star</li>
         </ul>
-        
-        <div class="flex justify-center">
-          <a href="/contact" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition-colors duration-200">联系我们</a>
-        </div>
+      </div>
+
+      {/* GitHub链接 */}
+      <div class="flex justify-center mt-8">
+        <Tooltip content="去看看我的开源项目吧！" position="top">
+          <div slot="trigger">
+            <Button variant="outline" size="lg" class="gap-2">
+              <a 
+                href="https://github.com/ExquisiteCore" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                class="inline-flex items-center gap-2"
+              >
+                <GithubIcon size="20px" />
+                <span>访问我的GitHub</span>
+              </a>
+            </Button>
+          </div>
+        </Tooltip>
       </div>
     </div>
   </div>
 </Layout>
+
+<!-- 时钟脚本已移至Clock组件 -->
