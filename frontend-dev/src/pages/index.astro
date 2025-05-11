@@ -3,5 +3,35 @@ import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout>
-    <h1>Hello World</h1>
+    <section class="bg-blue-50 py-16 px-4 rounded-lg mb-12 text-center">
+        <div>
+            <h1 class="text-4xl md:text-5xl font-bold text-blue-900 mb-4">欢迎访问我们的网站</h1>
+            <p class="text-xl text-gray-600 max-w-2xl mx-auto mb-8">这是一个包含头部、主体和脚部的完整页面布局示例</p>
+            <div class="flex justify-center space-x-4">
+                <a href="/about" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium transition-colors duration-200">了解更多</a>
+                <a href="/contact" class="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 px-6 py-3 rounded-md font-medium transition-colors duration-200">联系我们</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-8 pb-16">
+        <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">我们的特色</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto px-4">
+            <div class="bg-white p-8 rounded-lg shadow-md text-center hover:-translate-y-1 transition-transform duration-300">
+                <div class="text-5xl mb-4">🚀</div>
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">快速响应</h3>
+                <p class="text-gray-600">采用现代化技术栈，确保网站加载迅速</p>
+            </div>
+            <div class="bg-white p-8 rounded-lg shadow-md text-center hover:-translate-y-1 transition-transform duration-300">
+                <div class="text-5xl mb-4">🎨</div>
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">精美设计</h3>
+                <p class="text-gray-600">优雅的界面设计，提供出色的用户体验</p>
+            </div>
+            <div class="bg-white p-8 rounded-lg shadow-md text-center hover:-translate-y-1 transition-transform duration-300">
+                <div class="text-5xl mb-4">📱</div>
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">响应式布局</h3>
+                <p class="text-gray-600">完美适配各种设备屏幕尺寸</p>
+            </div>
+        </div>
+    </section>
 </Layout>
