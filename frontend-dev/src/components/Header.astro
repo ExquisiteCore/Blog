@@ -1,10 +1,5 @@
 ---
-const navItems = [
-  { href: "/", label: "首页" },
-  { href: "/about", label: "关于" },
-  { href: "/blog", label: "博客" },
-  { href: "/contact", label: "联系" },
-];
+import { mainNavItems } from "../data/navigation";
 ---
 
 <header class="bg-white shadow-md sticky top-0 z-50">
@@ -16,7 +11,7 @@ const navItems = [
       <nav class="hidden md:block">
         <ul class="flex space-x-8">
           {
-            navItems.map(item => (
+            mainNavItems.map(item => (
               <li>
                 <a 
                   href={item.href} 
@@ -42,7 +37,7 @@ const navItems = [
   <div class="hidden md:hidden">
     <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
       {
-        navItems.map(item => (
+        mainNavItems.map(item => (
           <a
             href={item.href}
             class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50"
