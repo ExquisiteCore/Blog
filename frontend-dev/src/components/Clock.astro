@@ -5,24 +5,43 @@ interface Props {
 }
 ---
 
-<div id="clock-container" class={`bg-gray-100 rounded-full flex items-center justify-center text-gray-700 border border-gray-300 shadow-sm ${Astro.props.className || ''}`} style={`width: ${Astro.props.size || '8rem'}; height: ${Astro.props.size || '8rem'};`}>
-  <span id="clock" class="text-xl font-mono"></span>
+<div class="flex flex-col items-end">
+  <div class="flex items-center gap-2 mb-1">
+    <div class="w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center">
+      <span class="text-white text-xs">⏰</span>
+    </div>
+    <span class="text-sm text-gray-600" id="date-display"></span>
+  </div>
+  <div id="clock" class="text-5xl font-mono font-bold"></div>
 </div>
 
 <script>
-  // 简单的时钟实现
-  function updateClock() {
+  // 日期和时钟实现
+  function updateDateTime() {
     const clockElement = document.getElementById('clock');
-    if (clockElement) {
+    const dateElement = document.getElementById('date-display');
+    
+    if (clockElement && dateElement) {
       const now = new Date();
+      
+      // 更新时钟
       const hours = now.getHours().toString().padStart(2, '0');
       const minutes = now.getMinutes().toString().padStart(2, '0');
       const seconds = now.getSeconds().toString().padStart(2, '0');
       clockElement.textContent = `${hours}:${minutes}:${seconds}`;
+      
+      // 更新日期
+      const year = now.getFullYear();
+      const month = (now.getMonth() + 1).toString().padStart(2, '0');
+      const day = now.getDate().toString().padStart(2, '0');
+      const isWeekend = now.getDay() === 0 || now.getDay() === 6;
+      const weekdayText = isWeekend ? '周末' : '星期' + '日一二三四五六'[now.getDay()];
+      
+      dateElement.textContent = `${year}-${month}-${day} ${weekdayText}`;
     }
   }
 
   // 初始化并每秒更新时钟
-  updateClock();
-  setInterval(updateClock, 1000);
+  updateDateTime();
+  setInterval(updateDateTime, 1000);
 </script>
