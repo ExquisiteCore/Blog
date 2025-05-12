@@ -1,0 +1,98 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="关于我 | 精致的芯 - 精致的私人博客">
+    <div class="container mx-auto">
+        <!-- Page Header -->
+        <div class="text-center my-8">
+            <h1 class="text-4xl font-bold">关于我</h1>
+            <p class="mt-2 text-lg">了解更多关于我的信息和博客背后的故事</p>
+        </div>
+
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-12 my-12">
+            <!-- Left Column - Story -->
+            <div class="space-y-6">
+                <h2 class="text-2xl font-bold">我的故事</h2>
+                <p>
+                    欢迎来到我的博客！我是精致，一名充满热情的开发者和设计爱好者，喜欢分享关于Web开发、设计和技术的知识与见解。
+                </p>
+                <p>
+                    我的博客之旅始于2022年，当时我意识到需要一个平台来记录学习心得和分享对现代Web开发技术（如Astro、SolidJS和TailwindCSS）的探索。
+                </p>
+                <p>
+                    我相信网络作为一个平台的力量，并致力于通过我的教程、指南和文章帮助他人构建更好的网站和应用程序。
+                </p>
+                
+                <h2 class="text-2xl font-bold mt-8">我的使命</h2>
+                <p>
+                    我的使命是通过提供既有教育意义又实用的高质量内容，赋能各级开发者。我的目标是：
+                </p>
+                <ul class="list-disc pl-6 space-y-2">
+                    <li>分享Web开发的知识和最佳实践</li>
+                    <li>探索新兴技术和框架</li>
+                    <li>建立志同道合的开发者社区</li>
+                    <li>让复杂的概念变得容易理解</li>
+                </ul>
+            </div>
+            
+            <!-- Right Column - Image and Stats -->
+            <div>
+                <div class="card bg-base-100 shadow-xl">
+                    <figure><img src="https://picsum.photos/600/400" alt="Team Image" class="w-full h-auto" /></figure>
+                    <div class="card-body">
+                        <h3 class="card-title">博客背后的故事</h3>
+                        <p>这是我记录技术探索、分享学习心得的个人空间，希望能为更多开发者提供有价值的内容。</p>
+                    </div>
+                </div>
+                
+                <!-- Stats -->
+                <div class="stats shadow w-full mt-8">
+                    <div class="stat">
+                        <div class="stat-figure text-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                        </div>
+                        <div class="stat-title">文章数量</div>
+                        <div class="stat-value text-primary">100+</div>
+                        <div class="stat-desc">2022年1月至今</div>
+                    </div>
+                    
+                    <div class="stat">
+                        <div class="stat-figure text-secondary">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-8 h-8 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        </div>
+                        <div class="stat-title">月度阅读量</div>
+                        <div class="stat-value text-secondary">25K+</div>
+                        <div class="stat-desc">↗︎ 比上月增长14%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Contact Section -->
+        <section class="my-16 card bg-base-200 p-8">
+            <h2 class="text-3xl font-bold text-center mb-8">联系我</h2>
+            <div class="flex flex-col md:flex-row gap-8 justify-center">
+                <div class="form-control w-full max-w-md">
+                    <label class="label">
+                        <span class="label-text">姓名</span>
+                    </label>
+                    <input type="text" placeholder="您的姓名" class="input input-bordered w-full" />
+                    
+                    <label class="label mt-2">
+                        <span class="label-text">邮箱</span>
+                    </label>
+                    <input type="email" placeholder="您的邮箱地址" class="input input-bordered w-full" />
+                    
+                    <label class="label mt-2">
+                        <span class="label-text">留言</span>
+                    </label>
+                    <textarea class="textarea textarea-bordered h-24" placeholder="您的留言内容"></textarea>
+                    
+                    <button class="btn btn-primary mt-4">发送留言</button>
+                </div>
+            </div>
+        </section>
+    </div>
+</Layout>

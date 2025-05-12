@@ -2,6 +2,126 @@
 import Layout from "../layouts/Layout.astro";
 ---
 
-<Layout>
-    <button class="btn">Default</button>
+<Layout title="精致的芯 - 精致的私人博客">
+    <!-- Hero Section -->
+    <section class="hero min-h-[60vh] bg-base-200 rounded-box my-8">
+        <div class="hero-content text-center">
+            <div class="max-w-md">
+                <h1 class="text-5xl font-bold">精致的芯</h1>
+                <p class="py-6">
+                    欢迎来到精致的私人博客，这里记录了我的技术探索、生活感悟和创意思考。
+                </p>
+                <button class="btn btn-primary">开始浏览</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Posts -->
+    <section class="my-12">
+        <h2 class="text-3xl font-bold mb-8 text-center">精选文章</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Card 1 -->
+            <div class="card bg-base-100 shadow-xl">
+                <figure>
+                    <img
+                        src="https://picsum.photos/400/250"
+                        alt="Blog Post Image"
+                    />
+                </figure>
+                <div class="card-body">
+                    <h3 class="card-title">
+                        Astro开发入门
+                        <div class="badge badge-secondary">最新</div>
+                    </h3>
+                    <p>
+                        学习如何使用Astro构建高性能网站，并结合SolidJS打造交互式组件。
+                    </p>
+                    <div class="card-actions justify-end">
+                        <div class="badge badge-outline">Astro</div>
+                        <div class="badge badge-outline">SolidJS</div>
+                    </div>
+                    <div class="mt-4">
+                        <button class="btn btn-primary btn-sm">阅读更多</button
+                        >
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="card bg-base-100 shadow-xl">
+                <figure>
+                    <img
+                        src="https://picsum.photos/400/251"
+                        alt="Blog Post Image"
+                    />
+                </figure>
+                <div class="card-body">
+                    <h3 class="card-title">DaisyUI的强大功能</h3>
+                    <p>
+                        探索这个强大的组件库，它让使用Tailwind CSS构建美观界面变得轻而易举。
+                    </p>
+                    <div class="card-actions justify-end">
+                        <div class="badge badge-outline">Tailwind</div>
+                        <div class="badge badge-outline">DaisyUI</div>
+                    </div>
+                    <div class="mt-4">
+                        <button class="btn btn-primary btn-sm">Read More</button
+                        >
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="card bg-base-100 shadow-xl">
+                <figure>
+                    <img
+                        src="https://picsum.photos/400/252"
+                        alt="Blog Post Image"
+                    />
+                </figure>
+                <div class="card-body">
+                    <h3 class="card-title">响应式设计技巧</h3>
+                    <p>
+                        学习创建适应各种设备尺寸的响应式布局的最佳实践和技巧。
+                    </p>
+                    <div class="card-actions justify-end">
+                        <div class="badge badge-outline">CSS</div>
+                        <div class="badge badge-outline">Design</div>
+                    </div>
+                    <div class="mt-4">
+                        <button class="btn btn-primary btn-sm">Read More</button
+                        >
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Newsletter Section -->
+    <section class="my-16 card bg-base-200 p-8">
+        <div class="flex flex-col md:flex-row items-center gap-6">
+            <div class="flex-1">
+                <h2 class="text-2xl font-bold mb-2">
+                    订阅我的新文章提醒
+                </h2>
+                <p>
+                    订阅我的博客更新，第一时间获取最新文章和动态。
+                </p>
+            </div>
+            <div class="flex-1">
+                <div class="form-control">
+                    <div class="join">
+                        <input
+                            type="text"
+                            placeholder="输入您的邮箱"
+                            class="input input-bordered join-item"
+                        />
+                        <button class="btn btn-primary join-item"
+                            >订阅</button
+                        >
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 </Layout>
