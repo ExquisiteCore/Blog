@@ -83,6 +83,9 @@
   
   // Handle scroll events
   function handleScroll() {
+    // Safety check in case header element doesn't exist
+    if (!header) return;
+    
     const currentScrollY = window.scrollY;
     const scrollDelta = currentScrollY - lastScrollY;
     
@@ -123,16 +126,22 @@
 
   // Add scroll event listener with throttling for better performance
   let ticking = false;
-  window.addEventListener('scroll', function() {
-    if (!ticking) {
-      window.requestAnimationFrame(function() {
-        handleScroll();
-        ticking = false;
-      });
-      ticking = true;
-    }
-  });
   
-  // Initialize header state
-  handleScroll();
+  // Only add event listener if header exists
+  if (header) {
+    window.addEventListener('scroll', function() {
+      if (!ticking) {
+        window.requestAnimationFrame(function() {
+          handleScroll();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    });
+    
+    // Initialize header state
+    handleScroll();
+  } else {
+    console.warn('Header element with ID "smart-header" not found');
+  }
 </script>
