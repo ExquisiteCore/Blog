@@ -1,11 +1,8 @@
 ---
-// Header component with smart scroll behavior
+import ScrollHeader from "../components/solid/ScrollHeader";
 ---
 
-<header 
-  class="fixed top-0 w-full z-50 transition-all duration-300 transform" 
-  id="smart-header"
->
+<ScrollHeader client:load>
     <div class="navbar container mx-auto px-4 h-16">
         <div class="navbar-start">
             <div class="dropdown">
@@ -73,75 +70,4 @@
             <button class="btn btn-primary ml-2">登录</button>
         </div>
     </div>
-</header>
-
-<script>
-  // Get the header element
-  const header = document.getElementById('smart-header');
-  let lastScrollY = 0;
-  let isAtTop = true;
-  
-  // Handle scroll events
-  function handleScroll() {
-    // Safety check in case header element doesn't exist
-    if (!header) return;
-    
-    const currentScrollY = window.scrollY;
-    const scrollDelta = currentScrollY - lastScrollY;
-    
-    // Check if at top of page
-    if (currentScrollY < 10) {
-      isAtTop = true;
-      header.classList.remove('-translate-y-full');
-      header.classList.add('translate-y-0');
-      header.classList.remove('bg-base-100/95', 'backdrop-blur-sm', 'shadow-md');
-      header.classList.add('bg-base-100');
-    } else {
-      if (isAtTop) {
-        isAtTop = false;
-        header.classList.remove('bg-base-100');
-        header.classList.add('bg-base-100/95', 'backdrop-blur-sm', 'shadow-md');
-      }
-      
-      // Ignore small scroll movements to prevent jitter
-      if (Math.abs(scrollDelta) < 5) {
-        lastScrollY = currentScrollY;
-        return;
-      }
-      
-      // Show/hide based on scroll direction
-      if (scrollDelta < 0) {
-        // Scrolling up - show header
-        header.classList.remove('-translate-y-full');
-        header.classList.add('translate-y-0');
-      } else if (currentScrollY > 100) {
-        // Only hide when we've scrolled down a bit
-        header.classList.remove('translate-y-0');
-        header.classList.add('-translate-y-full');
-      }
-    }
-    
-    lastScrollY = currentScrollY;
-  }
-
-  // Add scroll event listener with throttling for better performance
-  let ticking = false;
-  
-  // Only add event listener if header exists
-  if (header) {
-    window.addEventListener('scroll', function() {
-      if (!ticking) {
-        window.requestAnimationFrame(function() {
-          handleScroll();
-          ticking = false;
-        });
-        ticking = true;
-      }
-    });
-    
-    // Initialize header state
-    handleScroll();
-  } else {
-    console.warn('Header element with ID "smart-header" not found');
-  }
-</script>
+</ScrollHeader>
