@@ -1,9 +1,10 @@
-import { createSignal, createEffect, onCleanup, onMount } from "solid-js";
+import { createSignal, createEffect, onCleanup, onMount, createMemo } from "solid-js";
 
 export default function ScrollHeader(props) {
   const [isVisible, setIsVisible] = createSignal(true);
   const [lastScrollY, setLastScrollY] = createSignal(0);
   const [isAtTop, setIsAtTop] = createSignal(true);
+  const [theme, setTheme] = createSignal('light');
   
   // Handle scroll events with debounce
   const handleScroll = () => {
@@ -50,11 +51,26 @@ export default function ScrollHeader(props) {
     }
   };
   
+  // Listen for theme changes in localStorage
+  const handleStorageChange = (e) => {
+    if (typeof localStorage !== 'undefined' && e.key === 'theme') {
+      setTheme(e.newValue || 'light');
+    }
+  };
+
   onMount(() => {
     // Set initial scroll position
     setLastScrollY(window.scrollY);
     // Initialize header state
     handleScroll();
+    
+    // Set initial theme from localStorage (only available in browser)
+    if (typeof localStorage !== 'undefined') {
+      setTheme(localStorage.getItem('theme') || 'light');
+    }
+    
+    // Listen for theme changes from other components
+    window.addEventListener('storage', handleStorageChange);
   });
   
   createEffect(() => {
@@ -64,7 +80,15 @@ export default function ScrollHeader(props) {
     onCleanup(() => {
       // Remove scroll event listener
       window.removeEventListener("scroll", onScroll);
+      window.removeEventListener('storage', handleStorageChange);
     });
+  });
+  
+  // Theme-based background color class
+  const bgColorClass = createMemo(() => {
+    return theme() === 'dark' 
+      ? 'bg-base-100/80 backdrop-blur-sm shadow-md' 
+      : 'bg-base-100/95 backdrop-blur-sm shadow-md';
   });
   
   return (
@@ -72,7 +96,7 @@ export default function ScrollHeader(props) {
       class={`fixed top-0 w-full z-50 transition-all duration-300 transform ${
         isVisible() ? "translate-y-0" : "-translate-y-full"
       } ${
-        !isAtTop() ? "bg-base-100/95 backdrop-blur-sm shadow-md" : "bg-base-100"
+        !isAtTop() ? bgColorClass() : "bg-base-100"
       }`}
     >
       {props.children}
