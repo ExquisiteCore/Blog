@@ -1,6 +1,6 @@
 ---
-import ScrollHeader from "../components/solid/ScrollHeader";
-import ThemeToggle from "../components/solid/ThemeToggle";
+import ScrollHeader from "@/components/solid/ScrollHeader";
+import ThemeToggle from "@/components/solid/ThemeToggle";
 
 // Get current path to highlight active navigation item
 const currentPath = Astro.url.pathname;
@@ -11,7 +11,7 @@ const isProjectsPage = currentPath.startsWith("/projects");
 
 // Helper function to determine tab classes
 const getTabClass = (isActive: boolean) => {
-  return isActive ? "tab tab-active" : "tab";
+    return isActive ? "tab tab-active" : "tab";
 };
 ---
 
@@ -38,10 +38,35 @@ const getTabClass = (isActive: boolean) => {
                     tabindex="0"
                     class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52"
                 >
-                    <li><a href="/" class={isHomePage ? "font-bold text-primary" : ""}>首页</a></li>
-                    <li><a href="/blog" class={isBlogPage ? "font-bold text-primary" : ""}>博客</a></li>
-                    <li><a href="/about" class={isAboutPage ? "font-bold text-primary" : ""}>关于我</a></li>
-                    <li><a href="/projects" class={isProjectsPage ? "font-bold text-primary" : ""}>项目</a></li>
+                    <li>
+                        <a
+                            href="/"
+                            class={isHomePage ? "font-bold text-primary" : ""}
+                            >首页</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="/blog"
+                            class={isBlogPage ? "font-bold text-primary" : ""}
+                            >博客</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="/about"
+                            class={isAboutPage ? "font-bold text-primary" : ""}
+                            >关于我</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="/projects"
+                            class={isProjectsPage
+                                ? "font-bold text-primary"
+                                : ""}>项目</a
+                        >
+                    </li>
                 </ul>
             </div>
             <a href="/" class="btn btn-ghost text-xl">
@@ -51,9 +76,17 @@ const getTabClass = (isActive: boolean) => {
         <div class="navbar-center hidden lg:flex">
             <div role="tablist" class="tabs tabs-bordered">
                 <a href="/" role="tab" class={getTabClass(isHomePage)}>首页</a>
-                <a href="/blog" role="tab" class={getTabClass(isBlogPage)}>博客</a>
-                <a href="/about" role="tab" class={getTabClass(isAboutPage)}>关于我</a>
-                <a href="/projects" role="tab" class={getTabClass(isProjectsPage)}>项目</a>
+                <a href="/blog" role="tab" class={getTabClass(isBlogPage)}
+                    >博客</a
+                >
+                <a href="/about" role="tab" class={getTabClass(isAboutPage)}
+                    >关于我</a
+                >
+                <a
+                    href="/projects"
+                    role="tab"
+                    class={getTabClass(isProjectsPage)}>项目</a
+                >
             </div>
         </div>
         <div class="navbar-end">

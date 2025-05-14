@@ -1,8 +1,8 @@
 ---
-import "../styles/global.css";
-import background from "../assets/background.svg";
-import Header from "../components/Header.astro";
-import Footer from "../components/Footer.astro";
+import "@/styles/global.css";
+import background from "@/assets/background.svg";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
 
 interface Props {
     title?: string;
@@ -22,19 +22,27 @@ const { title = "My Blog" } = Astro.props;
         <script is:inline>
             // Apply saved theme immediately to prevent flash
             try {
-                const savedTheme = localStorage.getItem('theme');
+                const savedTheme = localStorage.getItem("theme");
                 if (savedTheme) {
-                    document.documentElement.setAttribute('data-theme', savedTheme);
-                } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                    document.documentElement.setAttribute('data-theme', 'dark');
-                    localStorage.setItem('theme', 'dark');
+                    document.documentElement.setAttribute(
+                        "data-theme",
+                        savedTheme,
+                    );
+                } else if (
+                    window.matchMedia("(prefers-color-scheme: dark)").matches
+                ) {
+                    document.documentElement.setAttribute("data-theme", "dark");
+                    localStorage.setItem("theme", "dark");
                 } else {
-                    document.documentElement.setAttribute('data-theme', 'light');
-                    localStorage.setItem('theme', 'light');
+                    document.documentElement.setAttribute(
+                        "data-theme",
+                        "light",
+                    );
+                    localStorage.setItem("theme", "light");
                 }
             } catch (e) {
                 // Fallback for environments where localStorage is not available
-                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.setAttribute("data-theme", "light");
             }
         </script>
     </head>
