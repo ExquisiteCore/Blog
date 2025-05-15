@@ -34,6 +34,35 @@ pub struct Post {
     pub published_at: Option<DateTime<Utc>>,
 }
 
+/// 文章结构体（包含标签）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PostWithLabels {
+    /// 文章ID
+    pub id: Uuid,
+    /// 文章标题
+    pub title: String,
+    /// 文章别名(URL友好)
+    pub slug: String,
+    /// 文章内容
+    pub content: String,
+    /// 文章摘要
+    pub excerpt: Option<String>,
+    /// 特色图片
+    pub featured_image: Option<String>,
+    /// 是否发布
+    pub published: bool,
+    /// 作者ID
+    pub author_id: Uuid,
+    /// 创建时间
+    pub created_at: DateTime<Utc>,
+    /// 更新时间
+    pub updated_at: DateTime<Utc>,
+    /// 发布时间
+    pub published_at: Option<DateTime<Utc>>,
+    /// 文章标签名列表
+    pub labels: Vec<String>,
+}
+
 /// 文章摘要结构体（不包含content字段）
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PostSummary {
@@ -178,6 +207,52 @@ impl Post {
         .await?;
 
         Ok(post)
+    }
+
+    /// 根据ID查找文章（包含标签）
+    pub async fn find_by_id_with_labels(
+        pool: &PgPool,
+        id: Uuid,
+    ) -> Result<Option<PostWithLabels>, Error> {
+        // 查找文章
+        let post = sqlx::query!(
+            r#"
+            SELECT id, title, slug, content, excerpt, featured_image, published, author_id, created_at, updated_at, published_at
+            FROM posts
+            WHERE id = $1
+            "#,
+            id
+        )
+        .fetch_optional(pool)
+        .await?;
+
+        // 如果没有找到文章，直接返回 None
+        let Some(post) = post else {
+            return Ok(None);
+        };
+
+        // 获取文章的标签
+        let labels_objects =
+            crate::model::models::label::Label::find_by_post_id(pool, post.id).await?;
+
+        // 只提取标签名
+        let labels = labels_objects.into_iter().map(|label| label.name).collect();
+
+        // 构建 PostWithLabels 返回
+        Ok(Some(PostWithLabels {
+            id: post.id,
+            title: post.title,
+            slug: post.slug,
+            content: post.content,
+            excerpt: post.excerpt,
+            featured_image: post.featured_image,
+            published: post.published,
+            author_id: post.author_id,
+            created_at: post.created_at,
+            updated_at: post.updated_at,
+            published_at: post.published_at,
+            labels,
+        }))
     }
 
     /// 根据别名查找文章
@@ -327,7 +402,7 @@ impl Post {
                 Self,
                 r#"
                 UPDATE posts
-                SET title = $1, slug = $2, content = $3, excerpt = $4, featured_image = $5, 
+                SET title = $1, slug = $2, content = $3, excerpt = $4, featured_image = $5,
                     published = $6, updated_at = $7, published_at = $8
                 WHERE id = $9
                 RETURNING id, title, slug, content, excerpt, featured_image, published, author_id, created_at, updated_at, published_at

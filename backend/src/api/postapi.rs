@@ -44,9 +44,9 @@ pub async fn create_post(
 pub async fn get_post_by_id(
     State(pool): State<Arc<Pool<Postgres>>>,
     Path(id): Path<Uuid>,
-) -> Result<Json<post::Post>, AppError> {
+) -> Result<Json<post::PostWithLabels>, AppError> {
     // 根据ID查找文章
-    match post::Post::find_by_id(pool.as_ref(), id).await? {
+    match post::Post::find_by_id_with_labels(pool.as_ref(), id).await? {
         Some(post) => Ok(Json(post)),
         None => Err(AppError::new_message(
             &format!("未找到ID为{}的文章", id),
