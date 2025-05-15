@@ -9,6 +9,7 @@
     "astro": "astro"
   },
   "dependencies": {
+    "@astrojs/node": "^9.2.1",
     "@astrojs/sitemap": "^3.4.0",
     "@astrojs/solid-js": "^5.0.10",
     "@tailwindcss/vite": "^4.1.6",

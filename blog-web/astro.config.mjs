@@ -7,11 +7,18 @@ import solidJs from "@astrojs/solid-js";
 
 import sitemap from "@astrojs/sitemap";
 
+import node from "@astrojs/node";
+
 // https://astro.build/config
 export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
   },
+
   site: "https://blog.exquisitecore.xzy",
   integrations: [solidJs(), sitemap()],
+
+  adapter: node({
+    mode: "standalone",
+  }),
 });
