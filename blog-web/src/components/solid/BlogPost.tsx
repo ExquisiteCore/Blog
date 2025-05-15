@@ -34,13 +34,11 @@ async function fetchPost(slug: string): Promise<Post | null> {
       withToken: false,
     });
 
-    // 检查响应格式
     if (response && response.id) {
-      // 处理特殊字符
       return {
         ...response,
         featured_image: response.featured_image
-          ? response.data.featured_image.replace(/`/g, "").trim()
+          ? response.featured_image.replace(/`/g, "").trim()
           : null,
       };
     } else {
@@ -53,6 +51,7 @@ async function fetchPost(slug: string): Promise<Post | null> {
   }
 }
 
+
 interface BlogPostProps {
   slug: string;
 }
@@ -60,6 +59,7 @@ interface BlogPostProps {
 export default function BlogPost(props: BlogPostProps) {
   // 使用SolidJS的资源加载功能获取文章
   const [post] = createResource<Post | null>(() => fetchPost(props.slug));
+  console.log(post());
 
   return (
     <div class="container mx-auto px-4 py-8">
@@ -98,7 +98,7 @@ export default function BlogPost(props: BlogPostProps) {
             <article class="prose prose-lg max-w-none dark:prose-invert">
               {post()!.featured_image && (
                 <img
-                  src={post()!.featured_image}
+                  src={post()!.featured_image ?? ''}
                   alt={post()!.title}
                   class="w-full h-64 md:h-96 object-cover rounded-lg shadow-md mb-8"
                 />

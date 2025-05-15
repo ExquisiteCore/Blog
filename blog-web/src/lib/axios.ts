@@ -10,11 +10,7 @@ interface RequestConfig extends AxiosRequestConfig {
 }
 
 // 定义响应数据的通用接口
-interface ApiResponse<T = any> {
-  code: number;
-  data: T;
-  message: string;
-}
+type ApiResponse<T = any> = T;
 
 /**
  * HTTP请求类，封装axios实例
