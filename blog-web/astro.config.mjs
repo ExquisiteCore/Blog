@@ -16,7 +16,7 @@ export default defineConfig({
   },
 
   site: "https://blog.exquisitecore.xzy",
-  integrations: [solidJs(), sitemap()],
+  integrations: [solidJs({ devtools: true }), sitemap()],
 
   adapter: node({
     mode: "standalone",
