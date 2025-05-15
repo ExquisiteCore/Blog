@@ -59,7 +59,6 @@ interface BlogPostProps {
 export default function BlogPost(props: BlogPostProps) {
   // 使用SolidJS的资源加载功能获取文章
   const [post] = createResource<Post | null>(() => fetchPost(props.slug));
-  console.log(post());
 
   return (
     <div class="container mx-auto px-4 py-8">
