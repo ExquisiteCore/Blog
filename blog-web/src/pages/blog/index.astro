@@ -1,10 +1,17 @@
 ---
+export const prerender = false;
 import Layout from "@/layouts/Layout.astro";
+import BlogPosts from "@/components/solid/BlogPosts";
 ---
 
 <Layout title="博客 | 精致的芯 - 精致的私人博客">
-    <div class="text-left my-8">
-        <h1 class="text-4xl font-bold">博客文章</h1>
-        <p class="mt-2 text-lg">探索我的最新文章和想法</p>
+    <div class="container mx-auto px-4">
+        <div class="text-left my-8">
+            <h1 class="text-4xl font-bold">博客文章</h1>
+            <p class="mt-2 text-lg">探索我的最新文章和想法</p>
+        </div>
+
+        <!-- 文章列表 -->
+        <BlogPosts client:load />
     </div>
 </Layout>
