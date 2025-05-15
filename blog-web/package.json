@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
+    "build:wasm": "wasm-pack build md-wasm --target web",
     "preview": "astro preview",
     "astro": "astro",
     "start": "HOST=0.0.0.0 PORT=4321 node ./dist/server/entry.mjs"

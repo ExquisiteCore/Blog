@@ -1,5 +1,6 @@
 import { createResource, Show } from "solid-js";
 import http from "@/lib/axios";
+import MarkdownRenderer from "@/components/solid/MarkdownRenderer";
 
 // 定义文章接口
 interface Post {
@@ -51,7 +52,6 @@ async function fetchPost(slug: string): Promise<Post | null> {
   }
 }
 
-
 interface BlogPostProps {
   slug: string;
 }
@@ -97,7 +97,7 @@ export default function BlogPost(props: BlogPostProps) {
             <article class="prose prose-lg max-w-none dark:prose-invert">
               {post()!.featured_image && (
                 <img
-                  src={post()!.featured_image ?? ''}
+                  src={post()!.featured_image ?? ""}
                   alt={post()!.title}
                   class="w-full h-64 md:h-96 object-cover rounded-lg shadow-md mb-8"
                 />
@@ -115,8 +115,7 @@ export default function BlogPost(props: BlogPostProps) {
                   </div>
                 )}
               </div>
-
-              <div class="mt-8" innerHTML={post()!.content}></div>
+              <MarkdownRenderer content={post()!.content} />
             </article>
           )}
         </Show>
