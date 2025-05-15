@@ -29,7 +29,7 @@ function formatDate(dateString: string) {
 // 获取文章数据的函数
 async function fetchPosts(): Promise<Post[]> {
   try {
-    const response = await http.get<Post[]>("/posts");
+    const response = await http.get<Post[]>("/posts", { withToken: false });
 
     // 检查响应格式，直接处理返回的数组数据
     if (response && Array.isArray(response)) {
@@ -58,7 +58,7 @@ export default function BlogPosts() {
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 my-8">
       <Show when={!posts.loading} fallback={<div class="col-span-full text-center">加载中...</div>}>
         <Show
-          when={posts() && posts().length > 0}
+          when={posts() && posts()!.length > 0}
           fallback={
             <div class="col-span-full text-center py-12">
               <div class="alert alert-info shadow-lg max-w-md mx-auto">
