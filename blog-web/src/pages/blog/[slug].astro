@@ -3,8 +3,9 @@ export const prerender = false;
 const { slug } = Astro.params;
 
 import Layout from "@/layouts/Layout.astro";
+import BlogPost from "@/components/solid/BlogPost";
 ---
 
-<Layout>
-    {slug}
+<Layout title="博客文章 | 精致的芯 - 精致的私人博客">
+    <BlogPost client:load slug={slug ?? ""} />
 </Layout>
