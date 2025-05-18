@@ -1,0 +1,15 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import AuthForm from "@/components/solid/AuthForm";
+---
+
+<Layout title="登录/注册 | 精致的芯 - 精致的私人博客">
+  <div class="text-center my-8">
+    <h1 class="text-4xl font-bold">账户管理</h1>
+    <p class="mt-2 text-lg">登录或注册以访问更多功能</p>
+  </div>
+
+  <div class="flex justify-center px-4">
+    <AuthForm client:load />
+  </div>
+</Layout>
