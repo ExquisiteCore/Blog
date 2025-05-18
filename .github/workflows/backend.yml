@@ -96,6 +96,10 @@ jobs:
           target: ${{ matrix.target.target }}
           override: true
 
+      - name: Install cross compile tools (Linux ARM64 only)
+        if: matrix.target.target == 'aarch64-unknown-linux-gnu'
+        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+
       - name: Cache Rust dependencies
         uses: actions/cache@v3
         with:
@@ -128,6 +132,8 @@ jobs:
         run: |
           cd backend
           cargo build --release --target ${{ matrix.target.target }}
+        env:
+          CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
 
       - name: Prepare binary
         shell: bash
