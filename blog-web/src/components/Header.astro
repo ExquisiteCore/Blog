@@ -15,6 +15,58 @@ const getTabClass = (isActive: boolean) => {
 };
 ---
 
+<script>
+    // 客户端脚本，用于处理用户登录状态
+    document.addEventListener("DOMContentLoaded", () => {
+        const loginBtn = document.getElementById("login-btn");
+        const userAvatar = document.getElementById("user-avatar");
+        const logoutBtn = document.getElementById("logout-btn");
+
+        // 检查用户是否已登录
+        const token = localStorage.getItem("token");
+        const userData = localStorage.getItem("user")
+            ? JSON.parse(localStorage.getItem("user") || "")
+            : null;
+
+        if (token && userData) {
+            // 用户已登录，显示头像，隐藏登录按钮
+            if (loginBtn) loginBtn.style.display = "none";
+            if (userAvatar) {
+                userAvatar.style.display = "flex";
+
+                // 设置头像图片
+                const avatarImg = userAvatar.querySelector(".avatar img");
+                if (avatarImg && userData.avatar_url) {
+                    avatarImg.setAttribute("src", userData.avatar_url);
+                    avatarImg.setAttribute(
+                        "alt",
+                        userData.username || "用户头像",
+                    );
+                }
+
+                // 设置用户名
+                const usernameEl = document.getElementById("username");
+                if (usernameEl && userData.username) {
+                    usernameEl.textContent = userData.username;
+                }
+            }
+
+            // 添加登出功能
+            if (logoutBtn) {
+                logoutBtn.addEventListener("click", () => {
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("user");
+                    window.location.href = "/";
+                });
+            }
+        } else {
+            // 用户未登录，显示登录按钮，隐藏头像
+            if (loginBtn) loginBtn.style.display = "flex";
+            if (userAvatar) userAvatar.style.display = "none";
+        }
+    });
+</script>
+
 <ScrollHeader client:load>
     <div class="navbar container mx-auto px-4 h-16">
         <div class="navbar-start">
@@ -91,9 +143,44 @@ const getTabClass = (isActive: boolean) => {
         </div>
         <div class="navbar-end">
             <ThemeToggle client:load />
-            <button class="btn btn-primary ml-2">
+
+            <!-- 登录按钮 (默认显示) -->
+            <button id="login-btn" class="btn btn-primary ml-2">
                 <a href="/auth">登录</a>
             </button>
+
+            <!-- 用户头像和下拉菜单 (默认隐藏) -->
+            <div
+                id="user-avatar"
+                class="dropdown dropdown-end ml-2"
+                style="display: none;"
+            >
+                <div
+                    tabindex="0"
+                    role="button"
+                    class="btn btn-ghost btn-circle avatar"
+                >
+                    <div class="w-10 rounded-full">
+                        <img
+                            alt="用户头像"
+                            src="https://daisyui.com/images/stock/photo-1534528741775-53994a69daeb.jpg"
+                        />
+                    </div>
+                </div>
+                <ul
+                    tabindex="0"
+                    class="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-52"
+                >
+                    <li>
+                        <a class="justify-between">
+                            <span id="username">用户名</span>
+                            <span class="badge">个人资料</span>
+                        </a>
+                    </li>
+                    <li><a href="/dashboard">控制面板</a></li>
+                    <li><a id="logout-btn">退出登录</a></li>
+                </ul>
+            </div>
         </div>
     </div>
 </ScrollHeader>
