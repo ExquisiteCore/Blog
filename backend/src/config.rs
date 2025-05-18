@@ -24,6 +24,7 @@ pub struct Config {
     pub server: ServerConfig,
     pub database: DatabaseConfig,
     pub jwt: JwtConfig,
+    pub cors: CorsConfig,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -42,6 +43,14 @@ pub struct DatabaseConfig {
 pub struct JwtConfig {
     pub secret: String,
     pub expiration: u64, // 过期时间（分钟）
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CorsConfig {
+    pub allowed_origins: Vec<String>,
+    pub allowed_methods: Vec<String>,
+    pub allowed_headers: Vec<String>,
+    pub allow_credentials: bool,
 }
 
 impl Config {
@@ -71,6 +80,18 @@ impl Config {
             jwt: JwtConfig {
                 secret: "default_secret_key_change_in_production".to_string(),
                 expiration: 60, // 60分钟
+            },
+            cors: CorsConfig {
+                allowed_origins: vec!["http://localhost:4321".to_string()],
+                allowed_methods: vec![
+                    "GET".to_string(),
+                    "POST".to_string(),
+                    "PUT".to_string(),
+                    "DELETE".to_string(),
+                    "OPTIONS".to_string(),
+                ],
+                allowed_headers: vec!["Authorization".to_string(), "Content-Type".to_string()],
+                allow_credentials: true,
             },
         }
     }
