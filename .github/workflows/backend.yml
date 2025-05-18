@@ -3,11 +3,12 @@ name: Rust Backend CI
 on:
   push:
     branches: ["dev"]
+    paths:
+      - "backend/**"
   pull_request:
     branches: ["dev"]
-  release:
-    types:
-      - published  # 当发布版本时触发
+    paths:
+      - "backend/**"
 
 env:
   CARGO_TERM_COLOR: always
@@ -127,70 +128,17 @@ jobs:
         run: |
           cd backend
           cargo build --release --target ${{ matrix.target.target }}
+
       - name: Prepare binary
         shell: bash
         run: |
           cd backend
           mkdir -p release
           cp target/${{ matrix.target.target }}/release/${{ matrix.target.bin }} release/${{ matrix.target.asset_name }}
+
       - name: Upload binary as artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target.asset_name }}
           path: backend/release/${{ matrix.target.asset_name }}
           if-no-files-found: error
-
-  update-release-notes:
-    permissions:
-      contents: write
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Extract release notes
-        id: extract-release-notes
-        uses: ffurrer2/extract-release-notes@v2
-
-      - uses: softprops/action-gh-release@v2
-        with:
-          body: |-
-            ${{ steps.extract-release-notes.outputs.release_notes }}
-            | File | SHA256 |
-            | ---- | ------ |
-  upload-to-release:
-    needs:
-      - build
-      - update-release-notes
-    permissions:
-      contents: write
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        mode:
-          - debug
-          - release
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: ${{ matrix.target.asset_name }}
-          path: artifact
-
-      - run: |
-          zip -r ../${{ matrix.asset_name }} *
-        working-directory: artifact
-      - id: calculate-sha256
-        run: |
-          echo sha256=$(sha256sum ${{ matrix.asset_name }} | awk '{print $1}') >> $GITHUB_OUTPUT
-      - uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.version.outputs.version }}
-          name: ${{ steps.version.outputs.version }}
-          body: |
-            ${{ github.event.release.body }}
-            ## Checksums
-            ${{ steps.checksums.outputs.HASHES }}
-          files: artifacts/*
-          generate_release_notes: false # 添加了这一行
-        if: ${{ github.event_name == 'release' }}
