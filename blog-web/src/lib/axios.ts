@@ -20,7 +20,7 @@ class Http {
   private instance: AxiosInstance;
   private baseURL: string;
 
-  constructor(baseURL: string = "http://121.62.28.11:8080/api") {
+  constructor(baseURL: string = "https://api.exquisitecore.xyz/api") {
     this.baseURL = baseURL;
     this.instance = axios.create({
       baseURL,
