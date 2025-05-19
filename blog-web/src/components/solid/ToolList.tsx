@@ -5,7 +5,7 @@ const tools = [
     id: "markdownrender",
     name: "md编辑器",
     description:
-      "一款基于React的Markdown编辑器，支持实时预览、导出、导入、复制、粘贴、撤销、重做、全屏、快捷键等功能。",
+      "一款基于Rust编写Wasm的Markdown编辑器，支持实时预览、导出、导入、复制、粘贴、撤销、重做、全屏、快捷键等功能。",
     category: ["text", "markdown"],
     image: "/markdown-svgrepo-com.svg",
     type: "editor",
