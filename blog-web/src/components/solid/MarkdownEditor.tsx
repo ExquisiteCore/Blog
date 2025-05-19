@@ -1,4 +1,6 @@
-import { createSignal, createEffect, onMount, Show } from 'solid-js';
+export const prerender = false;
+
+import { createSignal, onMount, Show } from 'solid-js';
 import MarkdownRenderer from './MarkdownRenderer';
 import { Image, Edit, Eye, Download, Settings } from 'lucide-solid';
 
@@ -276,8 +278,8 @@ export default function MarkdownEditor() {
   };
 
   return (
-    <div class="min-h-screen bg-gradient-to-br from-pink-100 to-purple-100 dark:from-pink-950/20 dark:to-purple-950/20">
-      <div class="container mx-auto flex min-h-screen flex-col py-8">
+    <div class="min-h-screen">
+      <div class="container mx-auto flex min-h-screen flex-col py-8 px-4">
         {/* 顶部工具栏 */}
         <div class="mb-6 flex items-center justify-between">
           <div class="flex space-x-2">
@@ -315,11 +317,11 @@ export default function MarkdownEditor() {
               <textarea
                 value={text()}
                 onInput={(e) => setText(e.target.value)}
-                class="h-[calc(100vh-300px)] w-full rounded-md border border-input bg-background p-4 shadow-sm focus:outline-none"
+                class="h-[calc(100vh-300px)] w-full p-4 focus:outline-none border border-base-200 rounded-md"
               />
             </Show>
             <Show when={mode() === 'preview'}>
-              <div class="h-[calc(100vh-300px)] overflow-auto rounded-md border border-input bg-background shadow-sm">
+              <div class="h-[calc(100vh-300px)] overflow-auto border border-base-200 rounded-md p-4">
                 <MarkdownRenderer content={text()} />
               </div>
             </Show>
@@ -345,7 +347,7 @@ export default function MarkdownEditor() {
                 <div>
                   <p class="text-xs text-gray-500">随机图片调用于www.dmoe.cc的接口，不代表我的个人审美</p>
                   <button
-                    class="btn btn-sm mt-2 bg-purple-100 text-purple-800 hover:bg-purple-200"
+                    class="btn btn-sm mt-2 btn-primary"
                     onClick={() => setCoverImage(`https://www.dmoe.cc/random.php?t=${Date.now()}`)}
                   >
                     <div class="flex items-center">
