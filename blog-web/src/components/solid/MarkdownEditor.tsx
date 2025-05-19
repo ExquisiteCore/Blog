@@ -4,6 +4,7 @@ import { createSignal, onMount, Show } from 'solid-js';
 import MarkdownRenderer from './MarkdownRenderer';
 import { Image, Edit, Eye, Download, Settings } from 'lucide-solid';
 import { pinyin } from 'pinyin-pro';
+import http from '@/lib/axios';
 
 export default function MarkdownEditor() {
   // 编辑器内容
@@ -35,8 +36,7 @@ export default function MarkdownEditor() {
   const fetchLabels = async () => {
     try {
       // 这里应该替换为实际的API调用
-      const response = await fetch('/api/labels');
-      const data = await response.json();
+      const { data } = await http.get('/labels');
       if (Array.isArray(data)) {
         setAvailableLabels(data);
       } else {
@@ -112,14 +112,7 @@ export default function MarkdownEditor() {
       };
 
       // 这里应该替换为实际的API调用
-      const response = await fetch('/api/labels', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(labelData)
-      });
-      const data = await response.json();
+      const { data } = await http.post('/labels', labelData);
 
       if (data && typeof data === 'object' && 'id' in data) {
         const newLabel = data;
@@ -220,14 +213,14 @@ export default function MarkdownEditor() {
       }
 
       // 从localStorage获取用户信息
-      const authData = localStorage.getItem('auth');
-      if (!authData) {
+      const userData = localStorage.getItem('user');
+      if (!userData) {
         alert('请先登录');
         return;
       }
 
-      const authState = JSON.parse(authData);
-      const authorId = authState.user.id;
+      const user = JSON.parse(userData);
+      const authorId = user.id;
 
       // 构建请求体
       const postData = {
@@ -242,13 +235,7 @@ export default function MarkdownEditor() {
       };
 
       // 发送请求
-      await fetch('/api/posts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(postData)
-      });
+      await http.post('/posts', postData, { withToken: true });
 
       alert('文章发布成功！');
 
