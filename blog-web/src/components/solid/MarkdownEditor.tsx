@@ -3,6 +3,7 @@ export const prerender = false;
 import { createSignal, onMount, Show } from 'solid-js';
 import MarkdownRenderer from './MarkdownRenderer';
 import { Image, Edit, Eye, Download, Settings } from 'lucide-solid';
+import { pinyin } from 'pinyin-pro';
 
 export default function MarkdownEditor() {
   // 编辑器内容
@@ -68,32 +69,33 @@ export default function MarkdownEditor() {
     alert('设置功能将在后续实现');
   };
 
-  // 生成slug
-  const generateSlug = (inputText: string) => {
-    // 检测是否包含中文字符
-    const hasChinese = /[\u4e00-\u9fa5]/.test(inputText);
+  // 处理标题和slug的逻辑
+  const generateSlug = (text: string) => {
+    const hasChinese = /[\u4e00-\u9fa5]/.test(text);
 
-    let convertedText = inputText;
+    let convertedText = text;
     if (hasChinese) {
-      // 这里应该替换为实际的拼音转换
-      // 简化处理，实际应用中需要引入拼音转换库
-      convertedText = inputText
-        .replace(/[\u4e00-\u9fa5]/g, 'pinyin')
-        .replace(/\s+/g, '-');
+      convertedText = pinyin(text, {
+        toneType: "none",
+        pattern: "pinyin",
+        type: "string",
+        nonZh: "consecutive",
+      }).replace(/\s+/g, "-");
     }
 
     return convertedText
       .toLowerCase()
-      .replace(/[^\w\s-]/g, '') // 移除特殊字符
-      .replace(/[\s_-]+/g, '-') // 将空格和下划线替换为连字符
-      .replace(/^-+|-+$/g, ''); // 移除开头和结尾的连字符
+      .replace(/[^\w\s-]/g, "")
+      .replace(/[\s_-]+/g, "-")
+      .replace(/^-+|-+$/g, "");
   };
 
   // 处理标题变化时自动生成slug
   const handleTitleChange = (e: Event) => {
-    const target = e.target as HTMLInputElement;
-    const newTitle = target.value;
+    const newTitle = (e.target as HTMLInputElement).value;
     setTitle(newTitle);
+
+    //如果slug为空或者等于当前title生成的slug，就更新slug
     if (!slug() || slug() === generateSlug(title())) {
       setSlug(generateSlug(newTitle));
     }

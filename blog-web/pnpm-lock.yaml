@@ -32,6 +32,9 @@ importers:
       lucide-solid:
         specifier: ^0.511.0
         version: 0.511.0(solid-js@1.9.6)
+      pinyin-pro:
+        specifier: ^3.26.0
+        version: 3.26.0
       sass:
         specifier: ^1.88.0
         version: 1.88.0
@@ -1791,6 +1794,9 @@ packages:
   picomatch@4.0.2:
     resolution: {integrity: sha512-M7BAV6Rlcy5u+m6oPhAPFgJTzAioX/6B0DxyvDlo9l8+T3nLKbrczg2WLUyzd45L8RqfUMyGPzekbMvX2Ldkwg==}
     engines: {node: '>=12'}
+
+  pinyin-pro@3.26.0:
+    resolution: {integrity: sha512-HcBZZb0pvm0/JkPhZHWA5Hqp2cWHXrrW/WrV+OtaYYM+kf35ffvZppIUuGmyuQ7gDr1JDJKMkbEE+GN0wfMoGg==}
 
   postcss@8.5.3:
     resolution: {integrity: sha512-dle9A3yYxlBSrt8Fu+IpjGT8SY8hN0mlaA6GY8t0P5PjIOZemULz/E2Bnm/2dcUOena75OTNkHI76uZBNUUq3A==}
@@ -4234,6 +4240,8 @@ snapshots:
   picomatch@2.3.1: {}
 
   picomatch@4.0.2: {}
+
+  pinyin-pro@3.26.0: {}
 
   postcss@8.5.3:
     dependencies:
