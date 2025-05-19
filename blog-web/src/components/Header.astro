@@ -2,12 +2,33 @@
 import ScrollHeader from "@/components/solid/ScrollHeader";
 import ThemeToggle from "@/components/solid/ThemeToggle";
 
-// Get current path to highlight active navigation item
+// 定义导航菜单项
+const navItems = [
+    { path: "/", name: "首页", isActive: (path: string) => path === "/" },
+    {
+        path: "/blog",
+        name: "博客",
+        isActive: (path: string) => path.startsWith("/blog"),
+    },
+    {
+        path: "/about",
+        name: "关于我",
+        isActive: (path: string) => path.startsWith("/about"),
+    },
+    {
+        path: "/projects",
+        name: "项目",
+        isActive: (path: string) => path.startsWith("/projects"),
+    },
+    {
+        path: "/tools",
+        name: "精致的工具箱",
+        isActive: (path: string) => path.startsWith("/tools"),
+    },
+];
+
+// 获取当前路径
 const currentPath = Astro.url.pathname;
-const isHomePage = currentPath === "/";
-const isBlogPage = currentPath.startsWith("/blog");
-const isAboutPage = currentPath.startsWith("/about");
-const isProjectsPage = currentPath.startsWith("/projects");
 
 // Helper function to determine tab classes
 const getTabClass = (isActive: boolean) => {
@@ -90,35 +111,22 @@ const getTabClass = (isActive: boolean) => {
                     tabindex="0"
                     class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52"
                 >
-                    <li>
-                        <a
-                            href="/"
-                            class={isHomePage ? "font-bold text-primary" : ""}
-                            >首页</a
-                        >
-                    </li>
-                    <li>
-                        <a
-                            href="/blog"
-                            class={isBlogPage ? "font-bold text-primary" : ""}
-                            >博客</a
-                        >
-                    </li>
-                    <li>
-                        <a
-                            href="/about"
-                            class={isAboutPage ? "font-bold text-primary" : ""}
-                            >关于我</a
-                        >
-                    </li>
-                    <li>
-                        <a
-                            href="/projects"
-                            class={isProjectsPage
-                                ? "font-bold text-primary"
-                                : ""}>项目</a
-                        >
-                    </li>
+                    {
+                        navItems.map((item) => (
+                            <li>
+                                <a
+                                    href={item.path}
+                                    class={
+                                        item.isActive(currentPath)
+                                            ? "font-bold text-primary"
+                                            : ""
+                                    }
+                                >
+                                    {item.name}
+                                </a>
+                            </li>
+                        ))
+                    }
                 </ul>
             </div>
             <a href="/" class="btn btn-ghost text-xl">
@@ -127,18 +135,17 @@ const getTabClass = (isActive: boolean) => {
         </div>
         <div class="navbar-center hidden lg:flex">
             <div role="tablist" class="tabs tabs-bordered">
-                <a href="/" role="tab" class={getTabClass(isHomePage)}>首页</a>
-                <a href="/blog" role="tab" class={getTabClass(isBlogPage)}
-                    >博客</a
-                >
-                <a href="/about" role="tab" class={getTabClass(isAboutPage)}
-                    >关于我</a
-                >
-                <a
-                    href="/projects"
-                    role="tab"
-                    class={getTabClass(isProjectsPage)}>项目</a
-                >
+                {
+                    navItems.map((item) => (
+                        <a
+                            href={item.path}
+                            role="tab"
+                            class={getTabClass(item.isActive(currentPath))}
+                        >
+                            {item.name}
+                        </a>
+                    ))
+                }
             </div>
         </div>
         <div class="navbar-end">
