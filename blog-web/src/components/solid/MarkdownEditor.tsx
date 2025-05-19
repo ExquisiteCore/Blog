@@ -36,7 +36,7 @@ export default function MarkdownEditor() {
   const fetchLabels = async () => {
     try {
       // 这里应该替换为实际的API调用
-      const { data } = await http.get('/labels');
+      const data = await http.get('/labels');
       if (Array.isArray(data)) {
         setAvailableLabels(data);
       } else {
@@ -112,7 +112,10 @@ export default function MarkdownEditor() {
       };
 
       // 这里应该替换为实际的API调用
-      const { data } = await http.post('/labels', labelData);
+      const data = await http.post('/labels', labelData, {
+        withToken: true
+      });
+
 
       if (data && typeof data === 'object' && 'id' in data) {
         const newLabel = data;
@@ -235,7 +238,9 @@ export default function MarkdownEditor() {
       };
 
       // 发送请求
-      await http.post('/posts', postData, { withToken: true });
+      await http.post('/posts', postData, {
+        withToken: true
+      });
 
       alert('文章发布成功！');
 
