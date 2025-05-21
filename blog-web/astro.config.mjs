@@ -15,7 +15,7 @@ export default defineConfig({
     plugins: [tailwindcss()],
   },
 
-  site: "https://blog.exquisitecore.xzy",
+  site: "https://blog.exquisitecore.xyz",
   integrations: [solidJs({ devtools: true }), sitemap()],
   output: "server",
   adapter: node({
