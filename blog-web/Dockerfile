@@ -1,6 +1,6 @@
 # Stage 1: Build WASM
 # Use a specific Rust version for reproducibility
-FROM rust:1.78 as wasm-builder
+FROM rust:1.86.0 AS wasm-builder
 
 WORKDIR /usr/src/app
 
@@ -17,7 +17,7 @@ COPY ./md-wasm ./md-wasm
 RUN wasm-pack build ./md-wasm --target web
 
 # Stage 2: Build Astro application
-FROM node:20-slim as builder
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
@@ -49,6 +49,7 @@ FROM node:20-slim
 
 WORKDIR /app
 
+RUN npm install -g pnpm
 # Copy built application from the builder stage
 COPY --from=builder /app/dist /app/dist
 # Copy package.json for running the app (Astro's node adapter might need it)
@@ -57,7 +58,7 @@ COPY --from=builder /app/package.json /app/
 # Install production dependencies only
 # Astro's standalone mode for the node adapter bundles dependencies,
 # but following the original Dockerfile's pattern.
-RUN npm install --omit=dev
+RUN pnpm install --prod
 
 EXPOSE 4321
 
