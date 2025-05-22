@@ -7,21 +7,17 @@ on:
 
 jobs:
   build-and-push:
-    name: 构建并推送Docker镜像
+    name: 构建并推送 Docker 镜像
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
 
-    env:
-      REPOSITORY_LOWER: ${{ github.repository }}
-
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: 将仓库名转为小写
-        id: lowercase
+      - name: 将仓库名转为小写，设置环境变量
         run: echo "REPOSITORY_LOWER=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: 设置 Docker Buildx
