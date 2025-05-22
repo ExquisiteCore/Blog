@@ -13,9 +13,16 @@ jobs:
       contents: read
       packages: write
 
+    env:
+      REPOSITORY_LOWER: ${{ github.repository }}
+
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
+
+      - name: 将仓库名转为小写
+        id: lowercase
+        run: echo "REPOSITORY_LOWER=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: 设置 Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -32,8 +39,8 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ghcr.io/${{ github.repository }}/backend
-            ghcr.io/${{ github.repository }}/frontend
+            ghcr.io/${{ env.REPOSITORY_LOWER }}/backend
+            ghcr.io/${{ env.REPOSITORY_LOWER }}/frontend
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
@@ -45,7 +52,7 @@ jobs:
         with:
           context: ./backend
           push: true
-          tags: ghcr.io/${{ github.repository }}/backend:${{ steps.meta.outputs.version }},ghcr.io/${{ github.repository }}/backend:latest
+          tags: ghcr.io/${{ env.REPOSITORY_LOWER }}/backend:${{ steps.meta.outputs.version }},ghcr.io/${{ env.REPOSITORY_LOWER }}/backend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -54,7 +61,7 @@ jobs:
         with:
           context: ./blog-web
           push: true
-          tags: ghcr.io/${{ github.repository }}/frontend:${{ steps.meta.outputs.version }},ghcr.io/${{ github.repository }}/frontend:latest
+          tags: ghcr.io/${{ env.REPOSITORY_LOWER }}/frontend:${{ steps.meta.outputs.version }},ghcr.io/${{ env.REPOSITORY_LOWER }}/frontend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
@@ -64,12 +71,13 @@ jobs:
       - name: 更新 Docker Compose 文件
         run: |
           VERSION=${{ steps.meta.outputs.version }}
-          sed -i "s|build:\s*context: ./backend|image: ghcr.io/${{ github.repository }}/backend:${VERSION}|g" docker-compose.yml
-          sed -i "s|build:\s*context: ./blog-web|image: ghcr.io/${{ github.repository }}/frontend:${VERSION}|g" docker-compose.yml
+          sed -i "s|build:\s*context: ./backend|image: ghcr.io/${REPOSITORY_LOWER}/backend:${VERSION}|g" docker-compose.yml
+          sed -i "s|build:\s*context: ./blog-web|image: ghcr.io/${REPOSITORY_LOWER}/frontend:${VERSION}|g" docker-compose.yml
+        env:
+          REPOSITORY_LOWER: ${{ env.REPOSITORY_LOWER }}
 
       - name: 创建 Docker Compose 发布文件
-        run: |
-          cp docker-compose.yml docker-compose.release.yml
+        run: cp docker-compose.yml docker-compose.release.yml
 
       - name: 上传 Docker Compose 文件作为发布资产
         uses: softprops/action-gh-release@v1
