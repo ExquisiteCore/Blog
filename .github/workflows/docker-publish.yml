@@ -38,8 +38,6 @@ jobs:
             ghcr.io/${{ env.REPOSITORY_LOWER }}/backend
             ghcr.io/${{ env.REPOSITORY_LOWER }}/frontend
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
             type=ref,event=branch
             type=sha,format=short
 
@@ -48,7 +46,9 @@ jobs:
         with:
           context: ./backend
           push: true
-          tags: ghcr.io/${{ env.REPOSITORY_LOWER }}/backend:${{ steps.meta.outputs.version }},ghcr.io/${{ env.REPOSITORY_LOWER }}/backend:latest
+          tags: |
+            ghcr.io/${{ env.REPOSITORY_LOWER }}/backend:${{ steps.meta.outputs.tags }}
+            ghcr.io/${{ env.REPOSITORY_LOWER }}/backend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -57,7 +57,9 @@ jobs:
         with:
           context: ./blog-web
           push: true
-          tags: ghcr.io/${{ env.REPOSITORY_LOWER }}/frontend:${{ steps.meta.outputs.version }},ghcr.io/${{ env.REPOSITORY_LOWER }}/frontend:latest
+          tags: |
+            ghcr.io/${{ env.REPOSITORY_LOWER }}/frontend:${{ steps.meta.outputs.tags }}
+            ghcr.io/${{ env.REPOSITORY_LOWER }}/frontend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
@@ -66,7 +68,8 @@ jobs:
 
       - name: 更新 Docker Compose 文件
         run: |
-          VERSION=${{ steps.meta.outputs.version }}
+          # 取第一个标签（通常是 branch 或 sha 短哈希）
+          VERSION=$(echo "${{ steps.meta.outputs.tags }}" | cut -d',' -f1)
           sed -i "s|build:\s*context: ./backend|image: ghcr.io/${REPOSITORY_LOWER}/backend:${VERSION}|g" docker-compose.yml
           sed -i "s|build:\s*context: ./blog-web|image: ghcr.io/${REPOSITORY_LOWER}/frontend:${VERSION}|g" docker-compose.yml
         env:
