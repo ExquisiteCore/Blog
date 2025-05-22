@@ -1,0 +1,21 @@
+# 服务器配置
+[server]
+host = "0.0.0.0"
+port = 8080
+
+# 数据库配置
+[database]
+url = "postgres://postgres:123456@postgres:5432/Blog"
+max_connections = 5
+
+# JWT配置
+[jwt]
+secret = "your_secret_key_change_this_in_production"
+expiration = 1140                                    # 过期时间（分钟）
+
+#跨域配置
+[cors]
+allowed_origins = ["http://localhost:4321", "https://blog.exquisitecore.xyz", "http://frontend:4321"]
+allowed_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+allowed_headers = ["Authorization", "Content-Type"]
+allow_credentials = true
