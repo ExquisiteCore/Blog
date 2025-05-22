@@ -25,7 +25,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.TOKEN }}
 
       - name: 提取元数据
         id: meta
@@ -75,4 +75,4 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: docker-compose.release.yml
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.TOKEN }}
