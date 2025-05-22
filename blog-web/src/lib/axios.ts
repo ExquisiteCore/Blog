@@ -20,10 +20,26 @@ class Http {
   private instance: AxiosInstance;
   private baseURL: string;
 
-  constructor(baseURL: string = "https://api.exquisitecore.xyz/api") {
-    this.baseURL = baseURL;
+  constructor(baseURL?: string) {
+    // 默认 API URL（如果未设置环境变量）
+    const defaultApiUrl = "https://api.exquisitecore.xyz/api";
+    let apiUrl;
+
+    // Astro 中通过 import.meta.env.SSR 判断是否为服务器端渲染
+    if (import.meta.env.SSR) {
+      // 服务器端渲染时，使用内部 Docker 网络地址
+      // 这个环境变量需要在 Docker 容器中设置
+      apiUrl = import.meta.env.INTERNAL_API_BASE_URL;
+    } else {
+      // 客户端渲染时，使用公共可访问地址
+      // 这个环境变量也需要在 Docker 容器中设置（对于构建时）或由客户端环境提供
+      apiUrl = import.meta.env.PUBLIC_API_BASE_URL;
+    }
+
+    this.baseURL = baseURL || apiUrl || defaultApiUrl;
+
     this.instance = axios.create({
-      baseURL,
+      baseURL: this.baseURL,
       timeout: 10000,
       headers: {
         "Content-Type": "application/json",
