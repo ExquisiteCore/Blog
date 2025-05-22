@@ -49,6 +49,14 @@ FROM node:20-slim
 
 WORKDIR /app
 
+# 声明构建参数，接受 docker-compose 传入的 args
+ARG PUBLIC_API_BASE_URL
+ARG INTERNAL_API_BASE_URL
+
+# 设置环境变量，供构建时读取
+ENV PUBLIC_API_BASE_URL=$PUBLIC_API_BASE_URL
+ENV INTERNAL_API_BASE_URL=$INTERNAL_API_BASE_URL
+
 RUN npm install -g pnpm
 # Copy built application from the builder stage
 COPY --from=builder /app/dist /app/dist
