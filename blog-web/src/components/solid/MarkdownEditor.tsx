@@ -37,12 +37,15 @@ export default function MarkdownEditor() {
   const [isUploading, setIsUploading] = createSignal<boolean>(false);
   // 上传token
   const [uploadToken, setUploadToken] = createSignal<string>("");
+  // 自定义上传 API 地址
+  const [uploadApiUrl, setUploadApiUrl] = createSignal<string>("http://121.62.28.11:40027/api/v1");
   // 设置弹窗显示状态
   const [showSettingsModal, setShowSettingsModal] = createSignal<boolean>(false);
   // 编辑器引用
   let editorRef: HTMLTextAreaElement | undefined;
   // 封面图片上传区域引用
   let coverDropzoneRef: HTMLDivElement | undefined;
+  let apiUrlInputRef: HTMLInputElement | undefined; // 新增 API URL 输入框的引用
 
   // 获取所有标签
   const fetchLabels = async () => {
@@ -81,8 +84,9 @@ export default function MarkdownEditor() {
       if (uploadToken()) {
         headers['Authorization'] = `Bearer ${uploadToken()}`;
       }
+      const baseUrl = uploadApiUrl() || 'http://121.62.28.11:40027/api/v1';
       const response = await http.post('/upload', formData, {
-        baseURL: 'http://121.62.28.11:40027/api/v1',
+        baseURL: baseUrl,
         headers: headers
       });
 
@@ -194,8 +198,9 @@ export default function MarkdownEditor() {
       if (uploadToken()) {
         headers['Authorization'] = `Bearer ${uploadToken()}`;
       }
+      const baseUrl = uploadApiUrl() || 'http://121.62.28.11:40027/api/v1';
       const response = await http.post('/upload', formData, {
-        baseURL: 'http://121.62.28.11:40027/api/v1',
+        baseURL: baseUrl,
         headers: headers
       });
 
@@ -245,6 +250,10 @@ export default function MarkdownEditor() {
     if (savedToken) {
       setUploadToken(savedToken);
     }
+    const savedApiUrl = localStorage.getItem("uploadApiUrl");
+    if (savedApiUrl) {
+      setUploadApiUrl(savedApiUrl);
+    }
     setIsMounted(true);
     fetchLabels();
 
@@ -279,9 +288,11 @@ export default function MarkdownEditor() {
   };
 
   // 保存设置
-  const handleSaveSettings = (newToken: string) => {
+  const handleSaveSettings = (newToken: string, newApiUrl: string) => {
     setUploadToken(newToken);
     localStorage.setItem("uploadToken", newToken);
+    setUploadApiUrl(newApiUrl);
+    localStorage.setItem("uploadApiUrl", newApiUrl);
     setShowSettingsModal(false);
   };
 
@@ -496,17 +507,34 @@ export default function MarkdownEditor() {
       <Show when={showSettingsModal()}>
         <div class="modal modal-open">
           <div class="modal-box">
-            <h3 class="font-bold text-lg">设置上传Token</h3>
-            <input
-              ref={tokenInputRef}
-              type="text"
-              placeholder="在此输入Token"
-              class="input input-bordered w-full mt-4"
-              value={uploadToken()}
-            />
-            <div class="modal-action">
+            <h3 class="font-bold text-lg">设置上传参数</h3>
+            <label class="form-control w-full mt-4">
+              <div class="label">
+                <span class="label-text">上传 Token</span>
+              </div>
+              <input
+                ref={tokenInputRef}
+                type="text"
+                placeholder="在此输入Token"
+                class="input input-bordered w-full"
+                value={uploadToken()}
+              />
+            </label>
+            <label class="form-control w-full mt-2">
+              <div class="label">
+                <span class="label-text">上传 API 地址</span>
+              </div>
+              <input
+                ref={apiUrlInputRef}
+                type="text"
+                placeholder="例如: http://121.62.28.11:40027/api/v1"
+                class="input input-bordered w-full"
+                value={uploadApiUrl()}
+              />
+            </label>
+            <div class="modal-action mt-6">
               <button class="btn" onClick={handleCloseSettingsModal}>取消</button>
-              <button class="btn btn-primary" onClick={() => handleSaveSettings(tokenInputRef?.value ?? "")}>保存</button>
+              <button class="btn btn-primary" onClick={() => handleSaveSettings(tokenInputRef?.value ?? "", apiUrlInputRef?.value ?? "")}>保存</button>
             </div>
           </div>
         </div>
@@ -551,7 +579,6 @@ export default function MarkdownEditor() {
                 ref={editorRef}
                 value={text()}
                 onInput={(e) => setText(e.target.value)}
-                onPaste={handleEditorPaste}
                 onDrop={handleEditorDrop}
                 onDragOver={handleEditorDragOver}
                 class="h-[calc(100vh-300px)] w-full p-4 focus:outline-none border border-base-200 rounded-md"
