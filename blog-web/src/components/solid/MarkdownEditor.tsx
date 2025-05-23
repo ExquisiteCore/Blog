@@ -81,7 +81,6 @@ export default function MarkdownEditor() {
       if (uploadToken()) {
         headers['Authorization'] = `Bearer ${uploadToken()}`;
       }
-      console.log(headers)
       const response = await http.post('/upload', formData, {
         baseURL: 'http://121.62.28.11:40027/api/v1',
         headers: headers
@@ -195,7 +194,6 @@ export default function MarkdownEditor() {
       if (uploadToken()) {
         headers['Authorization'] = `Bearer ${uploadToken()}`;
       }
-      console.log(headers)
       const response = await http.post('/upload', formData, {
         baseURL: 'http://121.62.28.11:40027/api/v1',
         headers: headers
