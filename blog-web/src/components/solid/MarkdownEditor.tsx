@@ -243,6 +243,10 @@ export default function MarkdownEditor() {
 
   // 设置已挂载标志
   onMount(() => {
+    const savedToken = localStorage.getItem("uploadToken");
+    if (savedToken) {
+      setUploadToken(savedToken);
+    }
     setIsMounted(true);
     fetchLabels();
 
@@ -279,6 +283,7 @@ export default function MarkdownEditor() {
   // 保存设置
   const handleSaveSettings = (newToken: string) => {
     setUploadToken(newToken);
+    localStorage.setItem("uploadToken", newToken);
     setShowSettingsModal(false);
   };
 
