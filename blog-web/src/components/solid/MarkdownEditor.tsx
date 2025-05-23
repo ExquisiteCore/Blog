@@ -1,49 +1,243 @@
 export const prerender = false;
 
-import { createSignal, onMount, Show } from 'solid-js';
-import MarkdownRenderer from './MarkdownRenderer';
-import { Image, Edit, Eye, Download, Settings } from 'lucide-solid';
-import { pinyin } from 'pinyin-pro';
-import http from '@/lib/axios';
+import { createSignal, onMount, Show } from "solid-js";
+import MarkdownRenderer from "./MarkdownRenderer";
+import { Image, Edit, Eye, Download, Settings, Upload } from "lucide-solid";
+import { pinyin } from "pinyin-pro";
+import http from "@/lib/axios";
 
 export default function MarkdownEditor() {
   // 编辑器内容
-  const [text, setText] = createSignal('EC is too lazy to write a refresh button, because he thinks \'refresh\' = \'edit\' + \'preview\'. Actually, that makes sense :D');
+  const [text, setText] = createSignal(
+    "EC is too lazy to write a refresh button, because he thinks 'refresh' = 'edit' + 'preview'. Actually, that makes sense :D",
+  );
   // 编辑器模式：edit - 编辑模式，preview - 预览模式
-  const [mode, setMode] = createSignal<'edit' | 'preview'>('edit');
+  const [mode, setMode] = createSignal<"edit" | "preview">("edit");
   // 封面图片URL
-  const [coverImage, setCoverImage] = createSignal<string>('');
+  const [coverImage, setCoverImage] = createSignal<string>("");
   // 文章标签
   const [tags, setTags] = createSignal<string[]>([]);
   // 标签输入
-  const [tagInput, setTagInput] = createSignal<string>('');
+  const [tagInput, setTagInput] = createSignal<string>("");
   // 所有可用标签列表
   const [availableLabels, setAvailableLabels] = createSignal<any[]>([]);
   // 选中的标签ID列表
   const [selectedLabelIds, setSelectedLabelIds] = createSignal<string[]>([]);
   // 文章标题
-  const [title, setTitle] = createSignal<string>('');
+  const [title, setTitle] = createSignal<string>("");
   // 文章摘要
-  const [summary, setSummary] = createSignal<string>('');
+  const [summary, setSummary] = createSignal<string>("");
   // 文章slug
-  const [slug, setSlug] = createSignal<string>('');
+  const [slug, setSlug] = createSignal<string>("");
   // 发布状态
   const [isPublishing, setIsPublishing] = createSignal<boolean>(false);
   // 是否已挂载标志
   const [isMounted, setIsMounted] = createSignal(false);
+  // 图片上传状态
+  const [isUploading, setIsUploading] = createSignal<boolean>(false);
+  // 上传token
+  const [uploadToken, setUploadToken] = createSignal<string>("");
+  // 设置弹窗显示状态
+  const [showSettingsModal, setShowSettingsModal] = createSignal<boolean>(false);
+  // 编辑器引用
+  let editorRef: HTMLTextAreaElement | undefined;
+  // 封面图片上传区域引用
+  let coverDropzoneRef: HTMLDivElement | undefined;
 
   // 获取所有标签
   const fetchLabels = async () => {
     try {
       // 这里应该替换为实际的API调用
-      const data = await http.get('/labels');
+      const data = await http.get("/labels");
       if (Array.isArray(data)) {
         setAvailableLabels(data);
       } else {
-        throw new Error('标签数据格式错误');
+        throw new Error("标签数据格式错误");
       }
     } catch (error) {
-      console.error('获取标签失败:', error);
+      console.error("获取标签失败:", error);
+    }
+  };
+
+  // 处理图片上传
+  const uploadImage = async (file: File): Promise<string | null> => {
+    try {
+      setIsUploading(true);
+
+      // 验证文件类型
+      if (!file.type.startsWith('image/')) {
+        alert('请上传图片文件');
+        return null;
+      }
+
+      // 创建FormData对象
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // 发送上传请求
+      const headers: Record<string, string> = {
+        'Content-Type': 'multipart/form-data',
+      };
+      if (uploadToken()) {
+        headers['Authorization'] = `Bearer ${uploadToken()}`;
+      }
+      const response = await http.post('/upload', formData, {
+        baseURL: 'http://121.62.28.11:40027/api/v1',
+        withToken: true, // Assuming http lib handles its own token logic if this is true
+        headers: headers
+      });
+
+      if (response && response.status && response.data) {
+        // 返回markdown格式的图片链接
+        return response.data.links.markdown;
+      } else {
+        throw new Error('上传失败，返回数据格式错误');
+      }
+    } catch (error) {
+      console.error('上传图片失败:', error);
+      alert(error instanceof Error ? error.message : '上传失败，请重试');
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // 处理编辑器中的图片粘贴
+  const handleEditorPaste = async (e: ClipboardEvent) => {
+    if (!e.clipboardData) return;
+
+    const items = e.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        e.preventDefault();
+        const file = items[i].getAsFile();
+        if (file) {
+          const markdownLink = await uploadImage(file);
+          if (markdownLink) {
+            // 获取当前光标位置
+            const textarea = e.target as HTMLTextAreaElement;
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const currentText = text();
+
+            // 在光标位置插入markdown图片链接
+            const newText = currentText.substring(0, start) + markdownLink + currentText.substring(end);
+            setText(newText);
+
+            // 设置新的光标位置
+            setTimeout(() => {
+              textarea.selectionStart = textarea.selectionEnd = start + markdownLink.length;
+              textarea.focus();
+            }, 0);
+          }
+        }
+        break;
+      }
+    }
+  };
+
+  // 处理编辑器中的拖拽上传
+  const handleEditorDrop = async (e: DragEvent) => {
+    e.preventDefault();
+
+    if (!e.dataTransfer) return;
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith('image/')) {
+        const markdownLink = await uploadImage(file);
+        if (markdownLink) {
+          // 获取拖拽位置的光标位置
+          const textarea = e.target as HTMLTextAreaElement;
+          const start = textarea.selectionStart;
+          const end = textarea.selectionEnd;
+          const currentText = text();
+
+          // 在光标位置插入markdown图片链接
+          const newText = currentText.substring(0, start) + markdownLink + currentText.substring(end);
+          setText(newText);
+
+          // 设置新的光标位置
+          setTimeout(() => {
+            textarea.selectionStart = textarea.selectionEnd = start + markdownLink.length;
+            textarea.focus();
+          }, 0);
+        }
+      }
+    }
+  };
+
+  // 处理编辑器拖拽进入事件
+  const handleEditorDragOver = (e: DragEvent) => {
+    e.preventDefault();
+  };
+
+  // 处理封面图片上传
+  const handleCoverImageUpload = async (file: File) => {
+    try {
+      // 验证文件类型
+      if (!file.type.startsWith('image/')) {
+        alert('请上传图片文件');
+        return;
+      }
+
+      setIsUploading(true);
+
+      // 创建FormData对象
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // 发送上传请求
+      const headers: Record<string, string> = {
+        'Content-Type': 'multipart/form-data',
+      };
+      if (uploadToken()) {
+        headers['Authorization'] = `Bearer ${uploadToken()}`;
+      }
+      const response = await http.post('/upload', formData, {
+        baseURL: 'http://121.62.28.11:40027/api/v1',
+        withToken: true, // Assuming http lib handles its own token logic if this is true
+        headers: headers
+      });
+
+      if (response && response.status && response.data) {
+        // 设置封面图片URL
+        setCoverImage(response.data.links.url);
+      } else {
+        throw new Error('上传失败，返回数据格式错误');
+      }
+    } catch (error) {
+      console.error('上传封面图片失败:', error);
+      alert(error instanceof Error ? error.message : '上传失败，请重试');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // 处理封面图片区域的拖拽上传
+  const handleCoverDrop = async (e: DragEvent) => {
+    e.preventDefault();
+
+    if (!e.dataTransfer) return;
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      const file = files[0];
+      await handleCoverImageUpload(file);
+    }
+  };
+
+  // 处理封面图片区域的拖拽进入事件
+  const handleCoverDragOver = (e: DragEvent) => {
+    e.preventDefault();
+  };
+
+  // 处理封面图片文件选择
+  const handleCoverFileSelect = (e: Event) => {
+    const input = e.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      handleCoverImageUpload(input.files[0]);
     }
   };
 
@@ -51,22 +245,41 @@ export default function MarkdownEditor() {
   onMount(() => {
     setIsMounted(true);
     fetchLabels();
+
+    // 添加全局粘贴事件监听
+    document.addEventListener('paste', (e) => {
+      // 只有在编辑模式下才处理粘贴事件
+      if (mode() === 'edit' && document.activeElement === editorRef) {
+        handleEditorPaste(e);
+      }
+    });
   });
 
   // 处理导出文档
   const handleExport = () => {
-    const blob = new Blob([text()], { type: 'text/markdown' });
+    const blob = new Blob([text()], { type: "text/markdown" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `${title() || 'markdown'}.md`;
+    a.download = `${title() || "markdown"}.md`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
   // 处理设置
   const handleSettings = () => {
-    alert('设置功能将在后续实现');
+    setShowSettingsModal(true);
+  };
+
+  // 关闭设置弹窗
+  const handleCloseSettingsModal = () => {
+    setShowSettingsModal(false);
+  };
+
+  // 保存设置
+  const handleSaveSettings = (newToken: string) => {
+    setUploadToken(newToken);
+    setShowSettingsModal(false);
   };
 
   // 处理标题和slug的逻辑
@@ -108,26 +321,25 @@ export default function MarkdownEditor() {
       const labelData = {
         name,
         slug,
-        description: `${name}相关文章`
+        description: `${name}相关文章`,
       };
 
       // 这里应该替换为实际的API调用
-      const data = await http.post('/labels', labelData, {
-        withToken: true
+      const data = await http.post("/labels", labelData, {
+        withToken: true,
       });
 
-
-      if (data && typeof data === 'object' && 'id' in data) {
+      if (data && typeof data === "object" && "id" in data) {
         const newLabel = data;
         setAvailableLabels([...availableLabels(), newLabel]);
         return newLabel;
       } else {
-        throw new Error('创建标签失败，返回数据格式错误');
+        throw new Error("创建标签失败，返回数据格式错误");
       }
     } catch (error) {
-      console.error('创建标签失败:', error);
+      console.error("创建标签失败:", error);
       // 这里应该替换为实际的toast通知
-      alert('创建标签失败，请重试');
+      alert("创建标签失败，请重试");
       return null;
     }
   };
@@ -139,11 +351,11 @@ export default function MarkdownEditor() {
     setTagInput(input);
 
     // 如果输入以逗号结尾，表示用户想添加一个标签
-    if (input.endsWith(',')) {
+    if (input.endsWith(",")) {
       const tagName = input.slice(0, -1).trim();
       if (tagName) {
         await addTag(tagName);
-        setTagInput('');
+        setTagInput("");
       }
     }
   };
@@ -159,7 +371,9 @@ export default function MarkdownEditor() {
 
     // 检查标签是否存在于可用标签列表中
     let labelId: string | null = null;
-    const existingLabel = availableLabels().find(label => label.name === tagName);
+    const existingLabel = availableLabels().find(
+      (label) => label.name === tagName,
+    );
 
     if (existingLabel) {
       // 如果标签已存在，使用现有标签ID
@@ -196,29 +410,29 @@ export default function MarkdownEditor() {
 
       // 验证必填字段
       if (!title()) {
-        alert('请输入文章标题');
+        alert("请输入文章标题");
         return;
       }
 
       if (!text() || text().trim().length < 10) {
-        alert('文章内容太短');
+        alert("文章内容太短");
         return;
       }
 
       if (!slug()) {
-        alert('请输入文章别名');
+        alert("请输入文章别名");
         return;
       }
 
       if (!coverImage()) {
-        alert('请设置封面图片');
+        alert("请设置封面图片");
         return;
       }
 
       // 从localStorage获取用户信息
-      const userData = localStorage.getItem('user');
+      const userData = localStorage.getItem("user");
       if (!userData) {
-        alert('请先登录');
+        alert("请先登录");
         return;
       }
 
@@ -234,27 +448,27 @@ export default function MarkdownEditor() {
         featured_image: coverImage(),
         author_id: authorId,
         published: true,
-        labels: selectedLabelIds().length > 0 ? selectedLabelIds() : [] // 标签ID数组
+        labels: selectedLabelIds().length > 0 ? selectedLabelIds() : [], // 标签ID数组
       };
 
       // 发送请求
-      await http.post('/posts', postData, {
-        withToken: true
+      await http.post("/posts", postData, {
+        withToken: true,
       });
 
-      alert('文章发布成功！');
+      alert("文章发布成功！");
 
       // 清空表单
-      setTitle('');
-      setText('');
-      setSlug('');
-      setSummary('');
-      setCoverImage('');
+      setTitle("");
+      setText("");
+      setSlug("");
+      setSummary("");
+      setCoverImage("");
       setTags([]);
       setSelectedLabelIds([]);
     } catch (error) {
-      console.error('发布文章失败:', error);
-      alert(error instanceof Error ? error.message : '发布失败，请重试');
+      console.error("发布文章失败:", error);
+      alert(error instanceof Error ? error.message : "发布失败，请重试");
     } finally {
       setIsPublishing(false);
     }
@@ -262,31 +476,53 @@ export default function MarkdownEditor() {
 
   // 处理标签键盘事件
   const handleTagKeyDown = (e: KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       if (tagInput().trim()) {
         addTag(tagInput().trim());
-        setTagInput('');
+        setTagInput("");
       }
     }
   };
 
+  let tokenInputRef: HTMLInputElement | undefined;
+
   return (
     <div class="min-h-screen">
+      {/* 设置弹窗 */}
+      <Show when={showSettingsModal()}>
+        <div class="modal modal-open">
+          <div class="modal-box">
+            <h3 class="font-bold text-lg">设置上传Token</h3>
+            <input
+              ref={tokenInputRef}
+              type="text"
+              placeholder="在此输入Token"
+              class="input input-bordered w-full mt-4"
+              value={uploadToken()}
+            />
+            <div class="modal-action">
+              <button class="btn" onClick={handleCloseSettingsModal}>取消</button>
+              <button class="btn btn-primary" onClick={() => handleSaveSettings(tokenInputRef?.value ?? "")}>保存</button>
+            </div>
+          </div>
+        </div>
+      </Show>
+
       <div class="container mx-auto flex min-h-screen flex-col py-8 px-4">
         {/* 顶部工具栏 */}
         <div class="mb-6 flex items-center justify-between">
           <div class="flex space-x-2">
             <button
-              class={`btn ${mode() === 'preview' ? 'btn-primary' : 'btn-outline'} btn-sm`}
-              onClick={() => setMode('preview')}
+              class={`btn ${mode() === "preview" ? "btn-primary" : "btn-outline"} btn-sm`}
+              onClick={() => setMode("preview")}
             >
               <Eye class="h-4 w-4" />
               <span>预览</span>
             </button>
             <button
-              class={`btn ${mode() === 'edit' ? 'btn-primary' : 'btn-outline'} btn-sm`}
-              onClick={() => setMode('edit')}
+              class={`btn ${mode() === "edit" ? "btn-primary" : "btn-outline"} btn-sm`}
+              onClick={() => setMode("edit")}
             >
               <Edit class="h-4 w-4" />
               <span>编辑</span>
@@ -307,14 +543,19 @@ export default function MarkdownEditor() {
         {/* 编辑器区域 */}
         <div class="flex-1">
           <Show when={isMounted()}>
-            <Show when={mode() === 'edit'}>
+            <Show when={mode() === "edit"}>
               <textarea
+                ref={editorRef}
                 value={text()}
                 onInput={(e) => setText(e.target.value)}
+                onPaste={handleEditorPaste}
+                onDrop={handleEditorDrop}
+                onDragOver={handleEditorDragOver}
                 class="h-[calc(100vh-300px)] w-full p-4 focus:outline-none border border-base-200 rounded-md"
+                placeholder="在此输入文章内容，支持Markdown格式。可以拖拽或粘贴图片到编辑器中上传。"
               />
             </Show>
-            <Show when={mode() === 'preview'}>
+            <Show when={mode() === "preview"}>
               <div class="h-[calc(100vh-300px)] overflow-auto border border-base-200 rounded-md p-4">
                 <MarkdownRenderer content={text()} />
               </div>
@@ -339,30 +580,89 @@ export default function MarkdownEditor() {
                   />
                 </div>
                 <div>
-                  <p class="text-xs text-gray-500">随机图片调用于www.dmoe.cc的接口，不代表我的个人审美</p>
-                  <button
-                    class="btn btn-sm mt-2 btn-primary"
-                    onClick={() => setCoverImage(`https://www.dmoe.cc/random.php?t=${Date.now()}`)}
-                  >
-                    <div class="flex items-center">
-                      <span class="mr-1">随机图片</span>
-                    </div>
-                  </button>
+                  <p class="text-xs text-gray-500">
+                    随机图片调用于www.dmoe.cc的接口，不代表我的个人审美
+                  </p>
+                  <div class="flex gap-2">
+                    <button
+                      class="btn btn-sm mt-2 btn-primary"
+                      onClick={() =>
+                        setCoverImage(
+                          `https://www.dmoe.cc/random.php?t=${Date.now()}`,
+                        )
+                      }
+                    >
+                      <div class="flex items-center">
+                        <span class="mr-1">随机图片</span>
+                      </div>
+                    </button>
+                    <button
+                      class="btn btn-sm mt-2 btn-outline"
+                      onClick={() => {
+                        const input = coverDropzoneRef?.querySelector('input[type="file"]');
+                        if (input) (input as HTMLInputElement).click();
+                      }}
+                      disabled={isUploading()}
+                    >
+                      <div class="flex items-center">
+                        <Upload class="mr-1 h-4 w-4" />
+                        <span>上传图片</span>
+                      </div>
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div class="w-[200px] h-[150px] overflow-hidden rounded-md border border-gray-200 bg-white dark:bg-gray-800">
-                <Show when={coverImage()} fallback={
-                  <div class="flex h-full w-full flex-col items-center justify-center text-gray-500">
-                    <Image class="mb-2 h-8 w-8" />
-                    <p class="text-xs">预览区域</p>
+              <div
+                ref={coverDropzoneRef}
+                class="w-[200px] h-[150px] overflow-hidden rounded-md border border-gray-200 bg-white dark:bg-gray-800 relative"
+                onDrop={handleCoverDrop}
+                onDragOver={handleCoverDragOver}
+              >
+                <Show
+                  when={coverImage()}
+                  fallback={
+                    <div class="flex h-full w-full flex-col items-center justify-center text-gray-500">
+                      <Image class="mb-2 h-8 w-8" />
+                      <p class="text-xs">拖拽或点击上传</p>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        class="absolute inset-0 opacity-0 cursor-pointer"
+                        onChange={handleCoverFileSelect}
+                      />
+                    </div>
+                  }
+                >
+                  <div class="relative h-full w-full group">
+                    <img
+                      src={coverImage()}
+                      alt="封面图片"
+                      class="h-full w-full object-cover"
+                    />
+                    <div class="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <button
+                        class="btn btn-sm btn-circle btn-ghost text-white"
+                        onClick={() => {
+                          const input = coverDropzoneRef?.querySelector('input[type="file"]');
+                          if (input) (input as HTMLInputElement).click();
+                        }}
+                      >
+                        <Upload class="h-4 w-4" />
+                      </button>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      class="hidden"
+                      onChange={handleCoverFileSelect}
+                    />
                   </div>
-                }>
-                  <img
-                    src={coverImage()}
-                    alt="封面图片"
-                    class="h-full w-full object-cover"
-                  />
                 </Show>
+                {isUploading() && (
+                  <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                    <div class="loading loading-spinner loading-md text-primary"></div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -434,7 +734,7 @@ export default function MarkdownEditor() {
                 onClick={handlePublish}
                 disabled={isPublishing()}
               >
-                {isPublishing() ? '发布中...' : '发布'}
+                {isPublishing() ? "发布中..." : "发布"}
               </button>
             </div>
           </div>
