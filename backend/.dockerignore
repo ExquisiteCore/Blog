@@ -1,0 +1,53 @@
+# Rust backend .dockerignore
+
+# Target directory
+target/
+Cargo.lock
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+README.md
+*.md
+docs/
+
+# Test files
+tests/
+benches/
+
+# Development configs
+.env*
+config.dev.toml
+
+# Cache
+.cache/
+
+# Logs
+*.log
+logs/
+
+# Runtime
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage
+coverage/
+*.lcov
+
+# Dependencies cache
+.cargo/registry/
+.cargo/git/

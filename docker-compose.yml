@@ -1,50 +1,100 @@
 services:
   postgres:
-    image: postgres:16
+    image: postgres:16-alpine
     container_name: blog-postgres
     environment:
-      POSTGRES_PASSWORD: 123456
-      POSTGRES_USER: postgres
-      POSTGRES_DB: Blog
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secure_password_change_me}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-Blog}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
+    networks:
+      - blog-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
 
   backend:
     build:
       context: ./backend
+      dockerfile: Dockerfile
+      target: production
     container_name: blog-backend
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      - DATABASE__URL=postgres://postgres:123456@postgres:5432/Blog
+      - DATABASE__URL=${DATABASE_URL:-postgres://postgres:secure_password_change_me@postgres:5432/Blog}
+      - JWT__SECRET=${JWT_SECRET:-your_super_secret_jwt_key_change_this_in_production}
+      - SERVER__HOST=0.0.0.0
+      - SERVER__PORT=8080
+      - RUST_LOG=${RUST_LOG:-info}
     ports:
-      - "8080:8080"
+      - "${BACKEND_PORT:-8080}:8080"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - blog-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
 
   frontend:
     build:
       context: ./blog-web
+      dockerfile: Dockerfile
       args:
-        PUBLIC_API_BASE_URL: "http://localhost:8080/api"
-        INTERNAL_API_BASE_URL: "http://backend:8080/api"
+        PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL:-http://localhost:8080/api}
+        INTERNAL_API_BASE_URL: ${INTERNAL_API_BASE_URL:-http://backend:8080/api}
+        NODE_ENV: ${NODE_ENV:-production}
     container_name: blog-frontend
     environment:
-      - HOST=0.0.0.0
-      - PORT=4321
+      - HOST=${HOST:-0.0.0.0}
+      - PORT=${PORT:-4321}
+      - NODE_ENV=${NODE_ENV:-production}
     ports:
-      - "4321:4321"
+      - "${FRONTEND_PORT:-4321}:4321"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:4321 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - blog-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
 
 volumes:
   postgres_data:
+    driver: local
+
+networks:
+  blog-network:
+    driver: bridge
