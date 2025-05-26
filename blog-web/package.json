@@ -11,11 +11,11 @@
     "start": "HOST=0.0.0.0 PORT=4321 node ./dist/server/entry.mjs"
   },
   "dependencies": {
-    "@astrojs/node": "^9.2.1",
+    "@astrojs/node": "^9.2.2",
     "@astrojs/sitemap": "^3.4.0",
-    "@astrojs/solid-js": "^5.0.10",
+    "@astrojs/solid-js": "^5.1.0",
     "@tailwindcss/vite": "^4.1.7",
-    "astro": "^5.7.12",
+    "astro": "^5.8.0",
     "axios": "^1.9.0",
     "daisyui": "^5.0.35",
     "lucide-solid": "^0.511.0",
