@@ -11,7 +11,7 @@ const currentYear = new Date().getFullYear();
             <a
                 href="https://beian.miit.gov.cn/"
                 target="_blank"
-                class="link link-hover">蒙ICP备2025026598号</a
+                class="link link-hover beian-link">蒙ICP备2025026598号-1</a
             >
         </div>
 
@@ -73,3 +73,14 @@ const currentYear = new Date().getFullYear();
         </div>
     </div>
 </footer>
+
+<style>
+    .beian-link {
+        text-decoration: underline;
+        color: #4b6bfb; /* 蓝色 */
+        transition: color 0.3s ease;
+    }
+    .beian-link:hover {
+        color: #7c3aed; /* 紫色 */
+    }
+</style>

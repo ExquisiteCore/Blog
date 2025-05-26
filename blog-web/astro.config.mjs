@@ -16,9 +16,29 @@ export default defineConfig({
   },
 
   site: "https://blog.exquisitecore.xyz",
-  integrations: [solidJs({ devtools: true }), sitemap()],
+  integrations: [
+    solidJs({ devtools: true }),
+    sitemap({
+      // 自定义sitemap配置
+      changefreq: 'weekly',
+      priority: 0.7,
+      lastmod: new Date(),
+      // 排除某些页面（如果需要）
+      filter: (page) => !page.includes('/admin'),
+      // 自定义URL
+      customPages: [
+        'https://blog.exquisitecore.xyz/tools',
+        'https://blog.exquisitecore.xyz/tools/markdownrender'
+      ]
+    })
+  ],
   output: "static",
   adapter: node({
     mode: "standalone",
   }),
+  // SEO相关配置
+  compressHTML: true,
+  build: {
+    inlineStylesheets: 'auto'
+  }
 });
