@@ -140,44 +140,48 @@ install_openresty_config() {
     
     log_info "安装OpenResty配置..."
     
-    # 检查是否有权限访问1Panel配置目录
-    if [[ ! -w "$ONEPANEL_OPENRESTY_CONF_DIR" ]]; then
-        log_warning "需要sudo权限来配置OpenResty"
-        sudo_cmd="sudo"
-    else
-        sudo_cmd=""
-    fi
+    # 使用简化版配置文件，不包含SSL路径
+    local config_file="1panel-configs/blog-site-simple.conf"
     
-    # 复制配置文件
-    if [[ -f "1panel-configs/blog-site.conf" ]]; then
-        # 替换域名
-        sed "s/yourdomain.com/$domain/g" 1panel-configs/blog-site.conf > /tmp/blog-site.conf
-        
-        $sudo_cmd cp /tmp/blog-site.conf "$ONEPANEL_OPENRESTY_CONF_DIR/"
-        rm /tmp/blog-site.conf
-        
-        log_success "OpenResty配置已安装到: $ONEPANEL_OPENRESTY_CONF_DIR/blog-site.conf"
-    else
-        log_error "OpenResty配置文件不存在: 1panel-configs/blog-site.conf"
+    if [[ ! -f "$config_file" ]]; then
+        log_error "OpenResty配置文件不存在: $config_file"
         exit 1
     fi
     
-    # 重载OpenResty配置
-    reload_openresty
+    # 替换域名并输出到临时文件
+    sed "s/yourdomain.com/$domain/g" "$config_file" > "/tmp/blog-site-${domain}.conf"
+    
+    log_success "配置文件已生成: /tmp/blog-site-${domain}.conf"
+    log_info ""
+    log_info "下一步请在1Panel面板中："
+    log_info "1. 进入 网站 -> 网站管理"
+    log_info "2. 点击 '创建网站'"
+    log_info "3. 选择 '反向代理' 类型"
+    log_info "4. 设置域名: $domain"
+    log_info "5. 代理地址: http://127.0.0.1:4321"
+    log_info "6. 复制以下配置到 '自定义配置' 中："
+    log_info ""
+    log_info "=== 复制下面的配置内容 ==="
+    cat "/tmp/blog-site-${domain}.conf" | sed 's/^/    /'
+    log_info "=== 配置内容结束 ==="
+    log_info ""
+    log_info "7. 如需SSL，在网站创建后点击SSL页面申请证书"
+    log_info ""
 }
 
 # 重载OpenResty配置
 reload_openresty() {
-    log_info "重载OpenResty配置..."
+    log_info "通过1Panel重载OpenResty配置..."
     
-    # 测试配置文件语法
-    if docker exec 1panel-openresty nginx -t; then
-        docker exec 1panel-openresty nginx -s reload
-        log_success "OpenResty配置重载成功"
-    else
-        log_error "OpenResty配置语法错误，请检查配置文件"
-        exit 1
-    fi
+    log_info "请在1Panel面板中："
+    log_info "1. 进入 应用商店 -> 已安装"
+    log_info "2. 找到OpenResty应用"
+    log_info "3. 点击 '重启' 按钮"
+    log_info ""
+    log_info "或者使用命令行："
+    log_info "docker restart 1panel-openresty"
+    
+    read -p "按回车键继续，或手动重启OpenResty后继续: "
 }
 
 # 启动服务
@@ -338,18 +342,16 @@ cleanup() {
 uninstall_config() {
     log_warning "移除OpenResty配置..."
     
-    if [[ -f "$ONEPANEL_OPENRESTY_CONF_DIR/blog-site.conf" ]]; then
-        if [[ ! -w "$ONEPANEL_OPENRESTY_CONF_DIR" ]]; then
-            sudo rm "$ONEPANEL_OPENRESTY_CONF_DIR/blog-site.conf"
-        else
-            rm "$ONEPANEL_OPENRESTY_CONF_DIR/blog-site.conf"
-        fi
-        
-        reload_openresty
-        log_success "OpenResty配置已移除"
-    else
-        log_info "OpenResty配置文件不存在"
-    fi
+    log_info "请在1Panel面板中："
+    log_info "1. 进入 网站 -> 网站管理"
+    log_info "2. 找到博客网站"
+    log_info "3. 点击 '删除' 按钮"
+    log_info ""
+    
+    # 清理临时文件
+    rm -f /tmp/blog-site-*.conf
+    
+    log_success "请手动在1Panel中删除网站配置"
 }
 
 # 显示状态
@@ -382,7 +384,7 @@ show_help() {
 
 命令:
   setup              设置环境配置
-  install <domain>   安装OpenResty配置 (域名可选)
+  install <domain>   生成OpenResty配置 (域名可选)
   build              构建Docker镜像
   start              启动所有服务
   stop               停止所有服务
@@ -399,7 +401,7 @@ show_help() {
 
 示例:
   $0 setup                    # 初始化环境
-  $0 install example.com      # 安装配置并设置域名
+  $0 install example.com      # 生成配置并显示设置说明
   $0 start                    # 启动服务
   $0 logs backend             # 查看后端日志
   $0 backup                   # 备份数据库
@@ -407,8 +409,9 @@ show_help() {
 
 注意事项:
   - 请确保已安装1Panel面板和OpenResty
-  - 首次运行请先执行 setup 命令
-  - 生产环境请先配置SSL证书
+  - 首次运行请先执行 setup 和 start 命令
+  - 然后执行 install 命令获取1Panel配置说明
+  - SSL证书通过1Panel面板自动管理
   - 建议定期备份数据库
 
 EOF

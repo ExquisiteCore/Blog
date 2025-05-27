@@ -266,40 +266,40 @@ location ~* (wp-admin|wp-login|xmlrpc|\.php$) {
    - 访问 `https://your-server-ip:10086`
    - 使用管理员账户登录
 
-2. **配置域名**
+2. **创建反向代理网站**
    - 进入 `网站` → `网站管理`
-   - 添加新网站，设置域名
+   - 点击 `创建网站`
    - 选择 `反向代理` 类型
+   - 设置域名（如：yourdomain.com）
+   - 代理地址：`http://127.0.0.1:4321`
 
-3. **申请SSL证书**
-   - 在网站详情页面点击 `SSL`
-   - 选择 `Let's Encrypt` 或上传自己的证书
+3. **添加自定义配置**
+   - 在网站创建页面或编辑页面
+   - 找到 `自定义配置` 选项
+   - 复制 `1panel-configs/blog-site-simple.conf` 中的内容
+   - 粘贴到自定义配置中
+
+4. **申请SSL证书**
+   - 网站创建成功后，进入网站详情页面
+   - 点击 `SSL` 标签页
+   - 选择 `Let's Encrypt` 免费证书或上传自己的证书
    - 点击申请并等待完成
+   - 1Panel会自动处理SSL配置和HTTP重定向
 
-4. **更新配置路径**
+### 上传自有SSL证书
 
-   编辑 `1panel-configs/blog-site.conf`，更新SSL证书路径：
-   ```nginx
-   ssl_certificate /opt/1panel/apps/openresty/openresty/conf/ssl/yourdomain.com/cert.pem;
-   ssl_certificate_key /opt/1panel/apps/openresty/openresty/conf/ssl/yourdomain.com/key.pem;
-   ```
+如果您有自己的SSL证书：
 
-### 手动配置SSL
+1. **在1Panel面板中上传**
+   - 进入网站详情页面，点击 `SSL` 标签
+   - 选择 `其他证书`
+   - 上传证书文件（.crt 或 .pem）和私钥文件（.key）
+   - 1Panel会自动验证并应用证书
 
-如果需要手动配置SSL证书：
-
-```bash
-# 创建SSL目录
-sudo mkdir -p /opt/1panel/apps/openresty/openresty/conf/ssl/yourdomain.com
-
-# 复制证书文件
-sudo cp your-cert.pem /opt/1panel/apps/openresty/openresty/conf/ssl/yourdomain.com/cert.pem
-sudo cp your-key.pem /opt/1panel/apps/openresty/openresty/conf/ssl/yourdomain.com/key.pem
-
-# 设置权限
-sudo chown -R 1001:1001 /opt/1panel/apps/openresty/openresty/conf/ssl/
-sudo chmod 600 /opt/1panel/apps/openresty/openresty/conf/ssl/yourdomain.com/*
-```
+2. **证书自动续期**
+   - Let's Encrypt证书会自动续期
+   - 自有证书需要手动更新
+   - 可以设置到期提醒
 
 ## 监控与维护
 
@@ -320,14 +320,18 @@ sudo chmod 600 /opt/1panel/apps/openresty/openresty/conf/ssl/yourdomain.com/*
 #### 查看OpenResty日志
 
 ```bash
-# 访问日志
-sudo tail -f /opt/1panel/apps/openresty/openresty/logs/blog_access.log
+# 通过1Panel面板查看
+# 进入 网站 -> 网站管理 -> 选择网站 -> 日志
 
-# 错误日志
-sudo tail -f /opt/1panel/apps/openresty/openresty/logs/blog_error.log
+# 或使用命令行查看
+sudo tail -f /www/wwwlogs/yourdomain.com.log
+sudo tail -f /www/wwwlogs/yourdomain.com.error.log
 
 # 1Panel系统日志
 sudo journalctl -u 1panel -f
+
+# Docker容器日志
+docker logs 1panel-openresty
 ```
 
 ### 性能监控
@@ -433,21 +437,25 @@ docker restart 1panel-openresty
 
 **排查步骤**:
 ```bash
-# 检查证书文件
-sudo ls -la /opt/1panel/apps/openresty/openresty/conf/ssl/yourdomain.com/
-
-# 检查证书有效期
-openssl x509 -in /path/to/cert.pem -text -noout | grep -A 2 "Validity"
+# 在1Panel面板中检查
+# 进入 网站 -> 网站管理 -> SSL 查看证书状态
 
 # 测试SSL配置
 openssl s_client -connect yourdomain.com:443 -servername yourdomain.com
+
+# 检查域名解析
+nslookup yourdomain.com
+dig yourdomain.com
+
+# 检查端口访问
+telnet yourdomain.com 443
 ```
 
 **解决方案**:
-- 通过1Panel重新申请证书
-- 检查域名解析是否正确
--
-确认证书文件路径和权限
+- 在1Panel面板中重新申请Let's Encrypt证书
+- 检查域名解析是否指向正确IP
+- 确认防火墙开放443端口
+- 验证域名所有权
 
 #### 4. 数据库连接失败
 
