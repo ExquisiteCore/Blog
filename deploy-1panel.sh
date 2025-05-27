@@ -56,11 +56,14 @@ check_dependencies() {
         fi
     done
     
-    # 检查1Panel OpenResty是否安装
-    if [[ ! -d "/opt/1panel/apps/openresty" ]]; then
-        log_error "未检测到1Panel OpenResty安装，请先在1Panel面板中安装OpenResty"
-        exit 1
-    fi
+    # 检查1Panel OpenResty是否安装 (可通过环境变量跳过)
+        if [[ ! -d "/opt/1panel/apps/openresty" ]] && [[ "${SKIP_1PANEL_CHECK:-false}" != "true" ]]; then
+            log_warning "未检测到1Panel OpenResty安装"
+            log_info "如果您在开发环境中运行，可以使用以下命令跳过检查："
+            log_info "SKIP_1PANEL_CHECK=true ./deploy-1panel.sh setup prod"
+            log_info "或者请在服务器上先安装1Panel面板和OpenResty"
+            exit 1
+        fi
     
     log_success "依赖检查完成"
 }
@@ -93,14 +96,16 @@ setup_env() {
     
     # 生成随机密码
     if ! grep -q "POSTGRES_PASSWORD=" .env || grep -q "secure_password_change_me" .env; then
-        local postgres_pass=$(openssl rand -base64 32)
-        sed -i "s/POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=${postgres_pass}/" .env
+        local postgres_pass=$(openssl rand -hex 32)
+        # 使用临时文件避免sed特殊字符问题
+        sed "s/POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=${postgres_pass}/" .env > .env.tmp && mv .env.tmp .env
         log_success "已生成新的数据库密码"
     fi
     
     if ! grep -q "JWT_SECRET=" .env || grep -q "your_super_secret_jwt_key" .env; then
-        local jwt_secret=$(openssl rand -base64 64)
-        sed -i "s/JWT_SECRET=.*/JWT_SECRET=${jwt_secret}/" .env
+        local jwt_secret=$(openssl rand -hex 64)
+        # 使用临时文件避免sed特殊字符问题
+        sed "s/JWT_SECRET=.*/JWT_SECRET=${jwt_secret}/" .env > .env.tmp && mv .env.tmp .env
         log_success "已生成新的JWT密钥"
     fi
     
@@ -108,7 +113,8 @@ setup_env() {
     if [[ "$1" == "prod" ]]; then
         read -p "请输入您的域名 (例如: yourdomain.com): " domain
         if [[ -n "$domain" ]]; then
-            sed -i "s|PUBLIC_API_BASE_URL=.*|PUBLIC_API_BASE_URL=https://${domain}/api|" .env
+            # 使用临时文件避免sed特殊字符问题
+            sed "s|PUBLIC_API_BASE_URL=.*|PUBLIC_API_BASE_URL=https://${domain}/api|" .env > .env.tmp && mv .env.tmp .env
             log_success "已更新API地址为: https://${domain}/api"
         fi
     fi
@@ -424,7 +430,21 @@ main() {
     case "${1:-help}" in
         "setup")
             check_root
-            check_dependencies
+            if [[ "${SKIP_1PANEL_CHECK:-false}" != "true" ]]; then
+                check_dependencies
+            else
+                log_warning "跳过1Panel检查 - 开发环境模式"
+                # 只检查基本依赖
+                log_info "检查基本依赖..."
+                local deps=("docker" "docker-compose")
+                for dep in "${deps[@]}"; do
+                    if ! command -v "$dep" &> /dev/null; then
+                        log_error "$dep 未安装，请先安装后再运行此脚本"
+                        exit 1
+                    fi
+                done
+                log_success "基本依赖检查完成"
+            fi
             setup_env "${2:-dev}"
             create_directories
             ;;
