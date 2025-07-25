@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# 1Panel OpenResty 博客系统部署脚本
-# 适用于使用1Panel面板管理的服务器环境
+# 1Panel 博客系统部署脚本
+# 适用于使用1Panel面板的服务器环境
+# 使用1Panel的容器编排功能部署Docker Compose项目
 
 set -e
 
@@ -39,22 +40,13 @@ log_error() {
 check_dependencies() {
     log_info "检查系统依赖..."
     
-    local deps=("docker" "docker-compose" "curl")
+    local deps=("docker" "docker-compose")
     for dep in "${deps[@]}"; do
         if ! command -v "$dep" &> /dev/null; then
             log_error "$dep 未安装，请先安装后再运行此脚本"
             exit 1
         fi
     done
-    
-    # 检查1Panel OpenResty是否安装 (可通过环境变量跳过)
-    if [[ ! -d "/opt/1panel/apps/openresty" ]] && [[ "${SKIP_1PANEL_CHECK:-false}" != "true" ]]; then
-        log_warning "未检测到1Panel OpenResty安装"
-        log_info "如果您在开发环境中运行，可以使用以下命令跳过检查："
-        log_info "SKIP_1PANEL_CHECK=true ./deploy-1panel.sh setup"
-        log_info "或者请在服务器上先安装1Panel面板和OpenResty"
-        exit 1
-    fi
     
     log_success "依赖检查完成"
 }
@@ -99,7 +91,6 @@ create_directories() {
     log_info "创建必要目录..."
     
     mkdir -p "$BACKUP_DIR"
-    mkdir -p "logs"
     
     log_success "目录创建完成"
 }
@@ -113,24 +104,42 @@ build_images() {
     log_success "镜像构建完成"
 }
 
-# 生成1Panel配置说明
-show_1panel_config() {
+# 显示1Panel部署说明
+show_1panel_deployment_guide() {
     local domain=${1:-"yourdomain.com"}
     
-    log_info "1Panel OpenResty 配置说明"
+    log_info "=== 1Panel 部署指南 ==="
     log_info ""
-    log_info "请在1Panel面板中按以下步骤操作："
+    log_info "请按以下步骤在1Panel中部署博客系统："
     log_info ""
-    log_info "1. 进入 网站 -> 网站管理"
-    log_info "2. 点击 '创建网站'"
-    log_info "3. 选择 '反向代理' 类型"
-    log_info "4. 设置域名: $domain"
-    log_info "5. 代理地址: http://127.0.0.1:4321"
-    log_info "6. 在'自定义配置'中添加以下配置："
+    log_info "=== 方法一：使用容器编排（推荐） ==="
+    log_info "1. 登录1Panel管理面板"
+    log_info "2. 进入 '容器' -> '编排'"
+    log_info "3. 点击 '创建编排'"
+    log_info "4. 填写信息："
+    log_info "   - 名称：blog-system"
+    log_info "   - 描述：博客系统"
+    log_info "   - 路径：$(pwd)"
+    log_info "5. 在 'Compose 文件' 中选择：$(pwd)/$DOCKER_COMPOSE_FILE"
+    log_info "6. 在 '环境变量' 中选择：$(pwd)/.env"
+    log_info "7. 点击 '创建'"
+    log_info "8. 在编排列表中点击 '启动'"
     log_info ""
-    log_info "=== 复制下面的配置内容 ==="
+    log_info "=== 方法二：使用网站反向代理 ==="
+    log_info "1. 先使用上面的方法启动容器"
+    log_info "2. 进入 '网站' -> '网站管理'"
+    log_info "3. 点击 '创建网站'"
+    log_info "4. 选择 '反向代理' 类型"
+    log_info "5. 填写信息："
+    log_info "   - 主域名：$domain"
+    log_info "   - 代理地址：http://127.0.0.1:4321"
+    log_info "6. 在 '证书' 选项卡中申请SSL证书（可选）"
+    log_info "7. 保存并启用网站"
+    log_info ""
+    log_info "=== API代理配置（可选） ==="
+    log_info "如果需要单独代理API，可在网站配置中添加："
+    log_info ""
     cat << 'EOF'
-    # API代理配置
     location /api {
         proxy_pass http://127.0.0.1:8080;
         proxy_set_header Host $host;
@@ -141,100 +150,32 @@ show_1panel_config() {
         proxy_send_timeout 60s;
         proxy_read_timeout 60s;
     }
-
-    # 静态文件缓存
-    location ~* \.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-        proxy_pass http://127.0.0.1:4321;
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-        proxy_set_header Host $host;
-    }
-
-    # 其他请求代理到前端
-    location / {
-        proxy_pass http://127.0.0.1:4321;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
 EOF
-    log_info "=== 配置内容结束 ==="
     log_info ""
-    log_info "7. 如需SSL，在网站创建后点击SSL页面申请证书"
+    log_info "=== 部署完成后 ==="
+    log_info "1. 前端访问：http://$domain 或 https://$domain"
+    log_info "2. API访问：http://$domain/api 或 https://$domain/api"
+    log_info "3. 可在1Panel中监控容器状态和日志"
     log_info ""
 }
 
-# 启动服务
-start_services() {
-    log_info "启动博客服务..."
+# 显示容器状态
+show_container_status() {
+    log_info "检查容器状态..."
     
-    docker-compose -f "$DOCKER_COMPOSE_FILE" up -d
-    
-    # 等待服务启动
-    log_info "等待服务启动..."
-    sleep 30
-    
-    # 检查服务状态
-    check_services_health
-}
-
-# 停止服务
-stop_services() {
-    log_info "停止博客服务..."
-    
-    docker-compose -f "$DOCKER_COMPOSE_FILE" down
-    
-    log_success "服务已停止"
-}
-
-# 重启服务
-restart_services() {
-    log_info "重启博客服务..."
-    
-    stop_services
-    start_services
-}
-
-# 检查服务健康状态
-check_services_health() {
-    log_info "检查服务健康状态..."
-    
-    local services=("postgres" "backend" "frontend")
-    local all_healthy=true
-    
-    for service in "${services[@]}"; do
-        if docker-compose -f "$DOCKER_COMPOSE_FILE" ps "$service" | grep -q "Up (healthy)"; then
-            log_success "$service 服务健康"
-        else
-            log_error "$service 服务不健康"
-            all_healthy=false
-        fi
-    done
-    
-    # 测试端口连通性
-    local ports=("4321" "8080" "5432")
-    for port in "${ports[@]}"; do
-        if nc -z localhost "$port" 2>/dev/null; then
-            log_success "端口 $port 可访问"
-        else
-            log_warning "端口 $port 不可访问"
-            all_healthy=false
-        fi
-    done
-    
-    if $all_healthy; then
-        log_success "所有服务都已正常运行"
-        log_info "前端访问: http://localhost:4321"
-        log_info "后端API: http://localhost:8080/api"
+    if docker-compose -f "$DOCKER_COMPOSE_FILE" ps --services --quiet >/dev/null 2>&1; then
+        docker-compose -f "$DOCKER_COMPOSE_FILE" ps
     else
-        log_warning "部分服务存在问题，请检查日志"
+        log_warning "未找到运行中的容器，请先在1Panel中启动编排"
     fi
 }
 
 # 查看日志
 view_logs() {
     local service=${1:-""}
+    
+    log_info "查看容器日志..."
+    log_info "提示：也可以在1Panel的容器管理中查看日志"
     
     if [[ -n "$service" ]]; then
         docker-compose -f "$DOCKER_COMPOSE_FILE" logs -f "$service"
@@ -281,52 +222,42 @@ restore_database() {
     log_success "数据库恢复完成"
 }
 
-# 显示状态
-show_status() {
-    log_info "=== 博客系统状态 ==="
-    
-    # Docker服务状态
-    echo -e "\n${BLUE}Docker服务状态:${NC}"
-    docker-compose -f "$DOCKER_COMPOSE_FILE" ps
-    
-    # 端口监听状态
-    echo -e "\n${BLUE}端口监听状态:${NC}"
-    netstat -tlnp | grep -E "(4321|8080|5432)" || echo "未找到相关端口"
-}
-
 # 显示帮助信息
 show_help() {
     cat << EOF
-1Panel OpenResty 博客系统部署脚本
+1Panel 博客系统部署脚本
 
 用法: $0 <命令> [参数]
 
 命令:
   setup              设置环境配置
-  config <domain>    显示1Panel配置说明
+  guide <domain>     显示1Panel部署指南
   build              构建Docker镜像
-  start              启动所有服务
-  stop               停止所有服务
-  restart            重启所有服务
-  status             显示系统状态
-  health             检查服务健康状态
+  status             显示容器状态
   logs [service]     查看日志 (可指定服务名)
   backup             备份数据库
   restore <file>     恢复数据库
 
 示例:
   $0 setup                    # 初始化环境
-  $0 config example.com       # 显示1Panel配置说明
-  $0 start                    # 启动服务
+  $0 guide example.com        # 显示部署指南
+  $0 build                    # 构建镜像
+  $0 status                   # 查看状态
   $0 logs backend             # 查看后端日志
   $0 backup                   # 备份数据库
   $0 restore backup.sql       # 恢复数据库
 
-注意事项:
-  - 请确保已安装1Panel面板和OpenResty
-  - 首次运行请先执行 setup 和 start 命令
-  - 然后执行 config 命令获取1Panel配置说明
-  - SSL证书通过1Panel面板自动管理
+1Panel 部署步骤：
+  1. 运行 '$0 setup' 初始化环境
+  2. 运行 '$0 build' 构建镜像（可选）
+  3. 运行 '$0 guide yourdomain.com' 查看部署指南
+  4. 在1Panel中按指南操作
+  5. 使用 '$0 status' 和 '$0 logs' 监控服务
+
+注意事项：
+  - 请确保已安装1Panel面板
+  - 服务的启动/停止请在1Panel中操作
+  - SSL证书通过1Panel的网站管理自动获取
   - 建议定期备份数据库
 
 EOF
@@ -338,34 +269,18 @@ main() {
     
     case "${1:-help}" in
         "setup")
-            if [[ "${SKIP_1PANEL_CHECK:-false}" != "true" ]]; then
-                check_dependencies
-            else
-                log_warning "跳过1Panel检查 - 开发环境模式"
-            fi
+            check_dependencies
             setup_env
             create_directories
             ;;
-        "config")
-            show_1panel_config "${2:-yourdomain.com}"
+        "guide")
+            show_1panel_deployment_guide "${2:-yourdomain.com}"
             ;;
         "build")
             build_images
             ;;
-        "start")
-            start_services
-            ;;
-        "stop")
-            stop_services
-            ;;
-        "restart")
-            restart_services
-            ;;
         "status")
-            show_status
-            ;;
-        "health")
-            check_services_health
+            show_container_status
             ;;
         "logs")
             view_logs "$2"
