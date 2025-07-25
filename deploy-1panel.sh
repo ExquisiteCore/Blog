@@ -140,8 +140,8 @@ show_1panel_deployment_guide() {
     log_info "如果需要单独代理API，可在网站配置中添加："
     log_info ""
     cat << 'EOF'
-    location /api {
-        proxy_pass http://127.0.0.1:8080;
+    location /api/ {
+        proxy_pass http://127.0.0.1:8080/api/;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -151,6 +151,11 @@ show_1panel_deployment_guide() {
         proxy_read_timeout 60s;
     }
 EOF
+    log_info ""
+    log_info "重要说明："
+    log_info "- 使用 location /api/ 和 proxy_pass http://127.0.0.1:8080/api/"
+    log_info "- 后端所有API都在 /api 路径下，需要保持路径一致"
+    log_info "- 尾部的 / 很重要，确保路径正确匹配"
     log_info ""
     log_info "=== 部署完成后 ==="
     log_info "1. 前端访问：http://$domain 或 https://$domain"
