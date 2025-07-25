@@ -16,8 +16,6 @@ NC='\033[0m' # No Color
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_NAME="blog"
 DOCKER_COMPOSE_FILE="docker-compose.1panel.yml"
-ONEPANEL_OPENRESTY_CONF_DIR="/opt/1panel/apps/openresty/openresty/conf/conf.d"
-ONEPANEL_SSL_DIR="/opt/1panel/apps/openresty/openresty/conf/ssl"
 BACKUP_DIR="./backup"
 
 # 日志函数
@@ -37,13 +35,6 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# 检查是否为root用户
-check_root() {
-    if [[ $EUID -eq 0 ]]; then
-        log_warning "检测到root用户，建议使用普通用户运行此脚本"
-    fi
-}
-
 # 检查必要的依赖
 check_dependencies() {
     log_info "检查系统依赖..."
@@ -57,27 +48,15 @@ check_dependencies() {
     done
     
     # 检查1Panel OpenResty是否安装 (可通过环境变量跳过)
-        if [[ ! -d "/opt/1panel/apps/openresty" ]] && [[ "${SKIP_1PANEL_CHECK:-false}" != "true" ]]; then
-            log_warning "未检测到1Panel OpenResty安装"
-            log_info "如果您在开发环境中运行，可以使用以下命令跳过检查："
-            log_info "SKIP_1PANEL_CHECK=true ./deploy-1panel.sh setup prod"
-            log_info "或者请在服务器上先安装1Panel面板和OpenResty"
-            exit 1
-        fi
+    if [[ ! -d "/opt/1panel/apps/openresty" ]] && [[ "${SKIP_1PANEL_CHECK:-false}" != "true" ]]; then
+        log_warning "未检测到1Panel OpenResty安装"
+        log_info "如果您在开发环境中运行，可以使用以下命令跳过检查："
+        log_info "SKIP_1PANEL_CHECK=true ./deploy-1panel.sh setup"
+        log_info "或者请在服务器上先安装1Panel面板和OpenResty"
+        exit 1
+    fi
     
     log_success "依赖检查完成"
-}
-
-# 检查1Panel OpenResty状态
-check_openresty_status() {
-    log_info "检查1Panel OpenResty状态..."
-    
-    if docker ps | grep -q "1panel-openresty"; then
-        log_success "1Panel OpenResty 正在运行"
-    else
-        log_warning "1Panel OpenResty 未运行，请在1Panel面板中启动OpenResty"
-        read -p "按回车键继续，或按Ctrl+C退出: "
-    fi
 }
 
 # 设置环境配置
@@ -97,26 +76,21 @@ setup_env() {
     # 生成随机密码
     if ! grep -q "POSTGRES_PASSWORD=" .env || grep -q "secure_password_change_me" .env; then
         local postgres_pass=$(openssl rand -hex 32)
-        # 使用临时文件避免sed特殊字符问题
         sed "s/POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=${postgres_pass}/" .env > .env.tmp && mv .env.tmp .env
         log_success "已生成新的数据库密码"
     fi
     
     if ! grep -q "JWT_SECRET=" .env || grep -q "your_super_secret_jwt_key" .env; then
         local jwt_secret=$(openssl rand -hex 64)
-        # 使用临时文件避免sed特殊字符问题
         sed "s/JWT_SECRET=.*/JWT_SECRET=${jwt_secret}/" .env > .env.tmp && mv .env.tmp .env
         log_success "已生成新的JWT密钥"
     fi
     
     # 更新API地址为生产环境
-    if [[ "$1" == "prod" ]]; then
-        read -p "请输入您的域名 (例如: yourdomain.com): " domain
-        if [[ -n "$domain" ]]; then
-            # 使用临时文件避免sed特殊字符问题
-            sed "s|PUBLIC_API_BASE_URL=.*|PUBLIC_API_BASE_URL=https://${domain}/api|" .env > .env.tmp && mv .env.tmp .env
-            log_success "已更新API地址为: https://${domain}/api"
-        fi
+    read -p "请输入您的域名 (例如: yourdomain.com，留空使用默认): " domain
+    if [[ -n "$domain" ]]; then
+        sed "s|PUBLIC_API_BASE_URL=.*|PUBLIC_API_BASE_URL=https://${domain}/api|" .env > .env.tmp && mv .env.tmp .env
+        log_success "已更新API地址为: https://${domain}/api"
     fi
 }
 
@@ -126,7 +100,6 @@ create_directories() {
     
     mkdir -p "$BACKUP_DIR"
     mkdir -p "logs"
-    mkdir -p "ssl"
     
     log_success "目录创建完成"
 }
@@ -140,54 +113,56 @@ build_images() {
     log_success "镜像构建完成"
 }
 
-# 安装OpenResty配置
-install_openresty_config() {
+# 生成1Panel配置说明
+show_1panel_config() {
     local domain=${1:-"yourdomain.com"}
     
-    log_info "安装OpenResty配置..."
-    
-    # 使用简化版配置文件，不包含SSL路径
-    local config_file="1panel-configs/blog-site-simple.conf"
-    
-    if [[ ! -f "$config_file" ]]; then
-        log_error "OpenResty配置文件不存在: $config_file"
-        exit 1
-    fi
-    
-    # 替换域名并输出到临时文件
-    sed "s/yourdomain.com/$domain/g" "$config_file" > "/tmp/blog-site-${domain}.conf"
-    
-    log_success "配置文件已生成: /tmp/blog-site-${domain}.conf"
+    log_info "1Panel OpenResty 配置说明"
     log_info ""
-    log_info "下一步请在1Panel面板中："
+    log_info "请在1Panel面板中按以下步骤操作："
+    log_info ""
     log_info "1. 进入 网站 -> 网站管理"
     log_info "2. 点击 '创建网站'"
     log_info "3. 选择 '反向代理' 类型"
     log_info "4. 设置域名: $domain"
     log_info "5. 代理地址: http://127.0.0.1:4321"
-    log_info "6. 复制以下配置到 '自定义配置' 中："
+    log_info "6. 在'自定义配置'中添加以下配置："
     log_info ""
     log_info "=== 复制下面的配置内容 ==="
-    cat "/tmp/blog-site-${domain}.conf" | sed 's/^/    /'
+    cat << 'EOF'
+    # API代理配置
+    location /api {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+    # 静态文件缓存
+    location ~* \.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        proxy_pass http://127.0.0.1:4321;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        proxy_set_header Host $host;
+    }
+
+    # 其他请求代理到前端
+    location / {
+        proxy_pass http://127.0.0.1:4321;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+EOF
     log_info "=== 配置内容结束 ==="
     log_info ""
     log_info "7. 如需SSL，在网站创建后点击SSL页面申请证书"
     log_info ""
-}
-
-# 重载OpenResty配置
-reload_openresty() {
-    log_info "通过1Panel重载OpenResty配置..."
-    
-    log_info "请在1Panel面板中："
-    log_info "1. 进入 应用商店 -> 已安装"
-    log_info "2. 找到OpenResty应用"
-    log_info "3. 点击 '重启' 按钮"
-    log_info ""
-    log_info "或者使用命令行："
-    log_info "docker restart 1panel-openresty"
-    
-    read -p "按回车键继续，或手动重启OpenResty后继续: "
 }
 
 # 启动服务
@@ -306,60 +281,6 @@ restore_database() {
     log_success "数据库恢复完成"
 }
 
-# 更新应用
-update_app() {
-    log_info "更新应用..."
-    
-    # 备份数据库
-    backup_database
-    
-    # 停止服务
-    stop_services
-    
-    # 拉取最新代码
-    git pull origin main
-    
-    # 重新构建镜像
-    build_images
-    
-    # 启动服务
-    start_services
-    
-    log_success "应用更新完成"
-}
-
-# 清理资源
-cleanup() {
-    log_info "清理Docker资源..."
-    
-    # 清理未使用的镜像
-    docker image prune -f
-    
-    # 清理未使用的卷
-    docker volume prune -f
-    
-    # 清理未使用的网络
-    docker network prune -f
-    
-    log_success "清理完成"
-}
-
-# 卸载配置
-uninstall_config() {
-    log_warning "移除OpenResty配置..."
-    
-    log_info "请在1Panel面板中："
-    log_info "1. 进入 网站 -> 网站管理"
-    log_info "2. 找到博客网站"
-    log_info "3. 点击 '删除' 按钮"
-    log_info ""
-    
-    # 清理临时文件
-    rm -f /tmp/blog-site-*.conf
-    
-    log_success "请手动在1Panel中删除网站配置"
-}
-
 # 显示状态
 show_status() {
     log_info "=== 博客系统状态 ==="
@@ -371,14 +292,6 @@ show_status() {
     # 端口监听状态
     echo -e "\n${BLUE}端口监听状态:${NC}"
     netstat -tlnp | grep -E "(4321|8080|5432)" || echo "未找到相关端口"
-    
-    # 磁盘使用情况
-    echo -e "\n${BLUE}磁盘使用情况:${NC}"
-    df -h . | tail -1
-    
-    # 内存使用情况
-    echo -e "\n${BLUE}内存使用情况:${NC}"
-    free -h
 }
 
 # 显示帮助信息
@@ -390,7 +303,7 @@ show_help() {
 
 命令:
   setup              设置环境配置
-  install <domain>   生成OpenResty配置 (域名可选)
+  config <domain>    显示1Panel配置说明
   build              构建Docker镜像
   start              启动所有服务
   stop               停止所有服务
@@ -400,14 +313,10 @@ show_help() {
   logs [service]     查看日志 (可指定服务名)
   backup             备份数据库
   restore <file>     恢复数据库
-  update             更新应用
-  cleanup            清理Docker资源
-  uninstall          移除OpenResty配置
-  reload-nginx       重载OpenResty配置
 
 示例:
   $0 setup                    # 初始化环境
-  $0 install example.com      # 生成配置并显示设置说明
+  $0 config example.com       # 显示1Panel配置说明
   $0 start                    # 启动服务
   $0 logs backend             # 查看后端日志
   $0 backup                   # 备份数据库
@@ -416,7 +325,7 @@ show_help() {
 注意事项:
   - 请确保已安装1Panel面板和OpenResty
   - 首次运行请先执行 setup 和 start 命令
-  - 然后执行 install 命令获取1Panel配置说明
+  - 然后执行 config 命令获取1Panel配置说明
   - SSL证书通过1Panel面板自动管理
   - 建议定期备份数据库
 
@@ -429,36 +338,21 @@ main() {
     
     case "${1:-help}" in
         "setup")
-            check_root
             if [[ "${SKIP_1PANEL_CHECK:-false}" != "true" ]]; then
                 check_dependencies
             else
                 log_warning "跳过1Panel检查 - 开发环境模式"
-                # 只检查基本依赖
-                log_info "检查基本依赖..."
-                local deps=("docker" "docker-compose")
-                for dep in "${deps[@]}"; do
-                    if ! command -v "$dep" &> /dev/null; then
-                        log_error "$dep 未安装，请先安装后再运行此脚本"
-                        exit 1
-                    fi
-                done
-                log_success "基本依赖检查完成"
             fi
-            setup_env "${2:-dev}"
+            setup_env
             create_directories
             ;;
-        "install")
-            check_dependencies
-            check_openresty_status
-            install_openresty_config "${2:-yourdomain.com}"
+        "config")
+            show_1panel_config "${2:-yourdomain.com}"
             ;;
         "build")
-            check_dependencies
             build_images
             ;;
         "start")
-            check_dependencies
             start_services
             ;;
         "stop")
@@ -485,18 +379,6 @@ main() {
                 exit 1
             fi
             restore_database "$2"
-            ;;
-        "update")
-            update_app
-            ;;
-        "cleanup")
-            cleanup
-            ;;
-        "uninstall")
-            uninstall_config
-            ;;
-        "reload-nginx")
-            reload_openresty
             ;;
         "help"|*)
             show_help

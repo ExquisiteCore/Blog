@@ -1,3 +1,8 @@
+# 博客系统 1Panel 集成配置
+# 为 1Panel 管理面板优化的 Docker Compose 配置
+
+version: '3.8'
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -8,9 +13,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-Blog}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-scripts:/docker-entrypoint-initdb.d
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:5432:5432"  # 只绑定本地接口
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
@@ -42,7 +46,7 @@ services:
       - SERVER__PORT=8080
       - RUST_LOG=${RUST_LOG:-info}
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:8080:8080"  # 只绑定本地接口
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
@@ -72,7 +76,7 @@ services:
       - PORT=${PORT:-4321}
       - NODE_ENV=${NODE_ENV:-production}
     ports:
-      - "127.0.0.1:4321:4321"
+      - "127.0.0.1:4321:4321"  # 只绑定本地接口，通过 1Panel OpenResty 代理
     depends_on:
       backend:
         condition: service_healthy
@@ -91,32 +95,8 @@ services:
           memory: 256M
           cpus: '0.5'
 
-  redis:
-    image: redis:7-alpine
-    container_name: blog-redis
-    command: redis-server --requirepass ${REDIS_PASSWORD:-secure_redis_password}
-    volumes:
-      - redis_data:/data
-    ports:
-      - "127.0.0.1:6379:6379"
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - blog-network
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-          cpus: '0.25'
-
 volumes:
   postgres_data:
-    driver: local
-  redis_data:
     driver: local
 
 networks:

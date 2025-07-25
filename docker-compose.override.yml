@@ -1,6 +1,6 @@
-# Development override for docker-compose.yml
-# This file is automatically loaded by docker-compose for development
-# To use production settings, rename this file or use: docker-compose -f docker-compose.yml up
+# 开发环境配置覆盖文件
+# 此文件会自动被 docker-compose 加载以用于开发环境
+# 如需使用生产环境配置，请重命名此文件或使用: docker-compose -f docker-compose.yml up
 
 version: '3.8'
 
@@ -24,7 +24,7 @@ services:
   backend:
     build:
       context: ./backend
-      target: runtime  # Use runtime stage for faster dev builds
+      target: development  # 使用开发构建目标
     environment:
       - DATABASE__URL=postgres://postgres:dev_password_123@postgres:5432/Blog_Dev
       - JWT__SECRET=dev_jwt_secret_key_not_for_production_use_only
@@ -35,7 +35,7 @@ services:
       - ./backend/config.dev.toml:/app/config.toml:ro
     ports:
       - "8080:8080"
-      - "9229:9229"  # Debug port
+      - "9229:9229"  # 调试端口
     deploy:
       resources:
         limits:
@@ -45,7 +45,7 @@ services:
   frontend:
     build:
       context: ./blog-web
-      target: builder  # Use builder stage for development
+      target: development  # 使用开发构建目标
       args:
         PUBLIC_API_BASE_URL: "http://localhost:8080/api"
         INTERNAL_API_BASE_URL: "http://backend:8080/api"
@@ -59,7 +59,7 @@ services:
       - ./blog-web/public:/app/public:ro
     ports:
       - "4321:4321"
-      - "24678:24678"  # Astro dev server HMR
+      - "24678:24678"  # Astro 开发服务器 HMR
     command: ["pnpm", "dev", "--host", "0.0.0.0"]
     deploy:
       resources:
@@ -67,7 +67,7 @@ services:
           memory: 512M
           cpus: '1.0'
 
-  # Development tools
+  # 开发工具
   adminer:
     image: adminer:4.8.1
     container_name: blog-adminer
