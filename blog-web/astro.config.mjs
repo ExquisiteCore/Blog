@@ -1,13 +1,13 @@
 // @ts-check
-import { defineConfig } from "astro/config";
+import { defineConfig } from 'astro/config';
 
-import tailwindcss from "@tailwindcss/vite";
+import tailwindcss from '@tailwindcss/vite';
 
-import solidJs from "@astrojs/solid-js";
+import solidJs from '@astrojs/solid-js';
 
-import sitemap from "@astrojs/sitemap";
+import sitemap from '@astrojs/sitemap';
 
-import node from "@astrojs/node";
+import node from '@astrojs/node';
 
 // https://astro.build/config
 export default defineConfig({
@@ -15,7 +15,7 @@ export default defineConfig({
     plugins: [tailwindcss()],
   },
 
-  site: "https://blog.exquisitecore.xyz",
+  site: 'https://blog.exquisitecore.xyz',
   integrations: [
     solidJs({ devtools: true }),
     sitemap({
@@ -28,17 +28,17 @@ export default defineConfig({
       // 自定义URL
       customPages: [
         'https://blog.exquisitecore.xyz/tools',
-        'https://blog.exquisitecore.xyz/tools/markdownrender'
-      ]
-    })
+        'https://blog.exquisitecore.xyz/tools/markdownrender',
+      ],
+    }),
   ],
-  output: "static",
+  output: 'static',
   adapter: node({
-    mode: "standalone",
+    mode: 'standalone',
   }),
   // SEO相关配置
   compressHTML: true,
   build: {
-    inlineStylesheets: 'auto'
-  }
+    inlineStylesheets: 'auto',
+  },
 });

@@ -1,34 +1,34 @@
 export const prerender = false;
 
-import { createSignal, onMount, Show } from "solid-js";
-import MarkdownRenderer from "./MarkdownRenderer";
-import { Image, Edit, Eye, Download, Settings, Upload } from "lucide-solid";
-import { pinyin } from "pinyin-pro";
-import http from "@/lib/axios";
+import { createSignal, onMount, Show } from 'solid-js';
+import MarkdownRenderer from './MarkdownRenderer';
+import { Image, Edit, Eye, Download, Settings, Upload } from 'lucide-solid';
+import { pinyin } from 'pinyin-pro';
+import http from '@/lib/axios';
 
 export default function MarkdownEditor() {
   // 编辑器内容
   const [text, setText] = createSignal(
-    "EC is too lazy to write a refresh button, because he thinks 'refresh' = 'edit' + 'preview'. Actually, that makes sense :D",
+    "EC is too lazy to write a refresh button, because he thinks 'refresh' = 'edit' + 'preview'. Actually, that makes sense :D"
   );
   // 编辑器模式：edit - 编辑模式，preview - 预览模式
-  const [mode, setMode] = createSignal<"edit" | "preview">("edit");
+  const [mode, setMode] = createSignal<'edit' | 'preview'>('edit');
   // 封面图片URL
-  const [coverImage, setCoverImage] = createSignal<string>("");
+  const [coverImage, setCoverImage] = createSignal<string>('');
   // 文章标签
   const [tags, setTags] = createSignal<string[]>([]);
   // 标签输入
-  const [tagInput, setTagInput] = createSignal<string>("");
+  const [tagInput, setTagInput] = createSignal<string>('');
   // 所有可用标签列表
   const [availableLabels, setAvailableLabels] = createSignal<any[]>([]);
   // 选中的标签ID列表
   const [selectedLabelIds, setSelectedLabelIds] = createSignal<string[]>([]);
   // 文章标题
-  const [title, setTitle] = createSignal<string>("");
+  const [title, setTitle] = createSignal<string>('');
   // 文章摘要
-  const [summary, setSummary] = createSignal<string>("");
+  const [summary, setSummary] = createSignal<string>('');
   // 文章slug
-  const [slug, setSlug] = createSignal<string>("");
+  const [slug, setSlug] = createSignal<string>('');
   // 发布状态
   const [isPublishing, setIsPublishing] = createSignal<boolean>(false);
   // 是否已挂载标志
@@ -36,11 +36,14 @@ export default function MarkdownEditor() {
   // 图片上传状态
   const [isUploading, setIsUploading] = createSignal<boolean>(false);
   // 上传token
-  const [uploadToken, setUploadToken] = createSignal<string>("");
+  const [uploadToken, setUploadToken] = createSignal<string>('');
   // 自定义上传 API 地址
-  const [uploadApiUrl, setUploadApiUrl] = createSignal<string>("http://121.62.28.11:40027/api/v1");
+  const [uploadApiUrl, setUploadApiUrl] = createSignal<string>(
+    'http://121.62.28.11:40027/api/v1'
+  );
   // 设置弹窗显示状态
-  const [showSettingsModal, setShowSettingsModal] = createSignal<boolean>(false);
+  const [showSettingsModal, setShowSettingsModal] =
+    createSignal<boolean>(false);
   // 编辑器引用
   let editorRef: HTMLTextAreaElement | undefined;
   // 封面图片上传区域引用
@@ -51,14 +54,14 @@ export default function MarkdownEditor() {
   const fetchLabels = async () => {
     try {
       // 这里应该替换为实际的API调用
-      const data = await http.get("/labels");
+      const data = await http.get('/labels');
       if (Array.isArray(data)) {
         setAvailableLabels(data);
       } else {
-        throw new Error("标签数据格式错误");
+        throw new Error('标签数据格式错误');
       }
     } catch (error) {
-      console.error("获取标签失败:", error);
+      console.error('获取标签失败:', error);
     }
   };
 
@@ -87,7 +90,7 @@ export default function MarkdownEditor() {
       const baseUrl = uploadApiUrl() || 'http://121.62.28.11:40027/api/v1';
       const response = await http.post('/upload', formData, {
         baseURL: baseUrl,
-        headers: headers
+        headers: headers,
       });
 
       if (response && response.status && response.data) {
@@ -124,12 +127,16 @@ export default function MarkdownEditor() {
             const currentText = text();
 
             // 在光标位置插入markdown图片链接
-            const newText = currentText.substring(0, start) + markdownLink + currentText.substring(end);
+            const newText =
+              currentText.substring(0, start) +
+              markdownLink +
+              currentText.substring(end);
             setText(newText);
 
             // 设置新的光标位置
             setTimeout(() => {
-              textarea.selectionStart = textarea.selectionEnd = start + markdownLink.length;
+              textarea.selectionStart = textarea.selectionEnd =
+                start + markdownLink.length;
               textarea.focus();
             }, 0);
           }
@@ -158,12 +165,16 @@ export default function MarkdownEditor() {
           const currentText = text();
 
           // 在光标位置插入markdown图片链接
-          const newText = currentText.substring(0, start) + markdownLink + currentText.substring(end);
+          const newText =
+            currentText.substring(0, start) +
+            markdownLink +
+            currentText.substring(end);
           setText(newText);
 
           // 设置新的光标位置
           setTimeout(() => {
-            textarea.selectionStart = textarea.selectionEnd = start + markdownLink.length;
+            textarea.selectionStart = textarea.selectionEnd =
+              start + markdownLink.length;
             textarea.focus();
           }, 0);
         }
@@ -201,7 +212,7 @@ export default function MarkdownEditor() {
       const baseUrl = uploadApiUrl() || 'http://121.62.28.11:40027/api/v1';
       const response = await http.post('/upload', formData, {
         baseURL: baseUrl,
-        headers: headers
+        headers: headers,
       });
 
       if (response && response.status && response.data) {
@@ -246,11 +257,11 @@ export default function MarkdownEditor() {
 
   // 设置已挂载标志
   onMount(() => {
-    const savedToken = localStorage.getItem("uploadToken");
+    const savedToken = localStorage.getItem('uploadToken');
     if (savedToken) {
       setUploadToken(savedToken);
     }
-    const savedApiUrl = localStorage.getItem("uploadApiUrl");
+    const savedApiUrl = localStorage.getItem('uploadApiUrl');
     if (savedApiUrl) {
       setUploadApiUrl(savedApiUrl);
     }
@@ -268,11 +279,11 @@ export default function MarkdownEditor() {
 
   // 处理导出文档
   const handleExport = () => {
-    const blob = new Blob([text()], { type: "text/markdown" });
+    const blob = new Blob([text()], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = url;
-    a.download = `${title() || "markdown"}.md`;
+    a.download = `${title() || 'markdown'}.md`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -290,9 +301,9 @@ export default function MarkdownEditor() {
   // 保存设置
   const handleSaveSettings = (newToken: string, newApiUrl: string) => {
     setUploadToken(newToken);
-    localStorage.setItem("uploadToken", newToken);
+    localStorage.setItem('uploadToken', newToken);
     setUploadApiUrl(newApiUrl);
-    localStorage.setItem("uploadApiUrl", newApiUrl);
+    localStorage.setItem('uploadApiUrl', newApiUrl);
     setShowSettingsModal(false);
   };
 
@@ -303,18 +314,18 @@ export default function MarkdownEditor() {
     let convertedText = text;
     if (hasChinese) {
       convertedText = pinyin(text, {
-        toneType: "none",
-        pattern: "pinyin",
-        type: "string",
-        nonZh: "consecutive",
-      }).replace(/\s+/g, "-");
+        toneType: 'none',
+        pattern: 'pinyin',
+        type: 'string',
+        nonZh: 'consecutive',
+      }).replace(/\s+/g, '-');
     }
 
     return convertedText
       .toLowerCase()
-      .replace(/[^\w\s-]/g, "")
-      .replace(/[\s_-]+/g, "-")
-      .replace(/^-+|-+$/g, "");
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
   };
 
   // 处理标题变化时自动生成slug
@@ -339,21 +350,21 @@ export default function MarkdownEditor() {
       };
 
       // 这里应该替换为实际的API调用
-      const data = await http.post("/labels", labelData, {
+      const data = await http.post('/labels', labelData, {
         withToken: true,
       });
 
-      if (data && typeof data === "object" && "id" in data) {
+      if (data && typeof data === 'object' && 'id' in data) {
         const newLabel = data;
         setAvailableLabels([...availableLabels(), newLabel]);
         return newLabel;
       } else {
-        throw new Error("创建标签失败，返回数据格式错误");
+        throw new Error('创建标签失败，返回数据格式错误');
       }
     } catch (error) {
-      console.error("创建标签失败:", error);
+      console.error('创建标签失败:', error);
       // 这里应该替换为实际的toast通知
-      alert("创建标签失败，请重试");
+      alert('创建标签失败，请重试');
       return null;
     }
   };
@@ -365,11 +376,11 @@ export default function MarkdownEditor() {
     setTagInput(input);
 
     // 如果输入以逗号结尾，表示用户想添加一个标签
-    if (input.endsWith(",")) {
+    if (input.endsWith(',')) {
       const tagName = input.slice(0, -1).trim();
       if (tagName) {
         await addTag(tagName);
-        setTagInput("");
+        setTagInput('');
       }
     }
   };
@@ -386,7 +397,7 @@ export default function MarkdownEditor() {
     // 检查标签是否存在于可用标签列表中
     let labelId: string | null = null;
     const existingLabel = availableLabels().find(
-      (label) => label.name === tagName,
+      (label) => label.name === tagName
     );
 
     if (existingLabel) {
@@ -424,29 +435,29 @@ export default function MarkdownEditor() {
 
       // 验证必填字段
       if (!title()) {
-        alert("请输入文章标题");
+        alert('请输入文章标题');
         return;
       }
 
       if (!text() || text().trim().length < 10) {
-        alert("文章内容太短");
+        alert('文章内容太短');
         return;
       }
 
       if (!slug()) {
-        alert("请输入文章别名");
+        alert('请输入文章别名');
         return;
       }
 
       if (!coverImage()) {
-        alert("请设置封面图片");
+        alert('请设置封面图片');
         return;
       }
 
       // 从localStorage获取用户信息
-      const userData = localStorage.getItem("user");
+      const userData = localStorage.getItem('user');
       if (!userData) {
-        alert("请先登录");
+        alert('请先登录');
         return;
       }
 
@@ -466,23 +477,23 @@ export default function MarkdownEditor() {
       };
 
       // 发送请求
-      await http.post("/posts", postData, {
+      await http.post('/posts', postData, {
         withToken: true,
       });
 
-      alert("文章发布成功！");
+      alert('文章发布成功！');
 
       // 清空表单
-      setTitle("");
-      setText("");
-      setSlug("");
-      setSummary("");
-      setCoverImage("");
+      setTitle('');
+      setText('');
+      setSlug('');
+      setSummary('');
+      setCoverImage('');
       setTags([]);
       setSelectedLabelIds([]);
     } catch (error) {
-      console.error("发布文章失败:", error);
-      alert(error instanceof Error ? error.message : "发布失败，请重试");
+      console.error('发布文章失败:', error);
+      alert(error instanceof Error ? error.message : '发布失败，请重试');
     } finally {
       setIsPublishing(false);
     }
@@ -490,11 +501,11 @@ export default function MarkdownEditor() {
 
   // 处理标签键盘事件
   const handleTagKeyDown = (e: KeyboardEvent) => {
-    if (e.key === "Enter") {
+    if (e.key === 'Enter') {
       e.preventDefault();
       if (tagInput().trim()) {
         addTag(tagInput().trim());
-        setTagInput("");
+        setTagInput('');
       }
     }
   };
@@ -505,10 +516,10 @@ export default function MarkdownEditor() {
     <div class="min-h-screen">
       {/* 设置弹窗 */}
       <Show when={showSettingsModal()}>
-        <div class="modal modal-open">
+        <div class="modal-open modal">
           <div class="modal-box">
-            <h3 class="font-bold text-lg">设置上传参数</h3>
-            <label class="form-control w-full mt-4">
+            <h3 class="text-lg font-bold">设置上传参数</h3>
+            <label class="form-control mt-4 w-full">
               <div class="label">
                 <span class="label-text">上传 Token</span>
               </div>
@@ -516,11 +527,11 @@ export default function MarkdownEditor() {
                 ref={tokenInputRef}
                 type="text"
                 placeholder="在此输入Token"
-                class="input input-bordered w-full"
+                class="input-bordered input w-full"
                 value={uploadToken()}
               />
             </label>
-            <label class="form-control w-full mt-2">
+            <label class="form-control mt-2 w-full">
               <div class="label">
                 <span class="label-text">上传 API 地址</span>
               </div>
@@ -528,32 +539,44 @@ export default function MarkdownEditor() {
                 ref={apiUrlInputRef}
                 type="text"
                 placeholder="例如: http://121.62.28.11:40027/api/v1"
-                class="input input-bordered w-full"
+                class="input-bordered input w-full"
                 value={uploadApiUrl()}
               />
             </label>
             <div class="modal-action mt-6">
-              <button class="btn" onClick={handleCloseSettingsModal}>取消</button>
-              <button class="btn btn-primary" onClick={() => handleSaveSettings(tokenInputRef?.value ?? "", apiUrlInputRef?.value ?? "")}>保存</button>
+              <button class="btn" onClick={handleCloseSettingsModal}>
+                取消
+              </button>
+              <button
+                class="btn btn-primary"
+                onClick={() =>
+                  handleSaveSettings(
+                    tokenInputRef?.value ?? '',
+                    apiUrlInputRef?.value ?? ''
+                  )
+                }
+              >
+                保存
+              </button>
             </div>
           </div>
         </div>
       </Show>
 
-      <div class="container mx-auto flex min-h-screen flex-col py-8 px-4">
+      <div class="container mx-auto flex min-h-screen flex-col px-4 py-8">
         {/* 顶部工具栏 */}
         <div class="mb-6 flex items-center justify-between">
           <div class="flex space-x-2">
             <button
-              class={`btn ${mode() === "preview" ? "btn-primary" : "btn-outline"} btn-sm`}
-              onClick={() => setMode("preview")}
+              class={`btn ${mode() === 'preview' ? 'btn-primary' : 'btn-outline'} btn-sm`}
+              onClick={() => setMode('preview')}
             >
               <Eye class="h-4 w-4" />
               <span>预览</span>
             </button>
             <button
-              class={`btn ${mode() === "edit" ? "btn-primary" : "btn-outline"} btn-sm`}
-              onClick={() => setMode("edit")}
+              class={`btn ${mode() === 'edit' ? 'btn-primary' : 'btn-outline'} btn-sm`}
+              onClick={() => setMode('edit')}
             >
               <Edit class="h-4 w-4" />
               <span>编辑</span>
@@ -574,19 +597,19 @@ export default function MarkdownEditor() {
         {/* 编辑器区域 */}
         <div class="flex-1">
           <Show when={isMounted()}>
-            <Show when={mode() === "edit"}>
+            <Show when={mode() === 'edit'}>
               <textarea
                 ref={editorRef}
                 value={text()}
                 onInput={(e) => setText(e.target.value)}
                 onDrop={handleEditorDrop}
                 onDragOver={handleEditorDragOver}
-                class="h-[calc(100vh-300px)] w-full p-4 focus:outline-none border border-base-200 rounded-md"
+                class="h-[calc(100vh-300px)] w-full rounded-md border border-base-200 p-4 focus:outline-none"
                 placeholder="在此输入文章内容，支持Markdown格式。可以拖拽或粘贴图片到编辑器中上传。"
               />
             </Show>
-            <Show when={mode() === "preview"}>
-              <div class="h-[calc(100vh-300px)] overflow-auto border border-base-200 rounded-md p-4">
+            <Show when={mode() === 'preview'}>
+              <div class="h-[calc(100vh-300px)] overflow-auto rounded-md border border-base-200 p-4">
                 <MarkdownRenderer content={text()} />
               </div>
             </Show>
@@ -604,7 +627,7 @@ export default function MarkdownEditor() {
                   <input
                     type="text"
                     placeholder="封面链接"
-                    class="input input-bordered w-full"
+                    class="input-bordered input w-full"
                     value={coverImage()}
                     onInput={(e) => setCoverImage(e.target.value)}
                   />
@@ -615,10 +638,10 @@ export default function MarkdownEditor() {
                   </p>
                   <div class="flex gap-2">
                     <button
-                      class="btn btn-sm mt-2 btn-primary"
+                      class="btn mt-2 btn-sm btn-primary"
                       onClick={() =>
                         setCoverImage(
-                          `https://www.dmoe.cc/random.php?t=${Date.now()}`,
+                          `https://www.dmoe.cc/random.php?t=${Date.now()}`
                         )
                       }
                     >
@@ -627,9 +650,10 @@ export default function MarkdownEditor() {
                       </div>
                     </button>
                     <button
-                      class="btn btn-sm mt-2 btn-outline"
+                      class="btn mt-2 btn-outline btn-sm"
                       onClick={() => {
-                        const input = coverDropzoneRef?.querySelector('input[type="file"]');
+                        const input =
+                          coverDropzoneRef?.querySelector('input[type="file"]');
                         if (input) (input as HTMLInputElement).click();
                       }}
                       disabled={isUploading()}
@@ -644,7 +668,7 @@ export default function MarkdownEditor() {
               </div>
               <div
                 ref={coverDropzoneRef}
-                class="w-[200px] h-[150px] overflow-hidden rounded-md border border-gray-200 bg-white dark:bg-gray-800 relative"
+                class="relative h-[150px] w-[200px] overflow-hidden rounded-md border border-gray-200 bg-white dark:bg-gray-800"
                 onDrop={handleCoverDrop}
                 onDragOver={handleCoverDragOver}
               >
@@ -657,23 +681,26 @@ export default function MarkdownEditor() {
                       <input
                         type="file"
                         accept="image/*"
-                        class="absolute inset-0 opacity-0 cursor-pointer"
+                        class="absolute inset-0 cursor-pointer opacity-0"
                         onChange={handleCoverFileSelect}
                       />
                     </div>
                   }
                 >
-                  <div class="relative h-full w-full group">
+                  <div class="group relative h-full w-full">
                     <img
                       src={coverImage()}
                       alt="封面图片"
                       class="h-full w-full object-cover"
                     />
-                    <div class="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <div class="bg-opacity-50 absolute inset-0 flex items-center justify-center bg-black opacity-0 transition-opacity group-hover:opacity-100">
                       <button
-                        class="btn btn-sm btn-circle btn-ghost text-white"
+                        class="btn btn-circle text-white btn-ghost btn-sm"
                         onClick={() => {
-                          const input = coverDropzoneRef?.querySelector('input[type="file"]');
+                          const input =
+                            coverDropzoneRef?.querySelector(
+                              'input[type="file"]'
+                            );
                           if (input) (input as HTMLInputElement).click();
                         }}
                       >
@@ -689,8 +716,8 @@ export default function MarkdownEditor() {
                   </div>
                 </Show>
                 {isUploading() && (
-                  <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                    <div class="loading loading-spinner loading-md text-primary"></div>
+                  <div class="bg-opacity-50 absolute inset-0 flex items-center justify-center bg-black">
+                    <div class="loading loading-md loading-spinner text-primary"></div>
                   </div>
                 )}
               </div>
@@ -705,16 +732,16 @@ export default function MarkdownEditor() {
                 <input
                   type="text"
                   placeholder="输入标签，按逗号添加"
-                  class="input input-bordered w-full"
+                  class="input-bordered input w-full"
                   value={tagInput()}
                   onInput={handleTagInput}
                   onKeyDown={handleTagKeyDown}
                 />
               </div>
               <Show when={tags().length > 0}>
-                <div class="flex flex-wrap gap-2 mt-2">
+                <div class="mt-2 flex flex-wrap gap-2">
                   {tags().map((tag, index) => (
-                    <div class="badge badge-primary gap-1">
+                    <div class="badge gap-1 badge-primary">
                       <span>{tag}</span>
                       <button
                         type="button"
@@ -733,7 +760,7 @@ export default function MarkdownEditor() {
               <input
                 type="text"
                 placeholder="输入文章标题"
-                class="input input-bordered w-full"
+                class="input-bordered input w-full"
                 value={title()}
                 onInput={handleTitleChange}
               />
@@ -743,7 +770,7 @@ export default function MarkdownEditor() {
               <input
                 type="text"
                 placeholder="输入文章别名，用于URL"
-                class="input input-bordered w-full"
+                class="input-bordered input w-full"
                 value={slug()}
                 onInput={(e) => setSlug(e.target.value)}
               />
@@ -753,18 +780,18 @@ export default function MarkdownEditor() {
               <input
                 type="text"
                 placeholder="输入文章摘要（可选）"
-                class="input input-bordered w-full"
+                class="input-bordered input w-full"
                 value={summary()}
                 onInput={(e) => setSummary(e.target.value)}
               />
             </div>
             <div class="flex justify-end">
               <button
-                class="btn btn-primary mt-2"
+                class="btn mt-2 btn-primary"
                 onClick={handlePublish}
                 disabled={isPublishing()}
               >
-                {isPublishing() ? "发布中..." : "发布"}
+                {isPublishing() ? '发布中...' : '发布'}
               </button>
             </div>
           </div>

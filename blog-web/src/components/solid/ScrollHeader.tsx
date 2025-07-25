@@ -1,5 +1,11 @@
-import { createSignal, createEffect, onCleanup, onMount, createMemo } from "solid-js";
-import type { JSX } from "solid-js";
+import {
+  createSignal,
+  createEffect,
+  onCleanup,
+  onMount,
+  createMemo,
+} from 'solid-js';
+import type { JSX } from 'solid-js';
 
 interface ScrollHeaderProps {
   children: JSX.Element;
@@ -102,11 +108,11 @@ export default function ScrollHeader(props: ScrollHeaderProps) {
 
   createEffect(() => {
     // Add scroll event listener
-    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener('scroll', onScroll, { passive: true });
 
     onCleanup(() => {
       // Remove scroll event listener
-      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener('scroll', onScroll);
       window.removeEventListener('storage', handleStorageChange);
     });
   });
@@ -120,9 +126,9 @@ export default function ScrollHeader(props: ScrollHeaderProps) {
 
   return (
     <header
-      class={`fixed top-0 w-full z-50 transition-all duration-300 transform ${isVisible() ? "translate-y-0" : "-translate-y-full"
-        } ${!isAtTop() ? bgColorClass() : "bg-base-100"
-        }`}
+      class={`fixed top-0 z-50 w-full transform transition-all duration-300 ${
+        isVisible() ? 'translate-y-0' : '-translate-y-full'
+      } ${!isAtTop() ? bgColorClass() : 'bg-base-100'}`}
     >
       {props.children}
     </header>

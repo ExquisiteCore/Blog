@@ -1,6 +1,6 @@
-import { createResource, Show } from "solid-js";
-import http from "@/lib/axios";
-import MarkdownRenderer from "@/components/solid/MarkdownRenderer";
+import { createResource, Show } from 'solid-js';
+import http from '@/lib/axios';
+import MarkdownRenderer from '@/components/solid/MarkdownRenderer';
 
 // 定义文章接口
 interface Post {
@@ -21,10 +21,10 @@ interface Post {
 // 格式化日期函数
 function formatDate(dateString: string) {
   const date = new Date(dateString);
-  return date.toLocaleDateString("zh-CN", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
+  return date.toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
   });
 }
 
@@ -39,11 +39,11 @@ async function fetchPost(slug: string): Promise<Post | null> {
       return {
         ...response,
         featured_image: response.featured_image
-          ? response.featured_image.replace(/`/g, "").trim()
+          ? response.featured_image.replace(/`/g, '').trim()
           : null,
       };
     } else {
-      console.error("API响应格式不符合预期:", response);
+      console.error('API响应格式不符合预期:', response);
       return null;
     }
   } catch (error) {
@@ -65,19 +65,19 @@ export default function BlogPost(props: BlogPostProps) {
       <Show
         when={!post.loading}
         fallback={
-          <div class="text-center py-12">
-            <span class="loading loading-spinner loading-lg"></span>
+          <div class="py-12 text-center">
+            <span class="loading loading-lg loading-spinner"></span>
           </div>
         }
       >
         <Show
           when={post()}
           fallback={
-            <div class="text-center py-12">
-              <div class="alert alert-error shadow-lg max-w-md mx-auto">
+            <div class="py-12 text-center">
+              <div class="mx-auto alert max-w-md alert-error shadow-lg">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  class="stroke-current shrink-0 h-6 w-6"
+                  class="h-6 w-6 shrink-0 stroke-current"
                   fill="none"
                   viewBox="0 0 24 24"
                 >
@@ -94,23 +94,23 @@ export default function BlogPost(props: BlogPostProps) {
           }
         >
           {post() && (
-            <article class="prose prose-lg max-w-none dark:prose-invert">
+            <article class="prose-lg dark:prose-invert prose max-w-none">
               {post()!.featured_image && (
                 <img
-                  src={post()!.featured_image ?? ""}
+                  src={post()!.featured_image ?? ''}
                   alt={post()!.title}
-                  class="w-full h-64 md:h-96 object-cover rounded-lg shadow-md mb-8"
+                  class="mb-8 h-64 w-full rounded-lg object-cover shadow-md md:h-96"
                 />
               )}
 
-              <h1 class="text-4xl font-bold mb-4">{post()!.title}</h1>
+              <h1 class="mb-4 text-4xl font-bold">{post()!.title}</h1>
 
-              <div class="flex items-center text-sm opacity-70 mb-8">
+              <div class="mb-8 flex items-center text-sm opacity-70">
                 <span>{formatDate(post()!.published_at)}</span>
                 {post()!.labels && post()!.labels.length > 0 && (
                   <div class="ml-4 flex gap-2">
                     {post()!.labels.map((tag) => (
-                      <div class="badge badge-outline">{tag}</div>
+                      <div class="badge-outline badge">{tag}</div>
                     ))}
                   </div>
                 )}

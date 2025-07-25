@@ -5,6 +5,7 @@
 ## 🎯 已实现的SEO功能
 
 ### 1. Meta标签优化
+
 - ✅ 基础meta标签（title, description, keywords, author）
 - ✅ Open Graph标签（社交媒体分享优化）
 - ✅ Twitter Card标签
@@ -13,18 +14,21 @@
 - ✅ Robots meta标签
 
 ### 2. 结构化数据（Schema.org）
+
 - ✅ WebSite结构化数据
 - ✅ BlogPosting结构化数据
 - ✅ Person和Organization数据
 - ✅ JSON-LD格式实现
 
 ### 3. 站点地图
+
 - ✅ 动态生成sitemap-index.xml
 - ✅ 静态页面sitemap
 - ✅ 博客文章动态sitemap
 - ✅ Robots.txt优化
 
 ### 4. 技术优化
+
 - ✅ HTML压缩
 - ✅ 内联样式优化
 - ✅ 爬虫友好的robots.txt
@@ -64,7 +68,7 @@ src/
 import Layout from '../layouts/Layout.astro';
 ---
 
-<Layout 
+<Layout
   title="页面标题"
   description="页面描述"
   keywords="关键词1,关键词2"
@@ -84,7 +88,7 @@ import SEO from '../components/SEO.astro';
 
 <html>
 <head>
-  <SEO 
+  <SEO
     title="页面标题"
     description="页面描述"
     keywords="关键词1,关键词2"
@@ -123,6 +127,7 @@ import SEO from '../components/SEO.astro';
 ## 📊 SEO检查清单
 
 ### 页面级别
+
 - [ ] 每个页面都有唯一的title（10-60字符）
 - [ ] 每个页面都有描述性的meta description（50-160字符）
 - [ ] 关键词相关且不过度堆砌
@@ -130,6 +135,7 @@ import SEO from '../components/SEO.astro';
 - [ ] 内部链接结构合理
 
 ### 技术级别
+
 - [x] 站点地图正常生成
 - [x] Robots.txt配置正确
 - [x] 结构化数据验证通过
@@ -137,6 +143,7 @@ import SEO from '../components/SEO.astro';
 - [x] 页面加载速度优化
 
 ### 内容级别
+
 - [ ] 内容原创且有价值
 - [ ] 标题层级结构清晰（H1-H6）
 - [ ] 内容长度适中
@@ -150,18 +157,18 @@ import SEO from '../components/SEO.astro';
 
 ```javascript
 export default defineConfig({
-  site: "https://blog.exquisitecore.xyz", // 站点URL
+  site: 'https://blog.exquisitecore.xyz', // 站点URL
   integrations: [
     sitemap({
       changefreq: 'weekly',
       priority: 0.7,
-      filter: (page) => !page.includes('/admin')
-    })
+      filter: (page) => !page.includes('/admin'),
+    }),
   ],
   compressHTML: true, // HTML压缩
   build: {
-    inlineStylesheets: 'auto' // 样式优化
-  }
+    inlineStylesheets: 'auto', // 样式优化
+  },
 });
 ```
 

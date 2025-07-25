@@ -19,17 +19,17 @@ interface Post {
 // 格式化日期函数
 function formatDate(dateString: string) {
   const date = new Date(dateString);
-  return date.toLocaleDateString("zh-CN", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
+  return date.toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
   });
 }
 
 // 获取文章数据的函数
 async function fetchPosts(): Promise<Post[]> {
   try {
-    const response = await http.get<Post[]>("/posts", { withToken: false });
+    const response = await http.get<Post[]>('/posts', { withToken: false });
 
     // 检查响应格式，直接处理返回的数组数据
     if (response && Array.isArray(response)) {
@@ -37,7 +37,7 @@ async function fetchPosts(): Promise<Post[]> {
       return response.map((post) => ({
         ...post,
         featured_image: post.featured_image
-          ? post.featured_image.replace(/`/g, "").trim()
+          ? post.featured_image.replace(/`/g, '').trim()
           : null,
       }));
     } else {
@@ -55,18 +55,21 @@ export default function BlogPosts() {
   // 使用SolidJS的资源加载功能获取文章
   const [posts] = createResource<Post[]>(fetchPosts);
   return (
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 my-8">
-      <Show when={!posts.loading} fallback={<div class="col-span-full text-center">加载中...</div>}>
+    <div class="my-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <Show
+        when={!posts.loading}
+        fallback={<div class="col-span-full text-center">加载中...</div>}
+      >
         <Show
           when={posts() && posts()!.length > 0}
           fallback={
-            <div class="col-span-full text-center py-12">
-              <div class="alert alert-info shadow-lg max-w-md mx-auto">
+            <div class="col-span-full py-12 text-center">
+              <div class="mx-auto alert max-w-md alert-info shadow-lg">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
-                  class="stroke-current shrink-0 w-6 h-6"
+                  class="h-6 w-6 shrink-0 stroke-current"
                 >
                   <path
                     stroke-linecap="round"
@@ -82,25 +85,33 @@ export default function BlogPosts() {
         >
           <For each={posts()}>
             {(post) => (
-              <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow duration-300">
-                {post.featured_image && post.featured_image.trim() !== "" && (
+              <div class="card bg-base-100 shadow-xl transition-shadow duration-300 hover:shadow-2xl">
+                {post.featured_image && post.featured_image.trim() !== '' && (
                   <figure>
-                    <img src={post.featured_image} alt={post.title} class="w-full h-48 object-cover" />
+                    <img
+                      src={post.featured_image}
+                      alt={post.title}
+                      class="h-48 w-full object-cover"
+                    />
                   </figure>
                 )}
                 <div class="card-body">
                   <h2 class="card-title">{post.title}</h2>
-                  <p class="text-sm opacity-70">{formatDate(post.published_at)}</p>
-                  <p class="mt-2">{post.excerpt || ""}</p>
+                  <p class="text-sm opacity-70">
+                    {formatDate(post.published_at)}
+                  </p>
+                  <p class="mt-2">{post.excerpt || ''}</p>
                   {post.labels && post.labels.length > 0 && (
-                    <div class="card-actions justify-start mt-3">
+                    <div class="mt-3 card-actions justify-start">
                       {post.labels.map((tag) => (
-                        <div class="badge badge-outline">{tag}</div>
+                        <div class="badge-outline badge">{tag}</div>
                       ))}
                     </div>
                   )}
-                  <div class="card-actions justify-end mt-4">
-                    <a href={`/blog/${post.id}`} class="btn btn-primary btn-sm">阅读更多</a>
+                  <div class="mt-4 card-actions justify-end">
+                    <a href={`/blog/${post.id}`} class="btn btn-sm btn-primary">
+                      阅读更多
+                    </a>
                   </div>
                 </div>
               </div>

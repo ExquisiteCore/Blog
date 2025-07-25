@@ -24,7 +24,7 @@ async function postExample() {
   try {
     const data = {
       username: 'test_user',
-      email: 'test@example.com'
+      email: 'test@example.com',
     };
     // 只需提供相对路径'/users'，不需要完整URL
     const response = await http.post('/users', data);
@@ -50,8 +50,4 @@ async function getWithTokenExample() {
 }
 
 // 导出示例函数
-export {
-  getExample,
-  postExample,
-  getWithTokenExample
-};
+export { getExample, postExample, getWithTokenExample };

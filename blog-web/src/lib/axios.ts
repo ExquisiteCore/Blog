@@ -2,7 +2,7 @@ import axios, {
   type AxiosInstance,
   type AxiosRequestConfig,
   type AxiosResponse,
-} from "axios";
+} from 'axios';
 
 // 定义请求配置接口，扩展AxiosRequestConfig以支持可选的withToken参数
 interface RequestConfig extends AxiosRequestConfig {
@@ -22,7 +22,7 @@ class Http {
 
   constructor(baseURL?: string) {
     // 默认 API URL（如果未设置环境变量）
-    const defaultApiUrl = "https://api.exquisitecore.xyz/api";
+    const defaultApiUrl = 'https://api.exquisitecore.xyz/api';
     let apiUrl;
 
     // Astro 中通过 import.meta.env.SSR 判断是否为服务器端渲染
@@ -42,7 +42,7 @@ class Http {
       baseURL: this.baseURL,
       timeout: 10000,
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
     });
 
@@ -62,7 +62,7 @@ class Http {
         if (requestConfig.withToken) {
           const token = this.getToken();
           if (token) {
-            config.headers["Authorization"] = `Bearer ${token}`;
+            config.headers['Authorization'] = `Bearer ${token}`;
           }
         }
 
@@ -70,7 +70,7 @@ class Http {
       },
       (error) => {
         return Promise.reject(error);
-      },
+      }
     );
 
     // 响应拦截器
@@ -87,24 +87,24 @@ class Http {
           // 处理特定状态码
           if (status === 401) {
             // 未授权，可以在这里处理登出逻辑
-            console.error("未授权访问，请重新登录");
+            console.error('未授权访问，请重新登录');
           } else if (status === 403) {
-            console.error("没有权限访问该资源");
+            console.error('没有权限访问该资源');
           } else if (status === 404) {
-            console.error("请求的资源不存在");
+            console.error('请求的资源不存在');
           } else if (status >= 500) {
-            console.error("服务器错误，请稍后再试");
+            console.error('服务器错误，请稍后再试');
           }
         } else if (error.request) {
           // 请求已发送但没有收到响应
-          console.error("网络错误，无法连接到服务器");
+          console.error('网络错误，无法连接到服务器');
         } else {
           // 请求配置出错
-          console.error("请求配置错误:", error.message);
+          console.error('请求配置错误:', error.message);
         }
 
         return Promise.reject(error);
-      },
+      }
     );
   }
 
@@ -114,8 +114,8 @@ class Http {
    */
   private getToken(): string | null {
     // 检查是否在浏览器环境
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("token");
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('token');
     }
     // 在服务端渲染时返回null
     return null;
@@ -130,7 +130,7 @@ class Http {
   public async get<T = any>(
     url: string,
     params?: any,
-    config: RequestConfig = {},
+    config: RequestConfig = {}
   ): Promise<ApiResponse<T>> {
     return this.instance.get(url, { ...config, params });
   }
@@ -144,7 +144,7 @@ class Http {
   public async post<T = any>(
     url: string,
     data?: any,
-    config: RequestConfig = {},
+    config: RequestConfig = {}
   ): Promise<ApiResponse<T>> {
     return this.instance.post(url, data, config);
   }
@@ -158,7 +158,7 @@ class Http {
   public async put<T = any>(
     url: string,
     data?: any,
-    config: RequestConfig = {},
+    config: RequestConfig = {}
   ): Promise<ApiResponse<T>> {
     return this.instance.put(url, data, config);
   }
@@ -170,7 +170,7 @@ class Http {
    */
   public async delete<T = any>(
     url: string,
-    config: RequestConfig = {},
+    config: RequestConfig = {}
   ): Promise<ApiResponse<T>> {
     return this.instance.delete(url, config);
   }

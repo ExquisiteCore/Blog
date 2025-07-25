@@ -1,23 +1,23 @@
-import { createSignal, onMount } from "solid-js";
+import { createSignal, onMount } from 'solid-js';
 
 export default function ThemeToggle() {
   const [isDarkMode, setIsDarkMode] = createSignal(false);
 
   // Initialize theme based on localStorage or system preference
   onMount(() => {
-    if (typeof localStorage !== "undefined") {
-      const savedTheme = localStorage.getItem("theme");
-      if (savedTheme === "dark") {
+    if (typeof localStorage !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark') {
         setIsDarkMode(true);
-      } else if (savedTheme === "light") {
+      } else if (savedTheme === 'light') {
         setIsDarkMode(false);
       } else {
         // Check system preference if no saved preference
         const prefersDark = window.matchMedia(
-          "(prefers-color-scheme: dark)",
+          '(prefers-color-scheme: dark)'
         ).matches;
         setIsDarkMode(prefersDark);
-        localStorage.setItem("theme", prefersDark ? "dark" : "light");
+        localStorage.setItem('theme', prefersDark ? 'dark' : 'light');
       }
     }
   });
@@ -28,15 +28,15 @@ export default function ThemeToggle() {
     setIsDarkMode(newTheme);
 
     // Update theme in localStorage and document
-    const themeName = newTheme ? "dark" : "light";
-    if (typeof localStorage !== "undefined") {
-      localStorage.setItem("theme", themeName);
+    const themeName = newTheme ? 'dark' : 'light';
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('theme', themeName);
     }
-    document.documentElement.setAttribute("data-theme", themeName);
+    document.documentElement.setAttribute('data-theme', themeName);
   };
 
   return (
-    <label class="swap swap-rotate btn btn-ghost btn-circle">
+    <label class="btn swap btn-circle swap-rotate btn-ghost">
       <input
         type="checkbox"
         class="theme-controller"
@@ -47,7 +47,7 @@ export default function ThemeToggle() {
       <span class="sr-only">切换主题模式</span>
       {/* Sun icon */}
       <svg
-        class="swap-on fill-current w-5 h-5"
+        class="swap-on h-5 w-5 fill-current"
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
       >
@@ -55,7 +55,7 @@ export default function ThemeToggle() {
       </svg>
       {/* Moon icon */}
       <svg
-        class="swap-off fill-current w-5 h-5"
+        class="swap-off h-5 w-5 fill-current"
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
       >

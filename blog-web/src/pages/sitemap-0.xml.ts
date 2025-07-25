@@ -22,7 +22,7 @@ async function getBlogPosts() {
         url: `blog/${post.slug}`,
         priority: '0.8',
         changefreq: 'monthly',
-        lastmod: post.updatedAt || post.createdAt
+        lastmod: post.updatedAt || post.createdAt,
       }));
     }
   } catch (error) {
@@ -37,9 +37,12 @@ export const GET: APIRoute = async ({ site }) => {
 
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${allPages.map(page => {
+${allPages
+  .map((page) => {
     const url = new URL(page.url, site).href;
-    const lastmod = page.lastmod ? new Date(page.lastmod).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+    const lastmod = page.lastmod
+      ? new Date(page.lastmod).toISOString().split('T')[0]
+      : new Date().toISOString().split('T')[0];
 
     return `  <url>
     <loc>${url}</loc>
@@ -47,7 +50,8 @@ ${allPages.map(page => {
     <changefreq>${page.changefreq}</changefreq>
     <priority>${page.priority}</priority>
   </url>`;
-  }).join('\n')}
+  })
+  .join('\n')}
 </urlset>`;
 
   return new Response(sitemap, {
