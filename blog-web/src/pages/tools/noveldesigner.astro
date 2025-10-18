@@ -1,0 +1,39 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import NovelDesigner from "@/components/solid/NovelDesigner";
+---
+
+<Layout
+    title="小说设计器 - ECTools | ExquisiteCore 在线工具"
+    description="专为小说创作者打造的工具，支持角色管理、大纲编辑、世界观设定、灵感笔记等功能，让你的小说创作更有条理。"
+    keywords="小说设计器,小说创作工具,角色管理,大纲编辑,世界观设定,灵感笔记,写作工具,在线工具"
+    type="website"
+>
+    <div class="relative min-h-screen">
+        <div class="container mx-auto px-4 py-8">
+            <!-- 返回按钮 -->
+            <div class="mb-6">
+                <a
+                    href="/tools"
+                    class="btn btn-sm btn-ghost gap-2"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    返回工具列表
+                </a>
+            </div>
+
+            <!-- 标题 -->
+            <div class="mb-8">
+                <h1 class="text-4xl font-bold mb-3">小说设计器</h1>
+                <p class="text-lg opacity-80">
+                    专为小说创作者打造的工具，让你的创作更有条理
+                </p>
+            </div>
+
+            <!-- 小说设计器组件 -->
+            <NovelDesigner client:load />
+        </div>
+    </div>
+</Layout>

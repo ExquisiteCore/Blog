@@ -10,6 +10,15 @@ const tools = [
     image: '/markdown-svgrepo-com.svg',
     type: 'editor',
   },
+  {
+    id: 'noveldesigner',
+    name: '小说设计器',
+    description:
+      '专为小说创作者打造的工具，支持角色管理、大纲编辑、世界观设定、灵感笔记等功能，让你的创作更有条理。',
+    category: ['creative', 'writing'],
+    image: '/book.webp',
+    type: 'creative',
+  },
 ];
 
 export default function ToolList() {
