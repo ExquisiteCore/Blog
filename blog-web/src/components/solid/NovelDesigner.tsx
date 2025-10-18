@@ -59,6 +59,14 @@ type ViewMode = 'home' | 'detail';
 type ModalType = 'background' | 'characters' | 'relationships' | 'worldview' | 'timeline' | 'outline' | null;
 
 export default function NovelDesigner() {
+  // ID 生成计数器,避免快速连续创建时产生重复 ID
+  let idCounter = 0;
+  const generateId = () => {
+    const timestamp = Date.now();
+    idCounter = (idCounter + 1) % 1000;
+    return `${timestamp}-${idCounter}`;
+  };
+
   // 小说列表
   const [novels, setNovels] = createSignal<Novel[]>([]);
   const [selectedNovel, setSelectedNovel] = createSignal<Novel | null>(null);
@@ -91,7 +99,12 @@ export default function NovelDesigner() {
   // 保存到 localStorage
   const saveToStorage = () => {
     if (typeof window === 'undefined') return;
-    localStorage.setItem('novel-designer-novels', JSON.stringify(novels()));
+    try {
+      localStorage.setItem('novel-designer-novels', JSON.stringify(novels()));
+    } catch (e) {
+      console.error('Failed to save data:', e);
+      alert('保存失败,可能是存储空间不足');
+    }
   };
 
   // 初始化时加载数据
@@ -109,7 +122,7 @@ export default function NovelDesigner() {
   // 创建新小说
   const createNovel = () => {
     const newNovel: Novel = {
-      id: Date.now().toString(),
+      id: generateId(),
       title: '未命名小说',
       cover: '',
       summary: '',
@@ -168,7 +181,7 @@ export default function NovelDesigner() {
   // ===== 角色管理 =====
   const addCharacter = () => {
     setEditingCharacter({
-      id: Date.now().toString(),
+      id: generateId(),
       name: '',
       avatar: '',
       age: '',
@@ -183,6 +196,12 @@ export default function NovelDesigner() {
     const char = editingCharacter();
     if (!char) return;
 
+    // 验证必填字段
+    if (!char.name.trim()) {
+      alert('请输入角色姓名');
+      return;
+    }
+
     updateSelectedNovel((novel) => {
       const exists = novel.characters.find((c) => c.id === char.id);
       return {
@@ -196,10 +215,20 @@ export default function NovelDesigner() {
   };
 
   const deleteCharacter = (id: string) => {
-    if (confirm('确定要删除这个角色吗？')) {
+    const novel = selectedNovel();
+    if (!novel) return;
+
+    const charToDelete = novel.characters.find((c) => c.id === id);
+    if (!charToDelete) return;
+
+    if (confirm('确定要删除这个角色吗？相关的人物关系也将被删除。')) {
       updateSelectedNovel((novel) => ({
         ...novel,
         characters: novel.characters.filter((c) => c.id !== id),
+        // 同时删除与该角色相关的所有关系
+        relationships: novel.relationships.filter(
+          (r) => r.from !== charToDelete.name && r.to !== charToDelete.name
+        ),
       }));
     }
   };
@@ -207,7 +236,7 @@ export default function NovelDesigner() {
   // ===== 世界观设定 =====
   const addWorldSetting = () => {
     setEditingWorld({
-      id: Date.now().toString(),
+      id: generateId(),
       category: '',
       title: '',
       description: '',
@@ -217,6 +246,12 @@ export default function NovelDesigner() {
   const saveWorldSetting = () => {
     const setting = editingWorld();
     if (!setting) return;
+
+    // 验证必填字段
+    if (!setting.title.trim()) {
+      alert('请输入设定标题');
+      return;
+    }
 
     updateSelectedNovel((novel) => {
       const exists = novel.worldSettings.find((w) => w.id === setting.id);
@@ -242,7 +277,7 @@ export default function NovelDesigner() {
   // ===== 人物关系网 =====
   const addRelationship = () => {
     setEditingRelationship({
-      id: Date.now().toString(),
+      id: generateId(),
       from: '',
       to: '',
       relation: '',
@@ -253,6 +288,16 @@ export default function NovelDesigner() {
   const saveRelationship = () => {
     const rel = editingRelationship();
     if (!rel) return;
+
+    // 验证必填字段
+    if (!rel.from.trim() || !rel.to.trim()) {
+      alert('请输入两个人物名称');
+      return;
+    }
+    if (!rel.relation.trim()) {
+      alert('请输入关系类型');
+      return;
+    }
 
     updateSelectedNovel((novel) => {
       const exists = novel.relationships.find((r) => r.id === rel.id);
@@ -278,7 +323,7 @@ export default function NovelDesigner() {
   // ===== 时间线 =====
   const addTimelineEvent = () => {
     setEditingTimeline({
-      id: Date.now().toString(),
+      id: generateId(),
       time: '',
       title: '',
       description: '',
@@ -288,6 +333,12 @@ export default function NovelDesigner() {
   const saveTimelineEvent = () => {
     const event = editingTimeline();
     if (!event) return;
+
+    // 验证必填字段
+    if (!event.title.trim()) {
+      alert('请输入事件标题');
+      return;
+    }
 
     updateSelectedNovel((novel) => {
       const exists = novel.timeline.find((t) => t.id === event.id);
@@ -313,7 +364,7 @@ export default function NovelDesigner() {
   // ===== 章节梗概 =====
   const addOutline = () => {
     setEditingOutline({
-      id: Date.now().toString(),
+      id: generateId(),
       chapter: '',
       title: '',
       content: '',
@@ -323,6 +374,16 @@ export default function NovelDesigner() {
   const saveOutline = () => {
     const outline = editingOutline();
     if (!outline) return;
+
+    // 验证必填字段
+    if (!outline.chapter.trim()) {
+      alert('请输入章节号');
+      return;
+    }
+    if (!outline.title.trim()) {
+      alert('请输入章节标题');
+      return;
+    }
 
     updateSelectedNovel((novel) => {
       const exists = novel.outlines.find((o) => o.id === outline.id);
@@ -357,6 +418,25 @@ export default function NovelDesigner() {
     URL.revokeObjectURL(url);
   };
 
+  // 验证导入的数据结构
+  const validateNovelData = (data: any): data is Novel[] => {
+    if (!Array.isArray(data)) return false;
+
+    return data.every((novel: any) => {
+      return (
+        typeof novel === 'object' &&
+        typeof novel.id === 'string' &&
+        typeof novel.title === 'string' &&
+        typeof novel.createdAt === 'string' &&
+        Array.isArray(novel.characters) &&
+        Array.isArray(novel.worldSettings) &&
+        Array.isArray(novel.relationships) &&
+        Array.isArray(novel.timeline) &&
+        Array.isArray(novel.outlines)
+      );
+    });
+  };
+
   const importData = () => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -368,6 +448,13 @@ export default function NovelDesigner() {
         reader.onload = (event) => {
           try {
             const data = JSON.parse(event.target?.result as string);
+
+            // 验证数据结构
+            if (!validateNovelData(data)) {
+              alert('导入失败,文件格式不正确。请确保导入的是有效的小说数据文件。');
+              return;
+            }
+
             if (confirm('导入将覆盖当前所有数据，确定继续吗？')) {
               setNovels(data);
               saveToStorage();
@@ -443,8 +530,12 @@ export default function NovelDesigner() {
                   selectedNovel()?.id === novel.id ? 'border-primary bg-base-200' : 'border-base-300'
                 }`}
                 onClick={() => {
-                  setSelectedNovel(novel);
-                  setViewMode('home');
+                  // 如果点击的不是当前选中的小说,则切换到home模式
+                  // 如果点击的是当前选中的小说,保持当前视图模式
+                  if (selectedNovel()?.id !== novel.id) {
+                    setSelectedNovel(novel);
+                    setViewMode('home');
+                  }
                 }}
               >
                 <div class="mb-1 flex items-start justify-between">
@@ -1299,34 +1390,45 @@ export default function NovelDesigner() {
             <div class="modal-box max-w-2xl">
               <h3 class="mb-4 text-lg font-bold">编辑人物关系</h3>
               <div class="space-y-3">
+                <Show when={(selectedNovel()?.characters.length || 0) === 0}>
+                  <div class="alert alert-warning">
+                    <span>还没有添加角色，请先在"人物详情"中添加角色</span>
+                  </div>
+                </Show>
                 <div class="grid grid-cols-2 gap-3">
                   <div>
                     <label class="label">
                       <span class="label-text">人物A</span>
                     </label>
-                    <input
-                      type="text"
+                    <select
                       value={rel().from}
-                      onInput={(e) =>
+                      onChange={(e) =>
                         setEditingRelationship({ ...rel(), from: e.currentTarget.value })
                       }
-                      class="input input-bordered w-full"
-                      placeholder="人物名"
-                    />
+                      class="select select-bordered w-full"
+                    >
+                      <option value="">请选择人物</option>
+                      <For each={selectedNovel()?.characters || []}>
+                        {(char) => <option value={char.name}>{char.name}</option>}
+                      </For>
+                    </select>
                   </div>
                   <div>
                     <label class="label">
                       <span class="label-text">人物B</span>
                     </label>
-                    <input
-                      type="text"
+                    <select
                       value={rel().to}
-                      onInput={(e) =>
+                      onChange={(e) =>
                         setEditingRelationship({ ...rel(), to: e.currentTarget.value })
                       }
-                      class="input input-bordered w-full"
-                      placeholder="人物名"
-                    />
+                      class="select select-bordered w-full"
+                    >
+                      <option value="">请选择人物</option>
+                      <For each={selectedNovel()?.characters || []}>
+                        {(char) => <option value={char.name}>{char.name}</option>}
+                      </For>
+                    </select>
                   </div>
                 </div>
                 <div>
