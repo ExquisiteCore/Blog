@@ -52,11 +52,12 @@ interface OutlineItem {
   id: string;
   chapter: string;
   title: string;
-  content: string;
+  content: string;      // 章节梗概
+  bodyContent: string;  // 章节正文内容
 }
 
 type ViewMode = 'home' | 'detail';
-type ModalType = 'background' | 'characters' | 'relationships' | 'worldview' | 'timeline' | 'outline' | null;
+type ModalType = 'background' | 'characters' | 'relationships' | 'worldview' | 'timeline' | 'outline' | 'writing' | null;
 type RelationshipViewMode = 'list' | 'graph';
 
 export default function NovelDesigner() {
@@ -83,6 +84,10 @@ export default function NovelDesigner() {
   const [editingTimeline, setEditingTimeline] = createSignal<TimelineEvent | null>(null);
   const [editingOutline, setEditingOutline] = createSignal<OutlineItem | null>(null);
   const [editingNovel, setEditingNovel] = createSignal<Partial<Novel> | null>(null);
+
+  // 正文编辑状态
+  const [selectedChapterId, setSelectedChapterId] = createSignal<string>('');
+  const [chapterContent, setChapterContent] = createSignal<string>('');
 
   // 从 localStorage 加载数据
   const loadFromStorage = () => {
@@ -370,6 +375,7 @@ export default function NovelDesigner() {
       chapter: '',
       title: '',
       content: '',
+      bodyContent: '',  // 初始化正文内容
     });
   };
 
@@ -406,6 +412,59 @@ export default function NovelDesigner() {
         outlines: novel.outlines.filter((o) => o.id !== id),
       }));
     }
+  };
+
+  // ===== 正文编辑 =====
+  const openWritingEditor = (chapterId?: string) => {
+    const novel = selectedNovel();
+    if (!novel) return;
+
+    // 如果没有章节，提示用户先创建章节
+    if (novel.outlines.length === 0) {
+      alert('请先在"章节梗概"中创建章节');
+      return;
+    }
+
+    // 选择第一个章节或指定的章节
+    const targetChapterId = chapterId || novel.outlines[0].id;
+    const chapter = novel.outlines.find((o) => o.id === targetChapterId);
+
+    if (chapter) {
+      setSelectedChapterId(targetChapterId);
+      setChapterContent(chapter.bodyContent || '');
+      setActiveModal('writing');
+    }
+  };
+
+  const switchChapter = (chapterId: string) => {
+    // 保存当前章节内容
+    saveChapterContent();
+
+    // 切换到新章节
+    const chapter = selectedNovel()?.outlines.find((o) => o.id === chapterId);
+    if (chapter) {
+      setSelectedChapterId(chapterId);
+      setChapterContent(chapter.bodyContent || '');
+    }
+  };
+
+  const saveChapterContent = () => {
+    const chapterId = selectedChapterId();
+    const content = chapterContent();
+
+    if (!chapterId) return;
+
+    updateSelectedNovel((novel) => ({
+      ...novel,
+      outlines: novel.outlines.map((o) =>
+        o.id === chapterId ? { ...o, bodyContent: content } : o
+      ),
+    }));
+  };
+
+  const getWordCount = (text: string) => {
+    // 移除空白字符后计算字数
+    return text.replace(/\s/g, '').length;
   };
 
   // ===== 导出/导入 =====
@@ -723,7 +782,7 @@ export default function NovelDesigner() {
               </div>
             </div>
 
-            {/* 详情页主体 - 6个功能按钮 */}
+            {/* 详情页主体 - 7个功能按钮 */}
             <div class="flex-1 overflow-y-auto p-8">
               <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 <button
@@ -786,6 +845,18 @@ export default function NovelDesigner() {
                     <div class="mb-3 text-4xl">📝</div>
                     <h3 class="text-xl font-bold group-hover:text-yellow-600">
                       章节梗概
+                    </h3>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => openWritingEditor()}
+                  class="group aspect-[4/3] rounded-xl border-2 border-base-300 bg-gradient-to-br from-red-500/10 to-red-600/10 p-6 transition-all hover:scale-105 hover:border-red-500 hover:shadow-lg"
+                >
+                  <div class="flex h-full flex-col items-center justify-center">
+                    <div class="mb-3 text-4xl">✍️</div>
+                    <h3 class="text-xl font-bold group-hover:text-red-600">
+                      正文编辑
                     </h3>
                   </div>
                 </button>
@@ -1317,12 +1388,24 @@ export default function NovelDesigner() {
                             <div class="mb-2 flex items-center gap-2">
                               <span class="badge badge-primary">{outline.chapter}</span>
                               <h3 class="text-lg font-semibold">{outline.title}</h3>
+                              {/* 字数显示 */}
+                              <Show when={outline.bodyContent}>
+                                <span class="badge badge-ghost badge-sm">
+                                  {getWordCount(outline.bodyContent)}字
+                                </span>
+                              </Show>
                             </div>
                             <p class="whitespace-pre-wrap text-sm text-base-content/80">
                               {outline.content}
                             </p>
                           </div>
                           <div class="ml-4 flex gap-1">
+                            <button
+                              onClick={() => openWritingEditor(outline.id)}
+                              class="btn btn-primary btn-ghost btn-xs"
+                            >
+                              写作
+                            </button>
                             <button
                               onClick={() => setEditingOutline(outline)}
                               class="btn btn-ghost btn-xs"
@@ -1768,6 +1851,76 @@ export default function NovelDesigner() {
             <div class="modal-backdrop" onClick={() => setEditingOutline(null)}></div>
           </div>
         )}
+      </Show>
+
+      {/* 正文编辑器模态框 */}
+      <Show when={activeModal() === 'writing'}>
+        <div class="modal modal-open">
+          <div class="modal-box max-w-7xl h-[90vh] flex flex-col p-0">
+            {/* 顶部工具栏 */}
+            <div class="flex items-center justify-between border-b border-base-300 px-6 py-4">
+              <div class="flex items-center gap-4">
+                <h3 class="text-lg font-bold">正文编辑</h3>
+                {/* 章节选择器 */}
+                <select
+                  value={selectedChapterId()}
+                  onChange={(e) => switchChapter(e.currentTarget.value)}
+                  class="select select-bordered select-sm"
+                >
+                  <For each={selectedNovel()?.outlines || []}>
+                    {(outline) => (
+                      <option value={outline.id}>
+                        {outline.chapter} - {outline.title || '未命名章节'}
+                      </option>
+                    )}
+                  </For>
+                </select>
+              </div>
+
+              <div class="flex items-center gap-4">
+                {/* 字数统计 */}
+                <div class="text-sm text-base-content/70">
+                  字数: {getWordCount(chapterContent())}
+                </div>
+                <button
+                  onClick={() => {
+                    saveChapterContent();
+                    setActiveModal(null);
+                  }}
+                  class="btn btn-primary btn-sm"
+                >
+                  保存并关闭
+                </button>
+              </div>
+            </div>
+
+            {/* 编辑器区域 */}
+            <div class="flex-1 overflow-hidden">
+              <textarea
+                value={chapterContent()}
+                onInput={(e) => setChapterContent(e.currentTarget.value)}
+                class="textarea textarea-bordered w-full h-full resize-none rounded-none border-0 focus:outline-none text-base leading-relaxed p-6"
+                placeholder="开始写作..."
+                style="font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;"
+              />
+            </div>
+
+            {/* 底部提示 */}
+            <div class="border-t border-base-300 px-6 py-3 bg-base-200">
+              <div class="flex items-center justify-between text-xs text-base-content/60">
+                <span>提示: 切换章节时会自动保存当前内容</span>
+                <span>当前章节: {selectedNovel()?.outlines.find(o => o.id === selectedChapterId())?.chapter}</span>
+              </div>
+            </div>
+          </div>
+          <div
+            class="modal-backdrop"
+            onClick={() => {
+              saveChapterContent();
+              setActiveModal(null);
+            }}
+          ></div>
+        </div>
       </Show>
     </div>
   );
