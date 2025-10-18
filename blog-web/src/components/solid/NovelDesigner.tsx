@@ -57,6 +57,7 @@ interface OutlineItem {
 
 type ViewMode = 'home' | 'detail';
 type ModalType = 'background' | 'characters' | 'relationships' | 'worldview' | 'timeline' | 'outline' | null;
+type RelationshipViewMode = 'list' | 'graph';
 
 export default function NovelDesigner() {
   // ID 生成计数器,避免快速连续创建时产生重复 ID
@@ -73,6 +74,7 @@ export default function NovelDesigner() {
   const [searchQuery, setSearchQuery] = createSignal('');
   const [viewMode, setViewMode] = createSignal<ViewMode>('home');
   const [activeModal, setActiveModal] = createSignal<ModalType>(null);
+  const [relationshipViewMode, setRelationshipViewMode] = createSignal<RelationshipViewMode>('list');
 
   // 编辑状态
   const [editingCharacter, setEditingCharacter] = createSignal<Character | null>(null);
@@ -960,55 +962,212 @@ export default function NovelDesigner() {
           <div class="modal-box max-w-6xl h-[80vh]">
             <div class="mb-4 flex items-center justify-between">
               <h3 class="text-lg font-bold">人物关系网</h3>
-              <button onClick={addRelationship} class="btn btn-primary btn-sm">
-                + 添加关系
-              </button>
-            </div>
-            <div class="h-[calc(100%-8rem)] overflow-y-auto">
-              <div class="space-y-3">
-                <For each={selectedNovel()?.relationships || []}>
-                  {(rel) => (
-                    <div class="card border border-base-300 bg-base-100 shadow-sm">
-                      <div class="card-body p-4">
-                        <div class="flex items-center gap-3">
-                          <div class="rounded-lg bg-primary/10 px-3 py-1 font-semibold">
-                            {rel.from || '?'}
-                          </div>
-                          <div class="flex-1 text-center">
-                            <div class="badge badge-secondary">{rel.relation || '关系'}</div>
-                          </div>
-                          <div class="rounded-lg bg-primary/10 px-3 py-1 font-semibold">
-                            {rel.to || '?'}
-                          </div>
-                          <div class="flex gap-1">
-                            <button
-                              onClick={() => setEditingRelationship(rel)}
-                              class="btn btn-ghost btn-xs"
-                            >
-                              编辑
-                            </button>
-                            <button
-                              onClick={() => deleteRelationship(rel.id)}
-                              class="btn btn-error btn-ghost btn-xs"
-                            >
-                              删除
-                            </button>
-                          </div>
-                        </div>
-                        <Show when={rel.description}>
-                          <p class="mt-2 text-sm text-base-content/70">{rel.description}</p>
-                        </Show>
-                      </div>
-                    </div>
-                  )}
-                </For>
-              </div>
-              <Show when={(selectedNovel()?.relationships.length || 0) === 0}>
-                <div class="py-16 text-center text-base-content/60">
-                  还没有添加人物关系，点击右上角按钮开始创建吧！
+              <div class="flex gap-2">
+                {/* 视图切换按钮 */}
+                <div class="join">
+                  <button
+                    class={`btn btn-sm join-item ${relationshipViewMode() === 'list' ? 'btn-active' : ''}`}
+                    onClick={() => setRelationshipViewMode('list')}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M4 6h16M4 12h16M4 18h16"
+                      />
+                    </svg>
+                    列表
+                  </button>
+                  <button
+                    class={`btn btn-sm join-item ${relationshipViewMode() === 'graph' ? 'btn-active' : ''}`}
+                    onClick={() => setRelationshipViewMode('graph')}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                      />
+                    </svg>
+                    图谱
+                  </button>
                 </div>
-              </Show>
+                <button onClick={addRelationship} class="btn btn-primary btn-sm">
+                  + 添加关系
+                </button>
+              </div>
             </div>
+
+            {/* 列表视图 */}
+            <Show when={relationshipViewMode() === 'list'}>
+              <div class="h-[calc(100%-8rem)] overflow-y-auto">
+                <div class="space-y-3">
+                  <For each={selectedNovel()?.relationships || []}>
+                    {(rel) => (
+                      <div class="card border border-base-300 bg-base-100 shadow-sm">
+                        <div class="card-body p-4">
+                          <div class="flex items-center gap-3">
+                            <div class="rounded-lg bg-primary/10 px-3 py-1 font-semibold">
+                              {rel.from || '?'}
+                            </div>
+                            <div class="flex-1 text-center">
+                              <div class="badge badge-secondary">{rel.relation || '关系'}</div>
+                            </div>
+                            <div class="rounded-lg bg-primary/10 px-3 py-1 font-semibold">
+                              {rel.to || '?'}
+                            </div>
+                            <div class="flex gap-1">
+                              <button
+                                onClick={() => setEditingRelationship(rel)}
+                                class="btn btn-ghost btn-xs"
+                              >
+                                编辑
+                              </button>
+                              <button
+                                onClick={() => deleteRelationship(rel.id)}
+                                class="btn btn-error btn-ghost btn-xs"
+                              >
+                                删除
+                              </button>
+                            </div>
+                          </div>
+                          <Show when={rel.description}>
+                            <p class="mt-2 text-sm text-base-content/70">{rel.description}</p>
+                          </Show>
+                        </div>
+                      </div>
+                    )}
+                  </For>
+                </div>
+                <Show when={(selectedNovel()?.relationships.length || 0) === 0}>
+                  <div class="py-16 text-center text-base-content/60">
+                    还没有添加人物关系，点击右上角按钮开始创建吧！
+                  </div>
+                </Show>
+              </div>
+            </Show>
+
+            {/* 网状图视图 */}
+            <Show when={relationshipViewMode() === 'graph'}>
+              <div class="h-[calc(100%-8rem)] overflow-auto">
+                <Show
+                  when={(selectedNovel()?.relationships.length || 0) > 0}
+                  fallback={
+                    <div class="py-16 text-center text-base-content/60">
+                      还没有添加人物关系，点击右上角按钮开始创建吧！
+                    </div>
+                  }
+                >
+                  <div class="relative min-h-full p-8">
+                    {/* 使用SVG绘制关系图 */}
+                    <svg class="absolute inset-0 w-full h-full pointer-events-none">
+                      <defs>
+                        <marker
+                          id="arrowhead"
+                          markerWidth="10"
+                          markerHeight="10"
+                          refX="9"
+                          refY="3"
+                          orient="auto"
+                        >
+                          <polygon points="0 0, 10 3, 0 6" fill="currentColor" class="text-base-content/30" />
+                        </marker>
+                      </defs>
+                      <For each={selectedNovel()?.relationships || []}>
+                        {(rel, index) => {
+                          const characters = selectedNovel()?.characters || [];
+                          const fromIndex = characters.findIndex(c => c.name === rel.from);
+                          const toIndex = characters.findIndex(c => c.name === rel.to);
+
+                          // 计算位置 - 使用圆形布局
+                          const centerX = 400;
+                          const centerY = 300;
+                          const radius = 200;
+                          const totalChars = characters.length || 1;
+
+                          const fromAngle = (fromIndex / totalChars) * 2 * Math.PI - Math.PI / 2;
+                          const toAngle = (toIndex / totalChars) * 2 * Math.PI - Math.PI / 2;
+
+                          const x1 = centerX + radius * Math.cos(fromAngle);
+                          const y1 = centerY + radius * Math.sin(fromAngle);
+                          const x2 = centerX + radius * Math.cos(toAngle);
+                          const y2 = centerY + radius * Math.sin(toAngle);
+
+                          return (
+                            <g>
+                              <line
+                                x1={x1}
+                                y1={y1}
+                                x2={x2}
+                                y2={y2}
+                                stroke="currentColor"
+                                class="text-base-content/30"
+                                stroke-width="2"
+                                marker-end="url(#arrowhead)"
+                              />
+                              {/* 关系标签 */}
+                              <text
+                                x={(x1 + x2) / 2}
+                                y={(y1 + y2) / 2}
+                                text-anchor="middle"
+                                class="fill-primary text-xs font-semibold"
+                              >
+                                {rel.relation}
+                              </text>
+                            </g>
+                          );
+                        }}
+                      </For>
+                    </svg>
+
+                    {/* 角色节点 */}
+                    <For each={selectedNovel()?.characters || []}>
+                      {(char, index) => {
+                        const totalChars = (selectedNovel()?.characters.length || 1);
+                        const angle = (index() / totalChars) * 2 * Math.PI - Math.PI / 2;
+                        const centerX = 400;
+                        const centerY = 300;
+                        const radius = 200;
+
+                        const x = centerX + radius * Math.cos(angle) - 50;
+                        const y = centerY + radius * Math.sin(angle) - 50;
+
+                        return (
+                          <div
+                            class="absolute flex h-24 w-24 flex-col items-center justify-center rounded-full border-4 border-primary bg-base-100 shadow-lg transition-transform hover:scale-110"
+                            style={`left: ${x}px; top: ${y}px;`}
+                          >
+                            <div class="text-center">
+                              <div class="text-sm font-bold line-clamp-2 px-2">{char.name}</div>
+                              <Show when={char.age || char.gender}>
+                                <div class="text-xs opacity-60">
+                                  {char.age} {char.gender}
+                                </div>
+                              </Show>
+                            </div>
+                          </div>
+                        );
+                      }}
+                    </For>
+                  </div>
+                </Show>
+              </div>
+            </Show>
+
             <div class="modal-action">
               <button onClick={() => setActiveModal(null)} class="btn">
                 关闭
