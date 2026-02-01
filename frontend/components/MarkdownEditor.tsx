@@ -1,0 +1,761 @@
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import { Image, Edit, Eye, Download, Settings, Upload } from 'lucide-react';
+import { pinyin } from 'pinyin-pro';
+import http from '@/lib/axios';
+import MarkdownRenderer from './MarkdownRenderer';
+
+export default function MarkdownEditor() {
+  // 编辑器内容
+  const [text, setText] = useState(
+    "EC is too lazy to write a refresh button, because he thinks 'refresh' = 'edit' + 'preview'. Actually, that makes sense :D"
+  );
+  // 编辑器模式：edit - 编辑模式，preview - 预览模式
+  const [mode, setMode] = useState<'edit' | 'preview'>('edit');
+  // 封面图片URL
+  const [coverImage, setCoverImage] = useState<string>('');
+  // 文章标签
+  const [tags, setTags] = useState<string[]>([]);
+  // 标签输入
+  const [tagInput, setTagInput] = useState<string>('');
+  // 所有可用标签列表
+  const [availableLabels, setAvailableLabels] = useState<any[]>([]);
+  // 选中的标签ID列表
+  const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>([]);
+  // 文章标题
+  const [title, setTitle] = useState<string>('');
+  // 文章摘要
+  const [summary, setSummary] = useState<string>('');
+  // 文章slug
+  const [slug, setSlug] = useState<string>('');
+  // 发布状态
+  const [isPublishing, setIsPublishing] = useState<boolean>(false);
+  // 是否已挂载标志
+  const [isMounted, setIsMounted] = useState(false);
+  // 图片上传状态
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  // 上传token
+  const [uploadToken, setUploadToken] = useState<string>('');
+  // 自定义上传 API 地址
+  const [uploadApiUrl, setUploadApiUrl] = useState<string>(
+    'http://121.62.28.11:40027/api/v1'
+  );
+  // 设置弹窗显示状态
+  const [showSettingsModal, setShowSettingsModal] = useState<boolean>(false);
+  // 编辑器引用
+  const editorRef = useRef<HTMLTextAreaElement>(null);
+  // 封面图片上传区域引用
+  const coverDropzoneRef = useRef<HTMLDivElement>(null);
+  const tokenInputRef = useRef<HTMLInputElement>(null);
+  const apiUrlInputRef = useRef<HTMLInputElement>(null);
+
+  // 获取所有标签
+  const fetchLabels = async () => {
+    try {
+      const data = await http.get('/labels');
+      if (Array.isArray(data)) {
+        setAvailableLabels(data);
+      } else {
+        throw new Error('标签数据格式错误');
+      }
+    } catch (error) {
+      console.error('获取标签失败:', error);
+    }
+  };
+
+  // 处理图片上传
+  const uploadImage = async (file: File): Promise<string | null> => {
+    try {
+      setIsUploading(true);
+
+      if (!file.type.startsWith('image/')) {
+        alert('请上传图片文件');
+        return null;
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'multipart/form-data',
+      };
+      if (uploadToken) {
+        headers['Authorization'] = `Bearer ${uploadToken}`;
+      }
+      const baseUrl = uploadApiUrl || 'http://121.62.28.11:40027/api/v1';
+      const response = await http.post('/upload', formData, {
+        baseURL: baseUrl,
+        headers: headers,
+      });
+
+      if (response && response.status && response.data) {
+        return response.data.links.markdown;
+      } else {
+        throw new Error('上传失败，返回数据格式错误');
+      }
+    } catch (error) {
+      console.error('上传图片失败:', error);
+      alert(error instanceof Error ? error.message : '上传失败，请重试');
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // 处理编辑器中的图片粘贴
+  const handleEditorPaste = async (e: React.ClipboardEvent) => {
+    if (!e.clipboardData) return;
+
+    const items = e.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        e.preventDefault();
+        const file = items[i].getAsFile();
+        if (file) {
+          const markdownLink = await uploadImage(file);
+          if (markdownLink && editorRef.current) {
+            const textarea = editorRef.current;
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const currentText = text;
+
+            const newText =
+              currentText.substring(0, start) +
+              markdownLink +
+              currentText.substring(end);
+            setText(newText);
+
+            setTimeout(() => {
+              textarea.selectionStart = textarea.selectionEnd =
+                start + markdownLink.length;
+              textarea.focus();
+            }, 0);
+          }
+        }
+        break;
+      }
+    }
+  };
+
+  // 处理编辑器中的拖拽上传
+  const handleEditorDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+
+    if (!e.dataTransfer) return;
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith('image/')) {
+        const markdownLink = await uploadImage(file);
+        if (markdownLink && editorRef.current) {
+          const textarea = editorRef.current;
+          const start = textarea.selectionStart;
+          const end = textarea.selectionEnd;
+          const currentText = text;
+
+          const newText =
+            currentText.substring(0, start) +
+            markdownLink +
+            currentText.substring(end);
+          setText(newText);
+
+          setTimeout(() => {
+            textarea.selectionStart = textarea.selectionEnd =
+              start + markdownLink.length;
+            textarea.focus();
+          }, 0);
+        }
+      }
+    }
+  };
+
+  // 处理编辑器拖拽进入事件
+  const handleEditorDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  // 处理封面图片上传
+  const handleCoverImageUpload = async (file: File) => {
+    try {
+      if (!file.type.startsWith('image/')) {
+        alert('请上传图片文件');
+        return;
+      }
+
+      setIsUploading(true);
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'multipart/form-data',
+      };
+      if (uploadToken) {
+        headers['Authorization'] = `Bearer ${uploadToken}`;
+      }
+      const baseUrl = uploadApiUrl || 'http://121.62.28.11:40027/api/v1';
+      const response = await http.post('/upload', formData, {
+        baseURL: baseUrl,
+        headers: headers,
+      });
+
+      if (response && response.status && response.data) {
+        setCoverImage(response.data.links.url);
+      } else {
+        throw new Error('上传失败，返回数据格式错误');
+      }
+    } catch (error) {
+      console.error('上传封面图片失败:', error);
+      alert(error instanceof Error ? error.message : '上传失败，请重试');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // 处理封面图片区域的拖拽上传
+  const handleCoverDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+
+    if (!e.dataTransfer) return;
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      const file = files[0];
+      await handleCoverImageUpload(file);
+    }
+  };
+
+  // 处理封面图片区域的拖拽进入事件
+  const handleCoverDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  // 处理封面图片文件选择
+  const handleCoverFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target;
+    if (input.files && input.files.length > 0) {
+      handleCoverImageUpload(input.files[0]);
+    }
+  };
+
+  // 设置已挂载标志
+  useEffect(() => {
+    const savedToken = localStorage.getItem('uploadToken');
+    if (savedToken) {
+      setUploadToken(savedToken);
+    }
+    const savedApiUrl = localStorage.getItem('uploadApiUrl');
+    if (savedApiUrl) {
+      setUploadApiUrl(savedApiUrl);
+    }
+    setIsMounted(true);
+    fetchLabels();
+  }, []);
+
+  // 处理导出文档
+  const handleExport = () => {
+    const blob = new Blob([text], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${title || 'markdown'}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // 处理设置
+  const handleSettings = () => {
+    setShowSettingsModal(true);
+  };
+
+  // 关闭设置弹窗
+  const handleCloseSettingsModal = () => {
+    setShowSettingsModal(false);
+  };
+
+  // 保存设置
+  const handleSaveSettings = (newToken: string, newApiUrl: string) => {
+    setUploadToken(newToken);
+    localStorage.setItem('uploadToken', newToken);
+    setUploadApiUrl(newApiUrl);
+    localStorage.setItem('uploadApiUrl', newApiUrl);
+    setShowSettingsModal(false);
+  };
+
+  // 处理标题和slug的逻辑
+  const generateSlug = (text: string) => {
+    const hasChinese = /[\u4e00-\u9fa5]/.test(text);
+
+    let convertedText = text;
+    if (hasChinese) {
+      convertedText = pinyin(text, {
+        toneType: 'none',
+        pattern: 'pinyin',
+        type: 'string',
+        nonZh: 'consecutive',
+      }).replace(/\s+/g, '-');
+    }
+
+    return convertedText
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  };
+
+  // 处理标题变化时自动生成slug
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newTitle = e.target.value;
+    setTitle(newTitle);
+
+    if (!slug || slug === generateSlug(title)) {
+      setSlug(generateSlug(newTitle));
+    }
+  };
+
+  // 创建新标签
+  const createLabel = async (name: string): Promise<any | null> => {
+    try {
+      const labelSlug = generateSlug(name);
+      const labelData = {
+        name,
+        slug: labelSlug,
+        description: `${name}相关文章`,
+      };
+
+      const data = await http.post('/labels', labelData, {
+        withToken: true,
+      });
+
+      if (data && typeof data === 'object' && 'id' in data) {
+        const newLabel = data;
+        setAvailableLabels([...availableLabels, newLabel]);
+        return newLabel;
+      } else {
+        throw new Error('创建标签失败，返回数据格式错误');
+      }
+    } catch (error) {
+      console.error('创建标签失败:', error);
+      alert('创建标签失败，请重试');
+      return null;
+    }
+  };
+
+  // 处理标签输入
+  const handleTagInput = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value;
+    setTagInput(input);
+
+    if (input.endsWith(',')) {
+      const tagName = input.slice(0, -1).trim();
+      if (tagName) {
+        await addTag(tagName);
+        setTagInput('');
+      }
+    }
+  };
+
+  // 添加标签
+  const addTag = async (tagName: string) => {
+    if (tags.includes(tagName)) {
+      alert(`标签 "${tagName}" 已添加`);
+      return;
+    }
+
+    let labelId: string | null = null;
+    const existingLabel = availableLabels.find(
+      (label) => label.name === tagName
+    );
+
+    if (existingLabel) {
+      labelId = existingLabel.id;
+    } else {
+      const newLabel = await createLabel(tagName);
+      if (newLabel) {
+        labelId = newLabel.id;
+      }
+    }
+
+    if (labelId) {
+      setSelectedLabelIds([...selectedLabelIds, labelId]);
+      setTags([...tags, tagName]);
+    }
+  };
+
+  // 处理标签删除
+  const removeTag = (index: number) => {
+    const newTags = [...tags];
+    const newLabelIds = [...selectedLabelIds];
+    newTags.splice(index, 1);
+    newLabelIds.splice(index, 1);
+    setTags(newTags);
+    setSelectedLabelIds(newLabelIds);
+  };
+
+  // 处理发布文章
+  const handlePublish = async () => {
+    try {
+      setIsPublishing(true);
+
+      if (!title) {
+        alert('请输入文章标题');
+        return;
+      }
+
+      if (!text || text.trim().length < 10) {
+        alert('文章内容太短');
+        return;
+      }
+
+      if (!slug) {
+        alert('请输入文章别名');
+        return;
+      }
+
+      if (!coverImage) {
+        alert('请设置封面图片');
+        return;
+      }
+
+      const userData = localStorage.getItem('user');
+      if (!userData) {
+        alert('请先登录');
+        return;
+      }
+
+      const user = JSON.parse(userData);
+      const authorId = user.id;
+
+      const postData = {
+        title: title,
+        content: text,
+        slug: slug,
+        summary: summary || title,
+        featured_image: coverImage,
+        author_id: authorId,
+        published: true,
+        labels: selectedLabelIds.length > 0 ? selectedLabelIds : [],
+      };
+
+      await http.post('/posts', postData, {
+        withToken: true,
+      });
+
+      alert('文章发布成功！');
+
+      setTitle('');
+      setText('');
+      setSlug('');
+      setSummary('');
+      setCoverImage('');
+      setTags([]);
+      setSelectedLabelIds([]);
+    } catch (error) {
+      console.error('发布文章失败:', error);
+      alert(error instanceof Error ? error.message : '发布失败，请重试');
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
+  // 处理标签键盘事件
+  const handleTagKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (tagInput.trim()) {
+        addTag(tagInput.trim());
+        setTagInput('');
+      }
+    }
+  };
+
+  return (
+    <div className="min-h-screen">
+      {/* 设置弹窗 */}
+      {showSettingsModal && (
+        <div className="modal modal-open">
+          <div className="modal-box">
+            <h3 className="font-bold text-lg">设置上传参数</h3>
+            <label className="form-control w-full mt-4">
+              <div className="label">
+                <span className="label-text">上传 Token</span>
+              </div>
+              <input
+                ref={tokenInputRef}
+                type="text"
+                placeholder="在此输入Token"
+                className="input input-bordered w-full"
+                defaultValue={uploadToken}
+              />
+            </label>
+            <label className="form-control w-full mt-2">
+              <div className="label">
+                <span className="label-text">上传 API 地址</span>
+              </div>
+              <input
+                ref={apiUrlInputRef}
+                type="text"
+                placeholder="例如: http://121.62.28.11:40027/api/v1"
+                className="input input-bordered w-full"
+                defaultValue={uploadApiUrl}
+              />
+            </label>
+            <div className="modal-action mt-6">
+              <button className="btn" onClick={handleCloseSettingsModal}>
+                取消
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={() =>
+                  handleSaveSettings(
+                    tokenInputRef.current?.value ?? '',
+                    apiUrlInputRef.current?.value ?? ''
+                  )
+                }
+              >
+                保存
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="container mx-auto flex min-h-screen flex-col px-4 py-8">
+        {/* 顶部工具栏 */}
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex space-x-2">
+            <button
+              className={`btn btn-sm ${mode === 'preview' ? 'btn-primary' : 'btn-outline'}`}
+              onClick={() => setMode('preview')}
+            >
+              <Eye className="h-4 w-4" />
+              <span>预览</span>
+            </button>
+            <button
+              className={`btn btn-sm ${mode === 'edit' ? 'btn-primary' : 'btn-outline'}`}
+              onClick={() => setMode('edit')}
+            >
+              <Edit className="h-4 w-4" />
+              <span>编辑</span>
+            </button>
+          </div>
+          <div className="flex space-x-2">
+            <button className="btn btn-outline btn-sm" onClick={handleExport}>
+              <Download className="h-4 w-4" />
+              <span>导出</span>
+            </button>
+            <button className="btn btn-outline btn-sm" onClick={handleSettings}>
+              <Settings className="h-4 w-4" />
+              <span>设置</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 编辑器区域 */}
+        <div className="flex-1">
+          {isMounted && (
+            <>
+              {mode === 'edit' && (
+                <textarea
+                  ref={editorRef}
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  onDrop={handleEditorDrop}
+                  onDragOver={handleEditorDragOver}
+                  onPaste={handleEditorPaste}
+                  className="h-[calc(100vh-300px)] w-full rounded-md border border-base-200 p-4 focus:outline-none"
+                  placeholder="在此输入文章内容，支持Markdown格式。可以拖拽或粘贴图片到编辑器中上传。"
+                />
+              )}
+              {mode === 'preview' && (
+                <div className="h-[calc(100vh-300px)] overflow-auto rounded-md border border-base-200 p-4">
+                  <MarkdownRenderer content={text} />
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* 底部区域 - 封面图片和标签 */}
+        <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+          {/* 封面图片上传 */}
+          <div className="flex flex-col space-y-2">
+            <span className="text-sm font-medium">封面图片：</span>
+            <div className="flex gap-4">
+              <div className="flex-1 space-y-2">
+                <div className="flex w-full items-center space-x-2">
+                  <input
+                    type="text"
+                    placeholder="封面链接"
+                    className="input input-bordered w-full"
+                    value={coverImage}
+                    onChange={(e) => setCoverImage(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">
+                    随机图片调用于www.dmoe.cc的接口，不代表我的个人审美
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      className="btn btn-primary btn-sm mt-2"
+                      onClick={() =>
+                        setCoverImage(
+                          `https://www.dmoe.cc/random.php?t=${Date.now()}`
+                        )
+                      }
+                    >
+                      <div className="flex items-center">
+                        <span className="mr-1">随机图片</span>
+                      </div>
+                    </button>
+                    <button
+                      className="btn btn-outline btn-sm mt-2"
+                      onClick={() => {
+                        const input =
+                          coverDropzoneRef.current?.querySelector('input[type="file"]');
+                        if (input) (input as HTMLInputElement).click();
+                      }}
+                      disabled={isUploading}
+                    >
+                      <div className="flex items-center">
+                        <Upload className="mr-1 h-4 w-4" />
+                        <span>上传图片</span>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div
+                ref={coverDropzoneRef}
+                className="relative h-[150px] w-[200px] overflow-hidden rounded-md border border-gray-200 bg-white dark:bg-gray-800"
+                onDrop={handleCoverDrop}
+                onDragOver={handleCoverDragOver}
+              >
+                {coverImage ? (
+                  <div className="group relative h-full w-full">
+                    <img
+                      src={coverImage}
+                      alt="封面图片"
+                      className="h-full w-full object-cover"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 transition-opacity group-hover:opacity-100">
+                      <button
+                        className="btn btn-circle btn-ghost btn-sm text-white"
+                        onClick={() => {
+                          const input =
+                            coverDropzoneRef.current?.querySelector(
+                              'input[type="file"]'
+                            );
+                          if (input) (input as HTMLInputElement).click();
+                        }}
+                      >
+                        <Upload className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleCoverFileSelect}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-full w-full flex-col items-center justify-center text-gray-500">
+                    <Image className="mb-2 h-8 w-8" />
+                    <p className="text-xs">拖拽或点击上传</p>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="absolute inset-0 cursor-pointer opacity-0"
+                      onChange={handleCoverFileSelect}
+                    />
+                  </div>
+                )}
+                {isUploading && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                    <div className="loading loading-spinner loading-md text-primary"></div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* 文章标签和标题 */}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-medium">文章标签：</span>
+                <input
+                  type="text"
+                  placeholder="输入标签，按逗号添加"
+                  className="input input-bordered w-full"
+                  value={tagInput}
+                  onChange={handleTagInput}
+                  onKeyDown={handleTagKeyDown}
+                />
+              </div>
+              {tags.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {tags.map((tag, index) => (
+                    <div key={index} className="badge badge-primary gap-1">
+                      <span>{tag}</span>
+                      <button
+                        type="button"
+                        className="text-purple-600 hover:text-purple-800 dark:text-purple-300 dark:hover:text-purple-100"
+                        onClick={() => removeTag(index)}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-medium">文章标题：</span>
+              <input
+                type="text"
+                placeholder="输入文章标题"
+                className="input input-bordered w-full"
+                value={title}
+                onChange={handleTitleChange}
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-medium">文章别名：</span>
+              <input
+                type="text"
+                placeholder="输入文章别名，用于URL"
+                className="input input-bordered w-full"
+                value={slug}
+                onChange={(e) => setSlug(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-medium">文章摘要：</span>
+              <input
+                type="text"
+                placeholder="输入文章摘要（可选）"
+                className="input input-bordered w-full"
+                value={summary}
+                onChange={(e) => setSummary(e.target.value)}
+              />
+            </div>
+            <div className="flex justify-end">
+              <button
+                className="btn btn-primary mt-2"
+                onClick={handlePublish}
+                disabled={isPublishing}
+              >
+                {isPublishing ? '发布中...' : '发布'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

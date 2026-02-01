@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm add axios daisyui lucide-react pinyin-pro sass)",
+      "Bash(pnpm add marked)",
+      "Bash(pnpm build)",
+      "Bash(pnpm dev)"
+    ]
+  }
+}
