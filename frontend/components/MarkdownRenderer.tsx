@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { marked } from 'marked';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeHighlight from 'rehype-highlight';
+import 'highlight.js/styles/github-dark.css';
 import '@/styles/markdown.scss';
 
 interface MarkdownRendererProps {
@@ -9,30 +11,16 @@ interface MarkdownRendererProps {
 }
 
 export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
-  const [html, setHtml] = useState('');
-
-  useEffect(() => {
-    // 配置 marked
-    marked.setOptions({
-      gfm: true,
-      breaks: true,
-    });
-
-    // 渲染 Markdown
-    const rendered = marked(content);
-    if (typeof rendered === 'string') {
-      setHtml(rendered);
-    } else {
-      rendered.then(setHtml);
-    }
-  }, [content]);
-
   return (
-    <div className="prose-indigo mx-auto prose rounded bg-white p-4 shadow-md">
-      <div
-        className="markdown-body"
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
+    <div className="prose prose-indigo mx-auto rounded bg-white dark:bg-base-100 p-4 shadow-md max-w-none">
+      <div className="markdown-body">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          rehypePlugins={[rehypeHighlight]}
+        >
+          {content}
+        </ReactMarkdown>
+      </div>
     </div>
   );
 }
