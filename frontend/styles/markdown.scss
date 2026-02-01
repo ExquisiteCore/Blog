@@ -13,11 +13,11 @@ $green: #a7ecad;
   font-weight: 400;
   font-size: 15px;
   overflow-x: hidden;
-  color: #333;
+  color: var(--markdown-text, #333);
   position: relative;
   background-image:
-    linear-gradient(90deg, rgba(217, 234, 251, 0.25) 3%, transparent 0),
-    linear-gradient(360deg, rgba(217, 234, 251, 0.25) 3%, transparent 0);
+    linear-gradient(90deg, rgba(217, 234, 251, 0.15) 3%, transparent 0),
+    linear-gradient(360deg, rgba(217, 234, 251, 0.15) 3%, transparent 0);
   background-size: 20px 20px;
   background-position: 50%;
 
@@ -35,10 +35,10 @@ $green: #a7ecad;
     font-weight: 900;
     font-family: serif;
     letter-spacing: 1px;
-    color: #000;
+    color: var(--markdown-heading, #000);
 
     &:hover {
-      background-color: #fff;
+      background-color: var(--markdown-heading-hover-bg, rgba(255, 255, 255, 0.5));
     }
   }
   h1 {
@@ -101,19 +101,22 @@ $green: #a7ecad;
     font-family: $ak-font;
     word-break: break-word;
     overflow-x: auto;
-    background-color: #fff7f7;
-    color: #f06;
+    background-color: var(--markdown-inline-code-bg, #fff7f7);
+    color: var(--markdown-inline-code-color, #f06);
     position: relative;
     font-size: 0.87em;
     padding: 0.065em 0.4em;
+    border-radius: 4px;
   }
 
   pre {
     margin: 15px 8px;
-    border: 1px solid rgb(245, 245, 247);
+    border: 1px solid var(--markdown-pre-border, rgb(245, 245, 247));
     font-family: $ak-font;
     position: relative;
     line-height: 1.75;
+    border-radius: 8px;
+    overflow: hidden;
 
     &::before {
       top: -4px;
@@ -146,8 +149,8 @@ $green: #a7ecad;
       margin: 0;
       word-break: normal;
       display: block;
-      color: #333;
-      background-color: #fff;
+      color: var(--markdown-code-color, #e6e6e6);
+      background-color: var(--markdown-code-bg, #1e1e1e);
       position: unset !important;
     }
 
@@ -210,7 +213,7 @@ $green: #a7ecad;
     width: 100%;
     max-width: 100%;
     font-size: 12px;
-    background-color: #fff;
+    background-color: var(--markdown-table-bg, #fff);
     overflow: auto;
     border-collapse: collapse;
 
@@ -226,11 +229,11 @@ $green: #a7ecad;
   }
   th {
     font-size: 1.2em;
-    border-bottom: 1px dashed #eee;
+    border-bottom: 1px dashed var(--markdown-border, #eee);
   }
   tr:nth-child(2n) {
     background-color: $bg-color;
-    border-bottom: 1px solid #fff;
+    border-bottom: 1px solid var(--markdown-table-bg, #fff);
   }
   th,
   td {
@@ -239,14 +242,14 @@ $green: #a7ecad;
   }
   td {
     min-width: 120px;
-    border-bottom: 1px dashed #fff;
+    border-bottom: 1px dashed var(--markdown-table-bg, #fff);
   }
 
   blockquote {
-    color: #666;
+    color: var(--markdown-blockquote-color, #666);
     padding: 12px 23px 2px;
     border: 1px solid $blue;
-    background-color: #fff;
+    background-color: var(--markdown-blockquote-bg, #fff);
     margin: 22px 0;
     position: relative;
     & > p {
@@ -372,4 +375,37 @@ $green: #a7ecad;
       font-size: 18px;
     }
   }
+}
+
+// 亮色模式 CSS 变量
+:root,
+[data-theme="light"] {
+  --markdown-text: #333;
+  --markdown-heading: #000;
+  --markdown-heading-hover-bg: rgba(255, 255, 255, 0.5);
+  --markdown-inline-code-bg: #fff7f7;
+  --markdown-inline-code-color: #f06;
+  --markdown-pre-border: rgb(245, 245, 247);
+  --markdown-code-color: #e6e6e6;
+  --markdown-code-bg: #1e1e1e;
+  --markdown-table-bg: #fff;
+  --markdown-border: #eee;
+  --markdown-blockquote-color: #666;
+  --markdown-blockquote-bg: #fff;
+}
+
+// 暗色模式 CSS 变量
+[data-theme="dark"] {
+  --markdown-text: #e0e0e0;
+  --markdown-heading: #ffffff;
+  --markdown-heading-hover-bg: rgba(255, 255, 255, 0.1);
+  --markdown-inline-code-bg: #3a3a3a;
+  --markdown-inline-code-color: #ff7eb3;
+  --markdown-pre-border: #444;
+  --markdown-code-color: #e6e6e6;
+  --markdown-code-bg: #1e1e1e;
+  --markdown-table-bg: #2a2a2a;
+  --markdown-border: #444;
+  --markdown-blockquote-color: #aaa;
+  --markdown-blockquote-bg: #2a2a2a;
 }

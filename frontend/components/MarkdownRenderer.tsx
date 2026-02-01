@@ -12,7 +12,7 @@ interface MarkdownRendererProps {
 
 export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
   return (
-    <div className="prose prose-indigo mx-auto rounded bg-white dark:bg-base-100 p-4 shadow-md max-w-none">
+    <div className="prose prose-indigo mx-auto rounded bg-base-100 p-4 shadow-md max-w-none">
       <div className="markdown-body">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}

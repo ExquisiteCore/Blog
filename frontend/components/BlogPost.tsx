@@ -43,7 +43,7 @@ export default function BlogPost({ slug }: BlogPostProps) {
     async function fetchPost() {
       try {
         setLoading(true);
-        const response = await http.get<Post>(`/posts/${slug}`, {
+        const response = await http.get<Post>(`/posts/${slug}`, undefined, {
           withToken: false,
         });
 

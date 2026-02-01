@@ -62,7 +62,7 @@ export default function AboutPage() {
               </p>
               <div className="mt-4">
                 <img
-                  src="https://moe-counter.glitch.me/get/@exquisitecore?theme=meborru"
+                  src="https://count.getloli.com/get/@exquisitecore?theme=meborru"
                   alt="访客计数"
                   className="mx-auto"
                 />

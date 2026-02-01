@@ -35,7 +35,7 @@ export default function BlogPosts() {
     async function fetchPosts() {
       try {
         setLoading(true);
-        const response = await http.get<Post[]>('/posts', {
+        const response = await http.get<Post[]>('/posts', undefined, {
           withToken: false,
         });
 
