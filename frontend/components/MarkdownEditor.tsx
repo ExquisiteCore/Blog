@@ -23,6 +23,10 @@ export default function MarkdownEditor() {
   const [availableLabels, setAvailableLabels] = useState<any[]>([]);
   // 选中的标签ID列表
   const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>([]);
+  // 是否显示标签下拉列表
+  const [showTagDropdown, setShowTagDropdown] = useState<boolean>(false);
+  // 过滤后的标签列表
+  const [filteredLabels, setFilteredLabels] = useState<any[]>([]);
   // 文章标题
   const [title, setTitle] = useState<string>('');
   // 文章摘要
@@ -49,6 +53,10 @@ export default function MarkdownEditor() {
   const coverDropzoneRef = useRef<HTMLDivElement>(null);
   const tokenInputRef = useRef<HTMLInputElement>(null);
   const apiUrlInputRef = useRef<HTMLInputElement>(null);
+  // 标签输入框引用
+  const tagInputRef = useRef<HTMLInputElement>(null);
+  // 标签下拉框引用
+  const tagDropdownRef = useRef<HTMLDivElement>(null);
 
   // 获取所有标签
   const fetchLabels = async () => {
@@ -348,12 +356,22 @@ export default function MarkdownEditor() {
     const input = e.target.value;
     setTagInput(input);
 
-    if (input.endsWith(',')) {
-      const tagName = input.slice(0, -1).trim();
-      if (tagName) {
-        await addTag(tagName);
-        setTagInput('');
-      }
+    // 过滤已有标签列表
+    if (input.trim()) {
+      const filtered = availableLabels.filter(
+        (label) =>
+          label.name.toLowerCase().includes(input.toLowerCase()) &&
+          !selectedLabelIds.includes(label.id)
+      );
+      setFilteredLabels(filtered);
+      setShowTagDropdown(true);
+    } else {
+      // 显示所有未选中的标签
+      const filtered = availableLabels.filter(
+        (label) => !selectedLabelIds.includes(label.id)
+      );
+      setFilteredLabels(filtered);
+      setShowTagDropdown(true);
     }
   };
 
@@ -383,6 +401,44 @@ export default function MarkdownEditor() {
       setTags([...tags, tagName]);
     }
   };
+
+  // 选择已有标签
+  const selectExistingLabel = (label: any) => {
+    if (!selectedLabelIds.includes(label.id)) {
+      setSelectedLabelIds([...selectedLabelIds, label.id]);
+      setTags([...tags, label.name]);
+    }
+    setTagInput('');
+    setShowTagDropdown(false);
+  };
+
+  // 处理标签输入框聚焦
+  const handleTagInputFocus = () => {
+    const filtered = availableLabels.filter(
+      (label) => !selectedLabelIds.includes(label.id)
+    );
+    setFilteredLabels(filtered);
+    setShowTagDropdown(true);
+  };
+
+  // 处理点击外部关闭下拉框
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        tagDropdownRef.current &&
+        !tagDropdownRef.current.contains(event.target as Node) &&
+        tagInputRef.current &&
+        !tagInputRef.current.contains(event.target as Node)
+      ) {
+        setShowTagDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // 处理标签删除
   const removeTag = (index: number) => {
@@ -461,13 +517,31 @@ export default function MarkdownEditor() {
   };
 
   // 处理标签键盘事件
-  const handleTagKeyDown = (e: React.KeyboardEvent) => {
+  const handleTagKeyDown = async (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (tagInput.trim()) {
-        addTag(tagInput.trim());
-        setTagInput('');
+      const trimmedInput = tagInput.trim();
+      if (trimmedInput) {
+        // 检查是否有完全匹配的已有标签
+        const exactMatch = availableLabels.find(
+          (label) =>
+            label.name.toLowerCase() === trimmedInput.toLowerCase() &&
+            !selectedLabelIds.includes(label.id)
+        );
+        if (exactMatch) {
+          selectExistingLabel(exactMatch);
+        } else {
+          // 创建新标签
+          await addTag(trimmedInput);
+          setTagInput('');
+          setShowTagDropdown(false);
+        }
       }
+    } else if (e.key === 'Escape') {
+      setShowTagDropdown(false);
+    } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      // 可以添加键盘导航支持
+      e.preventDefault();
     }
   };
 
@@ -686,16 +760,57 @@ export default function MarkdownEditor() {
           {/* 文章标签和标题 */}
           <div className="space-y-4">
             <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium">文章标签：</span>
-                <input
-                  type="text"
-                  placeholder="输入标签，按逗号添加"
-                  className="input input-bordered w-full"
-                  value={tagInput}
-                  onChange={handleTagInput}
-                  onKeyDown={handleTagKeyDown}
-                />
+              <div className="relative">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium">文章标签：</span>
+                  <input
+                    ref={tagInputRef}
+                    type="text"
+                    placeholder="输入标签名搜索或按回车创建新标签"
+                    className="input input-bordered w-full"
+                    value={tagInput}
+                    onChange={handleTagInput}
+                    onKeyDown={handleTagKeyDown}
+                    onFocus={handleTagInputFocus}
+                  />
+                </div>
+                {/* 标签下拉列表 */}
+                {showTagDropdown && (
+                  <div
+                    ref={tagDropdownRef}
+                    className="absolute left-[72px] right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-md border border-base-300 bg-base-100 shadow-lg"
+                  >
+                    {filteredLabels.length > 0 ? (
+                      <>
+                        <div className="px-3 py-2 text-xs text-gray-500 border-b border-base-200">
+                          点击选择已有标签
+                        </div>
+                        {filteredLabels.map((label) => (
+                          <div
+                            key={label.id}
+                            className="cursor-pointer px-3 py-2 hover:bg-base-200 transition-colors"
+                            onClick={() => selectExistingLabel(label)}
+                          >
+                            <span className="font-medium">{label.name}</span>
+                            {label.description && (
+                              <span className="ml-2 text-xs text-gray-500">
+                                {label.description}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </>
+                    ) : tagInput.trim() ? (
+                      <div className="px-3 py-2 text-sm text-gray-500">
+                        没有匹配的标签，按回车创建 &quot;{tagInput.trim()}&quot;
+                      </div>
+                    ) : (
+                      <div className="px-3 py-2 text-sm text-gray-500">
+                        暂无可用标签
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               {tags.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-2">
