@@ -5,7 +5,8 @@
       "Bash(pnpm add marked)",
       "Bash(pnpm build)",
       "Bash(pnpm dev)",
-      "Bash(pnpm add react-markdown remark-gfm rehype-highlight highlight.js)"
+      "Bash(pnpm add react-markdown remark-gfm rehype-highlight highlight.js)",
+      "Bash(cargo run)"
     ]
   }
 }
