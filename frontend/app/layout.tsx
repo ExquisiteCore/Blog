@@ -30,9 +30,6 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
-  icons: {
-    icon: "/favicon.svg",
-  },
 };
 
 // 主题初始化脚本
