@@ -205,13 +205,13 @@ export default function MarkdownEditor() {
         headers['Authorization'] = `Bearer ${uploadToken}`;
       }
       const baseUrl = uploadApiUrl || 'http://121.62.28.11:40027/api/v1';
-      const response = await http.post('/upload', formData, {
+      const response = await http.post<ImageUploadResponse>('/upload', formData, {
         baseURL: baseUrl,
         headers: headers,
       });
 
       if (response && response.status && response.data) {
-        setCoverImage(response.data.links.url);
+        setCoverImage(response.data.links.url || response.data.links.markdown);
       } else {
         throw new Error('上传失败，返回数据格式错误');
       }
