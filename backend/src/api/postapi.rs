@@ -102,10 +102,7 @@ pub async fn delete_post(
     State(state): State<crate::state::AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    // 先删除文章的所有标签关联
-    post::Post::remove_all_labels(state.pool.as_ref(), id).await?;
-
-    // 删除文章
+    // 直接删除文章（标签关联通过数据库 CASCADE 自动删除）
     let deleted = post::Post::delete(state.pool.as_ref(), id).await?;
 
     if deleted {

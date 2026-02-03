@@ -166,28 +166,28 @@ impl Comment {
     pub async fn update(pool: &PgPool, id: Uuid, req: UpdateCommentRequest) -> Result<Self, Error> {
         let comment = Self::find_by_id(pool, id).await?;
 
-        if let Some(_) = comment {
-            let now = Utc::now();
-
-            let updated_comment = sqlx::query_as!(
-                Self,
-                r#"
-                UPDATE comments
-                SET content = $1, updated_at = $2
-                WHERE id = $3
-                RETURNING id, content, post_id, user_id, parent_id, created_at, updated_at
-                "#,
-                req.content,
-                now,
-                id
-            )
-            .fetch_one(pool)
-            .await?;
-
-            Ok(updated_comment)
-        } else {
-            Err(Error::RowNotFound)
+        if comment.is_none() {
+            return Err(Error::RowNotFound);
         }
+
+        let now = Utc::now();
+
+        let updated_comment = sqlx::query_as!(
+            Self,
+            r#"
+            UPDATE comments
+            SET content = $1, updated_at = $2
+            WHERE id = $3
+            RETURNING id, content, post_id, user_id, parent_id, created_at, updated_at
+            "#,
+            req.content,
+            now,
+            id
+        )
+        .fetch_one(pool)
+        .await?;
+
+        Ok(updated_comment)
     }
 
     /// 删除评论

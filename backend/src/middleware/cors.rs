@@ -32,6 +32,9 @@ pub fn create_layer() -> CorsLayer {
 
     let mut layer = CorsLayer::new();
 
+    // 检查是否使用 Any origin（与 credentials 冲突）
+    let use_any_origin = origins.is_empty();
+
     // 如果有配置的源，则使用它们，否则允许任何源
     if !origins.is_empty() {
         layer = layer.allow_origin(origins);
@@ -53,8 +56,11 @@ pub fn create_layer() -> CorsLayer {
         layer = layer.allow_headers(Any);
     }
 
-    // 设置是否允许凭证
-    layer = layer.allow_credentials(cors_config.allow_credentials);
+    // 设置是否允许凭证（注意：Any origin 与 credentials 不兼容）
+    // 当使用 Any origin 时，忽略 allow_credentials 设置
+    if !use_any_origin && cors_config.allow_credentials {
+        layer = layer.allow_credentials(true);
+    }
 
     layer
 }

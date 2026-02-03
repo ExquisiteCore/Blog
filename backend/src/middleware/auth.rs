@@ -157,8 +157,8 @@ pub fn extract_token_from_header(auth_header: &str) -> Option<&str> {
     }
 }
 
-/// 认证中间件
-pub async fn auth_middleware(req: Request, next: Next) -> Result<Response, Response> {
+/// 从请求中提取并验证 token，返回 Claims
+fn extract_and_verify_token(req: &Request) -> Result<Claims, Response> {
     let auth_header = req
         .headers()
         .get("Authorization")
@@ -167,23 +167,21 @@ pub async fn auth_middleware(req: Request, next: Next) -> Result<Response, Respo
     match auth_header {
         Some(auth_header) => {
             if let Some(token) = extract_token_from_header(auth_header) {
-                match verify_token(token) {
-                    Ok(claims) => {
-                        let mut req = req;
-                        req.extensions_mut().insert(claims);
-                        Ok(next.run(req).await)
-                    }
-                    Err(e) => Err(e.into_response()),
-                }
+                verify_token(token).map_err(|e| e.into_response())
             } else {
-                Err(
-                    AppError::new_message("无效的认证头格式", AppErrorType::Forbidden)
-                        .into_response(),
-                )
+                Err(AppError::new_message("无效的认证头格式", AppErrorType::Forbidden).into_response())
             }
         }
         None => Err(AppError::new_message("需要认证", AppErrorType::Forbidden).into_response()),
     }
+}
+
+/// 认证中间件
+pub async fn auth_middleware(req: Request, next: Next) -> Result<Response, Response> {
+    let claims = extract_and_verify_token(&req)?;
+    let mut req = req;
+    req.extensions_mut().insert(claims);
+    Ok(next.run(req).await)
 }
 
 /// 刷新令牌处理函数
@@ -196,36 +194,15 @@ pub async fn refresh_token_handler(
 
 /// 管理员权限中间件
 pub async fn admin_middleware(req: Request, next: Next) -> Result<Response, Response> {
-    let auth_header = req
-        .headers()
-        .get("Authorization")
-        .and_then(|value| value.to_str().ok());
+    let claims = extract_and_verify_token(&req)?;
 
-    match auth_header {
-        Some(auth_header) => {
-            if let Some(token) = extract_token_from_header(auth_header) {
-                match verify_token(token) {
-                    Ok(claims) => {
-                        if claims.role == "admin" {
-                            let mut req = req;
-                            req.extensions_mut().insert(claims);
-                            Ok(next.run(req).await)
-                        } else {
-                            Err(
-                                AppError::new_message("需要管理员权限", AppErrorType::Forbidden)
-                                    .into_response(),
-                            )
-                        }
-                    }
-                    Err(e) => Err(e.into_response()),
-                }
-            } else {
-                Err(
-                    AppError::new_message("无效的认证头格式", AppErrorType::Forbidden)
-                        .into_response(),
-                )
-            }
-        }
-        None => Err(AppError::new_message("需要认证", AppErrorType::Forbidden).into_response()),
+    if claims.role != "admin" {
+        return Err(
+            AppError::new_message("需要管理员权限", AppErrorType::Forbidden).into_response()
+        );
     }
+
+    let mut req = req;
+    req.extensions_mut().insert(claims);
+    Ok(next.run(req).await)
 }

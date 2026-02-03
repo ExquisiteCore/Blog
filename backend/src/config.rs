@@ -76,8 +76,10 @@ impl Config {
         let config: Config = toml::from_str(&contents)?;
         Ok(config)
     }
+}
 
-    pub fn default() -> Self {
+impl Default for Config {
+    fn default() -> Self {
         Config {
             server: ServerConfig {
                 host: "127.0.0.1".to_string(),

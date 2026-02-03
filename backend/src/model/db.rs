@@ -22,6 +22,9 @@ pub async fn get_db_pool(config: &Arc<Config>) -> Result<PgPool, sqlx::Error> {
     while retry_count < MAX_RETRIES {
         match PgPoolOptions::new()
             .max_connections(config.database.max_connections)
+            .min_connections(1) // 保持至少1个连接预热
+            .acquire_timeout(Duration::from_secs(10)) // 获取连接超时
+            .idle_timeout(Duration::from_secs(600)) // 空闲连接10分钟后释放
             .connect(&config.database.url)
             .await
         {
@@ -170,7 +173,55 @@ async fn init_db(pool: &PgPool) -> Result<(), sqlx::Error> {
     .execute(pool)
     .await?;
 
+    // 创建索引以优化查询性能
+    create_indexes(pool).await?;
+
     info!("数据库初始化完成");
+    Ok(())
+}
+
+/// 创建数据库索引
+async fn create_indexes(pool: &PgPool) -> Result<(), sqlx::Error> {
+    info!("创建数据库索引...");
+
+    // posts 表索引
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_posts_published ON posts(published)")
+        .execute(pool)
+        .await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_posts_published_at ON posts(published_at DESC NULLS LAST)")
+        .execute(pool)
+        .await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_posts_updated_at ON posts(updated_at DESC)")
+        .execute(pool)
+        .await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_posts_author_id ON posts(author_id)")
+        .execute(pool)
+        .await?;
+    // 复合索引：发布状态 + 发布时间（用于首页查询）
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_posts_published_published_at ON posts(published, published_at DESC) WHERE published = true")
+        .execute(pool)
+        .await?;
+
+    // post_label 表索引（反向查询：根据标签查文章）
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_post_label_label_id ON post_label(label_id)")
+        .execute(pool)
+        .await?;
+
+    // comments 表索引
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_comments_post_id ON comments(post_id)")
+        .execute(pool)
+        .await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_comments_user_id ON comments(user_id)")
+        .execute(pool)
+        .await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_comments_parent_id ON comments(parent_id)")
+        .execute(pool)
+        .await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_comments_created_at ON comments(created_at DESC)")
+        .execute(pool)
+        .await?;
+
+    info!("索引创建完成");
     Ok(())
 }
 

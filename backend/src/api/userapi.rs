@@ -10,6 +10,46 @@ use crate::error::{AppError, AppErrorType};
 use crate::middleware::auth;
 use crate::model::models::user::{CreateUserRequest, LoginRequest, UpdateUserRequest, User};
 
+/// 验证用户名格式
+fn validate_username(username: &str) -> Result<(), AppError> {
+    if username.len() < 3 {
+        return Err(AppError::new_message("用户名至少需要3个字符", AppErrorType::Internal));
+    }
+    if username.len() > 50 {
+        return Err(AppError::new_message("用户名不能超过50个字符", AppErrorType::Internal));
+    }
+    if !username.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-') {
+        return Err(AppError::new_message(
+            "用户名只能包含字母、数字、下划线和连字符",
+            AppErrorType::Internal,
+        ));
+    }
+    Ok(())
+}
+
+/// 验证邮箱格式
+fn validate_email(email: &str) -> Result<(), AppError> {
+    if email.len() > 100 {
+        return Err(AppError::new_message("邮箱不能超过100个字符", AppErrorType::Internal));
+    }
+    // 简单的邮箱格式验证
+    if !email.contains('@') || !email.contains('.') {
+        return Err(AppError::new_message("邮箱格式不正确", AppErrorType::Internal));
+    }
+    Ok(())
+}
+
+/// 验证密码强度
+fn validate_password(password: &str) -> Result<(), AppError> {
+    if password.len() < 6 {
+        return Err(AppError::new_message("密码至少需要6个字符", AppErrorType::Internal));
+    }
+    if password.len() > 100 {
+        return Err(AppError::new_message("密码不能超过100个字符", AppErrorType::Internal));
+    }
+    Ok(())
+}
+
 /// 用户注册API
 ///
 /// 接收用户注册信息，验证数据有效性，然后创建新用户
@@ -17,6 +57,11 @@ pub async fn register_user(
     State(state): State<crate::state::AppState>,
     Json(req): Json<CreateUserRequest>,
 ) -> Result<Json<User>, AppError> {
+    // 验证输入
+    validate_username(&req.username)?;
+    validate_email(&req.email)?;
+    validate_password(&req.password)?;
+
     // 验证用户名是否已存在
     if let Ok(Some(_)) = User::find_by_username(&state.pool, &req.username).await {
         return Err(AppError::new_message(

@@ -178,41 +178,4 @@ impl Label {
 
         Ok(labels)
     }
-
-    /// 为文章添加标签
-    pub async fn add_to_post(pool: &PgPool, post_id: Uuid, tag_id: Uuid) -> Result<(), Error> {
-        sqlx::query!(
-            r#"
-            INSERT INTO post_label (post_id, label_id)
-            VALUES ($1, $2)
-            ON CONFLICT (post_id, label_id) DO NOTHING
-            "#,
-            post_id,
-            tag_id
-        )
-        .execute(pool)
-        .await?;
-
-        Ok(())
-    }
-
-    /// 从文章中移除标签
-    pub async fn remove_from_post(
-        pool: &PgPool,
-        post_id: Uuid,
-        tag_id: Uuid,
-    ) -> Result<bool, Error> {
-        let result = sqlx::query!(
-            r#"
-            DELETE FROM post_label
-            WHERE post_id = $1 AND label_id = $2
-            "#,
-            post_id,
-            tag_id
-        )
-        .execute(pool)
-        .await?;
-
-        Ok(result.rows_affected() > 0)
-    }
 }

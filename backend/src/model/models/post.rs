@@ -151,6 +151,8 @@ pub struct UpdatePostRequest {
     pub featured_image: Option<String>,
     /// 是否发布
     pub published: Option<bool>,
+    /// 文章标签ID列表（提供时替换全部标签）
+    pub labels: Option<Vec<Uuid>>,
 }
 
 impl Post {
@@ -182,11 +184,9 @@ impl Post {
         .fetch_one(pool)
         .await?;
 
-        // 如果提供了标签列表，则为文章添加标签
+        // 如果提供了标签列表，则批量添加标签
         if let Some(labels) = req.labels {
-            for label_id in labels {
-                Self::add_label(pool, post.id, label_id).await?;
-            }
+            Self::add_labels_batch(pool, post.id, &labels).await?;
         }
 
         Ok(post)
@@ -210,48 +210,42 @@ impl Post {
     }
 
     /// 根据ID查找文章（包含标签）
+    ///
+    /// 使用单次 JOIN 查询获取文章和标签
     pub async fn find_by_id_with_labels(
         pool: &PgPool,
         id: Uuid,
     ) -> Result<Option<PostWithLabels>, Error> {
-        // 查找文章
-        let post = sqlx::query!(
+        let row = sqlx::query!(
             r#"
-            SELECT id, title, slug, content, excerpt, featured_image, published, author_id, created_at, updated_at, published_at
-            FROM posts
-            WHERE id = $1
+            SELECT
+                p.id, p.title, p.slug, p.content, p.excerpt, p.featured_image,
+                p.published, p.author_id, p.created_at, p.updated_at, p.published_at,
+                COALESCE(array_agg(l.name) FILTER (WHERE l.name IS NOT NULL), ARRAY[]::VARCHAR[]) as "labels!"
+            FROM posts p
+            LEFT JOIN post_label pl ON p.id = pl.post_id
+            LEFT JOIN label l ON pl.label_id = l.id
+            WHERE p.id = $1
+            GROUP BY p.id
             "#,
             id
         )
         .fetch_optional(pool)
         .await?;
 
-        // 如果没有找到文章，直接返回 None
-        let Some(post) = post else {
-            return Ok(None);
-        };
-
-        // 获取文章的标签
-        let labels_objects =
-            crate::model::models::label::Label::find_by_post_id(pool, post.id).await?;
-
-        // 只提取标签名
-        let labels = labels_objects.into_iter().map(|label| label.name).collect();
-
-        // 构建 PostWithLabels 返回
-        Ok(Some(PostWithLabels {
-            id: post.id,
-            title: post.title,
-            slug: post.slug,
-            content: post.content,
-            excerpt: post.excerpt,
-            featured_image: post.featured_image,
-            published: post.published,
-            author_id: post.author_id,
-            created_at: post.created_at,
-            updated_at: post.updated_at,
-            published_at: post.published_at,
-            labels,
+        Ok(row.map(|r| PostWithLabels {
+            id: r.id,
+            title: r.title,
+            slug: r.slug,
+            content: r.content,
+            excerpt: r.excerpt,
+            featured_image: r.featured_image,
+            published: r.published,
+            author_id: r.author_id,
+            created_at: r.created_at,
+            updated_at: r.updated_at,
+            published_at: r.published_at,
+            labels: r.labels,
         }))
     }
 
@@ -420,6 +414,14 @@ impl Post {
             .fetch_one(pool)
             .await?;
 
+            // 如果提供了标签列表，则更新文章标签
+            if let Some(labels) = req.labels {
+                // 先删除所有现有标签
+                Self::remove_all_labels(pool, id).await?;
+                // 批量添加新标签
+                Self::add_labels_batch(pool, id, &labels).await?;
+            }
+
             Ok(updated_post)
         } else {
             Err(Error::RowNotFound)
@@ -445,6 +447,28 @@ impl Post {
             "#,
             post_id,
             label_id
+        )
+        .execute(pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// 批量为文章添加标签（单次查询）
+    pub async fn add_labels_batch(pool: &PgPool, post_id: Uuid, label_ids: &[Uuid]) -> Result<(), Error> {
+        if label_ids.is_empty() {
+            return Ok(());
+        }
+
+        // 使用 UNNEST 批量插入
+        sqlx::query!(
+            r#"
+            INSERT INTO post_label (post_id, label_id)
+            SELECT $1, unnest($2::uuid[])
+            ON CONFLICT (post_id, label_id) DO NOTHING
+            "#,
+            post_id,
+            label_ids
         )
         .execute(pool)
         .await?;
@@ -484,44 +508,81 @@ impl Post {
     }
 
     /// 获取所有文章（包含标签信息）
+    ///
+    /// 使用单次 JOIN 查询避免 N+1 问题
     pub async fn find_all_with_labels(
         pool: &PgPool,
         published_only: bool,
     ) -> Result<Vec<PostSummaryWithLabels>, Error> {
-        // 先获取所有文章
-        let post_summaries = Self::find_all(pool, published_only).await?;
+        // 使用 LEFT JOIN 和 array_agg 在单次查询中获取所有文章和标签
+        if published_only {
+            let rows = sqlx::query!(
+                r#"
+                SELECT
+                    p.id, p.title, p.slug, p.excerpt, p.featured_image,
+                    p.published, p.author_id, p.created_at, p.updated_at, p.published_at,
+                    COALESCE(array_agg(l.name) FILTER (WHERE l.name IS NOT NULL), ARRAY[]::VARCHAR[]) as "labels!"
+                FROM posts p
+                LEFT JOIN post_label pl ON p.id = pl.post_id
+                LEFT JOIN label l ON pl.label_id = l.id
+                WHERE p.published = true
+                GROUP BY p.id
+                ORDER BY p.published_at DESC
+                "#
+            )
+            .fetch_all(pool)
+            .await?;
 
-        // 创建带标签的文章列表
-        let mut posts_with_labels = Vec::with_capacity(post_summaries.len());
+            Ok(rows
+                .into_iter()
+                .map(|row| PostSummaryWithLabels {
+                    id: row.id,
+                    title: row.title,
+                    slug: row.slug,
+                    excerpt: row.excerpt,
+                    featured_image: row.featured_image,
+                    published: row.published,
+                    author_id: row.author_id,
+                    created_at: row.created_at,
+                    updated_at: row.updated_at,
+                    published_at: row.published_at,
+                    labels: row.labels,
+                })
+                .collect())
+        } else {
+            let rows = sqlx::query!(
+                r#"
+                SELECT
+                    p.id, p.title, p.slug, p.excerpt, p.featured_image,
+                    p.published, p.author_id, p.created_at, p.updated_at, p.published_at,
+                    COALESCE(array_agg(l.name) FILTER (WHERE l.name IS NOT NULL), ARRAY[]::VARCHAR[]) as "labels!"
+                FROM posts p
+                LEFT JOIN post_label pl ON p.id = pl.post_id
+                LEFT JOIN label l ON pl.label_id = l.id
+                GROUP BY p.id
+                ORDER BY p.updated_at DESC
+                "#
+            )
+            .fetch_all(pool)
+            .await?;
 
-        // 为每篇文章获取标签
-        for post in post_summaries {
-            // 获取文章的标签
-            let labels_objects =
-                crate::model::models::label::Label::find_by_post_id(pool, post.id).await?;
-
-            // 只提取标签名
-            let labels = labels_objects.into_iter().map(|label| label.name).collect();
-
-            // 创建带标签的文章摘要
-            let post_with_labels = PostSummaryWithLabels {
-                id: post.id,
-                title: post.title,
-                slug: post.slug,
-                excerpt: post.excerpt,
-                featured_image: post.featured_image,
-                published: post.published,
-                author_id: post.author_id,
-                created_at: post.created_at,
-                updated_at: post.updated_at,
-                published_at: post.published_at,
-                labels,
-            };
-
-            posts_with_labels.push(post_with_labels);
+            Ok(rows
+                .into_iter()
+                .map(|row| PostSummaryWithLabels {
+                    id: row.id,
+                    title: row.title,
+                    slug: row.slug,
+                    excerpt: row.excerpt,
+                    featured_image: row.featured_image,
+                    published: row.published,
+                    author_id: row.author_id,
+                    created_at: row.created_at,
+                    updated_at: row.updated_at,
+                    published_at: row.published_at,
+                    labels: row.labels,
+                })
+                .collect())
         }
-
-        Ok(posts_with_labels)
     }
     /// 获取标签下的所有文章
     pub async fn find_by_label_id(
