@@ -4,15 +4,14 @@
 
 use crate::api;
 use crate::middleware;
+use crate::state::AppState;
 use axum::Router;
-use sqlx::{Pool, Postgres};
-use std::sync::Arc;
 use tower::ServiceBuilder;
 
 /// 创建应用的所有路由
-pub fn create_routes(pool: Arc<Pool<Postgres>>) -> Router {
+pub fn create_routes(state: AppState) -> Router {
     Router::new()
-        .nest("/api", api::create_routes().with_state(pool))
+        .nest("/api", api::create_routes().with_state(state))
         //中间件
         .layer(
             ServiceBuilder::new()

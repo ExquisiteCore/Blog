@@ -1,9 +1,10 @@
-use backend::{config, logger, model, routes};
+use backend::{config, logger, model, routes, state::AppState};
 use std::net::SocketAddr;
 use std::path::Path;
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tracing::info;
+use wechat_oa_sdk::{Config as WeChatConfig, WeChatClient};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -27,8 +28,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let pool = model::get_db_pool(config::get_config()).await?;
     let pool = Arc::new(pool);
 
+    // 初始化微信客户端（如果配置了）
+    let wechat_client = config.wechat.map(|wc| {
+        info!("初始化微信客户端，AppID: {}", wc.app_id);
+        let sdk_config = WeChatConfig::new(&wc.app_id, &wc.app_secret, &wc.token);
+        let sdk_config = if let Some(ref aes_key) = wc.encoding_aes_key {
+            sdk_config.with_encoding_aes_key(aes_key)
+        } else {
+            sdk_config
+        };
+        WeChatClient::new(sdk_config)
+    });
+
+    // 创建应用状态
+    let app_state = AppState::new(pool, wechat_client);
+
     // 创建应用路由
-    let app = routes::create_routes(pool);
+    let app = routes::create_routes(app_state);
 
     // 启动服务器
     let addr = SocketAddr::new(

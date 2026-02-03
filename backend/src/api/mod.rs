@@ -13,13 +13,11 @@ use axum::{
     routing::{delete, get, post, put},
 };
 
-use sqlx::{Pool, Postgres};
-use std::sync::Arc;
-
 use crate::middleware::auth;
+use crate::state::AppState;
 
 /// 创建API路由
-pub fn create_routes() -> Router<Arc<Pool<Postgres>>> {
+pub fn create_routes() -> Router<AppState> {
     // 公共路由 - 不需要认证
     let public_routes = Router::new()
         .route("/users/register", post(userapi::register_user))

@@ -4,8 +4,6 @@
 
 use axum::{Json, extract::State};
 use bcrypt::{DEFAULT_COST, hash};
-use sqlx::{Pool, Postgres};
-use std::sync::Arc;
 
 use crate::error::{AppError, AppErrorType};
 use crate::middleware::auth;
@@ -15,11 +13,11 @@ use crate::model::models::user::{CreateUserRequest, LoginRequest, User};
 ///
 /// 接收用户注册信息，验证数据有效性，然后创建新用户
 pub async fn register_user(
-    State(pool): State<Arc<Pool<Postgres>>>,
+    State(state): State<crate::state::AppState>,
     Json(req): Json<CreateUserRequest>,
 ) -> Result<Json<User>, AppError> {
     // 验证用户名是否已存在
-    if let Ok(Some(_)) = User::find_by_username(&pool, &req.username).await {
+    if let Ok(Some(_)) = User::find_by_username(&state.pool, &req.username).await {
         return Err(AppError::new_message(
             "用户名已被使用",
             AppErrorType::Duplicate,
@@ -27,7 +25,7 @@ pub async fn register_user(
     }
 
     // 验证邮箱是否已存在
-    if let Ok(Some(_)) = User::find_by_email(&pool, &req.email).await {
+    if let Ok(Some(_)) = User::find_by_email(&state.pool, &req.email).await {
         return Err(AppError::new_message(
             "邮箱已被注册",
             AppErrorType::Duplicate,
@@ -52,7 +50,7 @@ pub async fn register_user(
     };
 
     // 创建新用户
-    match User::create(&pool, req_with_hashed_password).await {
+    match User::create(&state.pool, req_with_hashed_password).await {
         Ok(user) => Ok(Json(user)),
         Err(e) => Err(AppError::new(e, AppErrorType::Db)),
     }
@@ -62,11 +60,11 @@ pub async fn register_user(
 ///
 /// 验证用户凭据并生成JWT令牌
 pub async fn login_user(
-    State(pool): State<Arc<Pool<Postgres>>>,
+    State(state): State<crate::state::AppState>,
     Json(req): Json<LoginRequest>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     // 尝试登录用户
-    match User::login(&pool, req).await {
+    match User::login(&state.pool, req).await {
         Ok(Some(user)) => {
             // 生成JWT令牌
             let token = auth::generate_token(&user)?;

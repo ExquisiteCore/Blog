@@ -2,8 +2,6 @@ use axum::{
     Json,
     extract::{Path, State},
 };
-use sqlx::{Pool, Postgres};
-use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::{
@@ -18,11 +16,11 @@ use crate::{
 ///
 /// 接收标签信息并创建新标签
 pub async fn create_label(
-    State(pool): State<Arc<Pool<Postgres>>>,
+    State(state): State<crate::state::AppState>,
     Json(req): Json<label::CreateLabelRequest>,
 ) -> Result<Json<label::Label>, AppError> {
     // 创建新标签
-    let label = label::Label::create(pool.as_ref(), req)
+    let label = label::Label::create(state.pool.as_ref(), req)
         .await
         .map_err(|e| {
             AppError::new_message(&format!("创建标签失败: {}", e), AppErrorType::Internal)
@@ -36,12 +34,14 @@ pub async fn create_label(
 ///
 /// 返回所有标签列表
 pub async fn get_labels(
-    State(pool): State<Arc<Pool<Postgres>>>,
+    State(state): State<crate::state::AppState>,
 ) -> Result<Json<Vec<label::Label>>, AppError> {
     // 获取所有标签
-    let labels = label::Label::find_all(pool.as_ref()).await.map_err(|e| {
-        AppError::new_message(&format!("获取标签列表失败: {}", e), AppErrorType::Internal)
-    })?;
+    let labels = label::Label::find_all(state.pool.as_ref())
+        .await
+        .map_err(|e| {
+            AppError::new_message(&format!("获取标签列表失败: {}", e), AppErrorType::Internal)
+        })?;
 
     // 返回标签列表
     Ok(Json(labels))
@@ -51,11 +51,11 @@ pub async fn get_labels(
 ///
 /// 根据标签ID返回该标签下的所有文章
 pub async fn get_posts_by_label(
-    State(pool): State<Arc<Pool<Postgres>>>,
+    State(state): State<crate::state::AppState>,
     Path(label_id): Path<Uuid>,
 ) -> Result<Json<Vec<PostSummary>>, AppError> {
     // 检查标签是否存在
-    let label = label::Label::find_by_id(pool.as_ref(), label_id)
+    let label = label::Label::find_by_id(state.pool.as_ref(), label_id)
         .await
         .map_err(|e| {
             AppError::new_message(&format!("查询标签失败: {}", e), AppErrorType::Internal)
@@ -69,7 +69,7 @@ pub async fn get_posts_by_label(
     }
 
     // 获取标签下的文章
-    let posts = post::Post::find_by_label_id(pool.as_ref(), label_id, true)
+    let posts = post::Post::find_by_label_id(state.pool.as_ref(), label_id, true)
         .await
         .map_err(|e| {
             AppError::new_message(

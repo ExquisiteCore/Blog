@@ -9,7 +9,6 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use serde::{Deserialize, Serialize};
-use sqlx::{Pool, Postgres};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::{error, info};
@@ -19,7 +18,7 @@ use wechat_oa_sdk::{
     models::reply::{TextReply, empty_reply},
 };
 
-use crate::config::get_config;
+use crate::state::AppState;
 
 // ============================================================================
 // 通用类型和辅助函数
@@ -38,18 +37,9 @@ fn not_configured() -> (StatusCode, String) {
     )
 }
 
-/// 获取微信客户端实例
-fn get_wechat_client() -> Option<WeChatClient> {
-    let config = get_config();
-    config.wechat.as_ref().map(|wc| {
-        let sdk_config = wechat_oa_sdk::Config::new(&wc.app_id, &wc.app_secret, &wc.token);
-        let sdk_config = if let Some(ref aes_key) = wc.encoding_aes_key {
-            sdk_config.with_encoding_aes_key(aes_key)
-        } else {
-            sdk_config
-        };
-        WeChatClient::new(sdk_config)
-    })
+/// 从 AppState 获取微信客户端引用
+fn get_client(state: &AppState) -> Result<&Arc<WeChatClient>, (StatusCode, String)> {
+    state.wechat_client.as_ref().ok_or_else(not_configured)
 }
 
 /// 通用成功响应
@@ -85,8 +75,11 @@ pub struct VerifyQuery {
 }
 
 /// 微信服务器配置验证 (GET 请求)
-pub async fn verify_server(Query(query): Query<VerifyQuery>) -> Response {
-    let client = match get_wechat_client() {
+pub async fn verify_server(
+    State(state): State<AppState>,
+    Query(query): Query<VerifyQuery>,
+) -> Response {
+    let client = match &state.wechat_client {
         Some(c) => c,
         None => {
             error!("微信配置未设置");
@@ -125,11 +118,11 @@ pub async fn verify_server(Query(query): Query<VerifyQuery>) -> Response {
 
 /// 接收微信消息/事件 (POST 请求)
 pub async fn receive_message(
-    State(_pool): State<Arc<Pool<Postgres>>>,
+    State(state): State<AppState>,
     Query(query): Query<VerifyQuery>,
     body: String,
 ) -> Response {
-    let client = match get_wechat_client() {
+    let client = match &state.wechat_client {
         Some(c) => c,
         None => {
             error!("微信配置未设置");
@@ -274,9 +267,10 @@ pub struct GetUserInfoQuery {
 
 /// 获取用户信息
 pub async fn get_user_info(
+    State(state): State<AppState>,
     Query(params): Query<GetUserInfoQuery>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+    let client = get_client(&state)?;
 
     let info = client
         .get_user_info(&params.openid, params.lang.as_deref())
@@ -306,9 +300,10 @@ pub struct BatchGetUserInfoRequest {
 
 /// 批量获取用户信息
 pub async fn batch_get_user_info(
+    State(state): State<AppState>,
     Json(req): Json<BatchGetUserInfoRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+    let client = get_client(&state)?;
 
     let openids: Vec<&str> = req.openids.iter().map(|s| s.as_str()).collect();
     let result = client
@@ -346,9 +341,10 @@ pub struct GetUserListQuery {
 
 /// 获取用户列表（关注者列表）
 pub async fn get_user_list(
+    State(state): State<AppState>,
     Query(params): Query<GetUserListQuery>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+    let client = get_client(&state)?;
 
     let result = client
         .get_user_list(params.next_openid.as_deref())
@@ -371,9 +367,10 @@ pub struct SetUserRemarkRequest {
 
 /// 设置用户备注
 pub async fn set_user_remark(
+    State(state): State<AppState>,
     Json(req): Json<SetUserRemarkRequest>,
 ) -> Result<Json<SuccessResponse>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+    let client = get_client(&state)?;
 
     client
         .set_user_remark(&req.openid, &req.remark)
@@ -394,9 +391,10 @@ pub struct CreateTagRequest {
 
 /// 创建用户标签
 pub async fn create_tag(
+    State(state): State<AppState>,
     Json(req): Json<CreateTagRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+    let client = get_client(&state)?;
 
     let tag = client.create_tag(&req.name).await.map_err(wechat_error)?;
 
@@ -407,8 +405,10 @@ pub async fn create_tag(
 }
 
 /// 获取所有标签
-pub async fn get_tags() -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+pub async fn get_tags(
+    State(state): State<AppState>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let client = get_client(&state)?;
 
     let result = client.get_tags().await.map_err(wechat_error)?;
 
@@ -435,9 +435,10 @@ pub struct UpdateTagRequest {
 
 /// 更新标签名称
 pub async fn update_tag(
+    State(state): State<AppState>,
     Json(req): Json<UpdateTagRequest>,
 ) -> Result<Json<SuccessResponse>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+    let client = get_client(&state)?;
 
     client
         .update_tag(req.id, &req.name)
@@ -454,9 +455,10 @@ pub struct DeleteTagRequest {
 
 /// 删除标签
 pub async fn delete_tag(
+    State(state): State<AppState>,
     Json(req): Json<DeleteTagRequest>,
 ) -> Result<Json<SuccessResponse>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+    let client = get_client(&state)?;
 
     client.delete_tag(req.id).await.map_err(wechat_error)?;
 
@@ -471,9 +473,10 @@ pub struct GetUsersByTagQuery {
 
 /// 获取标签下的用户列表
 pub async fn get_users_by_tag(
+    State(state): State<AppState>,
     Query(params): Query<GetUsersByTagQuery>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+    let client = get_client(&state)?;
 
     let result = client
         .get_users_by_tag(params.tag_id, params.next_openid.as_deref())
@@ -495,9 +498,10 @@ pub struct BatchTagUsersRequest {
 
 /// 批量为用户打标签
 pub async fn batch_tag_users(
+    State(state): State<AppState>,
     Json(req): Json<BatchTagUsersRequest>,
 ) -> Result<Json<SuccessResponse>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+    let client = get_client(&state)?;
 
     let openids: Vec<&str> = req.openids.iter().map(|s| s.as_str()).collect();
     client
@@ -510,9 +514,10 @@ pub async fn batch_tag_users(
 
 /// 批量为用户取消标签
 pub async fn batch_untag_users(
+    State(state): State<AppState>,
     Json(req): Json<BatchTagUsersRequest>,
 ) -> Result<Json<SuccessResponse>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+    let client = get_client(&state)?;
 
     let openids: Vec<&str> = req.openids.iter().map(|s| s.as_str()).collect();
     client
@@ -530,9 +535,10 @@ pub struct GetUserTagsQuery {
 
 /// 获取用户的标签列表
 pub async fn get_user_tags(
+    State(state): State<AppState>,
     Query(params): Query<GetUserTagsQuery>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+    let client = get_client(&state)?;
 
     let tag_ids = client
         .get_user_tags(&params.openid)
@@ -547,8 +553,10 @@ pub async fn get_user_tags(
 // ============================================================================
 
 /// 获取当前菜单配置
-pub async fn get_menu() -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+pub async fn get_menu(
+    State(state): State<AppState>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let client = get_client(&state)?;
 
     let menu = client.get_menu().await.map_err(wechat_error)?;
 
@@ -591,9 +599,10 @@ pub struct MenuButtonRequest {
 
 /// 创建自定义菜单
 pub async fn create_menu(
+    State(state): State<AppState>,
     Json(req): Json<CreateMenuRequest>,
 ) -> Result<Json<SuccessResponse>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+    let client = get_client(&state)?;
 
     let buttons = convert_menu_buttons(req.buttons);
     client.create_menu(buttons).await.map_err(wechat_error)?;
@@ -602,8 +611,10 @@ pub async fn create_menu(
 }
 
 /// 删除所有菜单
-pub async fn delete_menu() -> Result<Json<SuccessResponse>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+pub async fn delete_menu(
+    State(state): State<AppState>,
+) -> Result<Json<SuccessResponse>, (StatusCode, String)> {
+    let client = get_client(&state)?;
 
     client.delete_menu().await.map_err(wechat_error)?;
 
@@ -624,9 +635,10 @@ pub struct MatchRuleRequest {
 
 /// 创建个性化菜单
 pub async fn create_conditional_menu(
+    State(state): State<AppState>,
     Json(req): Json<CreateConditionalMenuRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+    let client = get_client(&state)?;
 
     let buttons = convert_menu_buttons(req.buttons);
     let match_rule = wechat_oa_sdk::models::menu::MatchRule {
@@ -649,9 +661,10 @@ pub struct DeleteConditionalMenuRequest {
 
 /// 删除个性化菜单
 pub async fn delete_conditional_menu(
+    State(state): State<AppState>,
     Json(req): Json<DeleteConditionalMenuRequest>,
 ) -> Result<Json<SuccessResponse>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+    let client = get_client(&state)?;
 
     client
         .delete_conditional_menu(req.menuid)
@@ -668,9 +681,10 @@ pub struct TryMatchMenuRequest {
 
 /// 测试个性化菜单匹配
 pub async fn try_match_menu(
+    State(state): State<AppState>,
     Json(req): Json<TryMatchMenuRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+    let client = get_client(&state)?;
 
     let menu = client
         .try_match_menu(&req.user_id)
@@ -752,9 +766,10 @@ pub struct TemplateDataItemRequest {
 
 /// 发送模板消息
 pub async fn send_template_message(
+    State(state): State<AppState>,
     Json(req): Json<SendTemplateRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+    let client = get_client(&state)?;
 
     use wechat_oa_sdk::models::template::{TemplateDataItem, TemplateMessage};
 
@@ -800,9 +815,10 @@ pub struct SetIndustryRequest {
 
 /// 设置所属行业
 pub async fn set_industry(
+    State(state): State<AppState>,
     Json(req): Json<SetIndustryRequest>,
 ) -> Result<Json<SuccessResponse>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+    let client = get_client(&state)?;
 
     client
         .set_industry(&req.industry_id1, &req.industry_id2)
@@ -813,8 +829,10 @@ pub async fn set_industry(
 }
 
 /// 获取设置的行业信息
-pub async fn get_industry() -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+pub async fn get_industry(
+    State(state): State<AppState>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let client = get_client(&state)?;
 
     let result = client.get_industry().await.map_err(wechat_error)?;
 
@@ -837,9 +855,10 @@ pub struct AddTemplateRequest {
 
 /// 从模板库添加模板
 pub async fn add_template(
+    State(state): State<AppState>,
     Json(req): Json<AddTemplateRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+    let client = get_client(&state)?;
 
     let template_id = client
         .add_template(&req.template_id_short)
@@ -850,8 +869,10 @@ pub async fn add_template(
 }
 
 /// 获取所有模板列表
-pub async fn get_all_templates() -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+pub async fn get_all_templates(
+    State(state): State<AppState>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let client = get_client(&state)?;
 
     let result = client.get_all_templates().await.map_err(wechat_error)?;
 
@@ -880,9 +901,10 @@ pub struct DeleteTemplateRequest {
 
 /// 删除模板
 pub async fn delete_template(
+    State(state): State<AppState>,
     Json(req): Json<DeleteTemplateRequest>,
 ) -> Result<Json<SuccessResponse>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+    let client = get_client(&state)?;
 
     client
         .delete_template(&req.template_id)
@@ -904,9 +926,10 @@ pub struct SendTextRequest {
 
 /// 发送客服文本消息
 pub async fn send_text(
+    State(state): State<AppState>,
     Json(req): Json<SendTextRequest>,
 ) -> Result<Json<SuccessResponse>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+    let client = get_client(&state)?;
 
     client
         .send_text(&req.touser, &req.content)
@@ -924,9 +947,10 @@ pub struct SendImageRequest {
 
 /// 发送客服图片消息
 pub async fn send_image(
+    State(state): State<AppState>,
     Json(req): Json<SendImageRequest>,
 ) -> Result<Json<SuccessResponse>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+    let client = get_client(&state)?;
 
     client
         .send_image(&req.touser, &req.media_id)
@@ -944,9 +968,10 @@ pub struct SendVoiceRequest {
 
 /// 发送客服语音消息
 pub async fn send_voice(
+    State(state): State<AppState>,
     Json(req): Json<SendVoiceRequest>,
 ) -> Result<Json<SuccessResponse>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+    let client = get_client(&state)?;
 
     client
         .send_voice(&req.touser, &req.media_id)
@@ -967,9 +992,10 @@ pub struct SendVideoRequest {
 
 /// 发送客服视频消息
 pub async fn send_video(
+    State(state): State<AppState>,
     Json(req): Json<SendVideoRequest>,
 ) -> Result<Json<SuccessResponse>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+    let client = get_client(&state)?;
 
     client
         .send_video(
@@ -1001,9 +1027,10 @@ pub struct NewsArticleRequest {
 
 /// 发送客服图文消息
 pub async fn send_news(
+    State(state): State<AppState>,
     Json(req): Json<SendNewsRequest>,
 ) -> Result<Json<SuccessResponse>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+    let client = get_client(&state)?;
 
     use wechat_oa_sdk::api::customer_service::NewsArticle;
 
@@ -1034,9 +1061,10 @@ pub struct SetTypingRequest {
 
 /// 设置用户输入状态
 pub async fn set_typing(
+    State(state): State<AppState>,
     Json(req): Json<SetTypingRequest>,
 ) -> Result<Json<SuccessResponse>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+    let client = get_client(&state)?;
 
     client
         .set_typing(&req.touser, req.typing)
@@ -1060,9 +1088,10 @@ pub struct CreateQrcodeRequest {
 
 /// 创建带参数二维码
 pub async fn create_qrcode(
+    State(state): State<AppState>,
     Json(req): Json<CreateQrcodeRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+    let client = get_client(&state)?;
 
     use wechat_oa_sdk::models::qrcode::QrCodeAction;
 
@@ -1121,9 +1150,10 @@ pub struct CreateShortUrlRequest {
 
 /// 长链接转短链接
 pub async fn create_short_url(
+    State(state): State<AppState>,
     Json(req): Json<CreateShortUrlRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
-    let client = get_wechat_client().ok_or_else(not_configured)?;
+    let client = get_client(&state)?;
 
     let short_url = client
         .create_short_url(&req.long_url)
