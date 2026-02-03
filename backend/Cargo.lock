@@ -186,6 +186,7 @@ dependencies = [
  "dotenv",
  "jsonwebtoken",
  "once_cell",
+ "reqwest",
  "serde",
  "serde_json",
  "sqlx",
@@ -2907,9 +2908,9 @@ dependencies = [
 
 [[package]]
 name = "wechat-oa-sdk"
-version = "1.0.2"
+version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7fa23ce5b081f4894c72b30091b813ed8a0b097ddd290f9a55514db1424c7111"
+checksum = "8181353a91681141df2b54337dab0eddd8a1696640b9df96bc68af53fd8769a6"
 dependencies = [
  "aes",
  "base64 0.22.1",

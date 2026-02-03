@@ -19,6 +19,7 @@ use wechat_oa_sdk::{
 };
 
 use crate::error::{AppError, AppErrorType};
+use crate::llm::LlmClient;
 use crate::state::AppState;
 
 // ============================================================================
@@ -164,7 +165,7 @@ pub async fn receive_message(
     };
 
     // 处理消息并生成回复
-    let reply_xml = handle_message(message).await;
+    let reply_xml = handle_message(message, state.llm_client.as_ref()).await;
 
     // 如果是加密模式，加密回复
     if is_encrypted && reply_xml != "success" {
@@ -181,23 +182,45 @@ pub async fn receive_message(
 }
 
 /// 处理接收到的消息/事件
-async fn handle_message(message: IncomingMessage) -> String {
+async fn handle_message(message: IncomingMessage, llm_client: Option<&Arc<LlmClient>>) -> String {
     match message {
         IncomingMessage::Text(msg) => {
             info!("收到文本消息: {} from {}", msg.content, msg.from_user_name);
-            let reply_content = match msg.content.as_str() {
-                "你好" | "hello" | "hi" => "你好！欢迎关注我的博客！".to_string(),
-                "帮助" | "help" => {
-                    "可用命令：\n- 博客：获取博客链接\n- 最新：获取最新文章".to_string()
+
+            // 先处理特殊命令
+            let reply_content = match msg.content.trim().to_lowercase().as_str() {
+                "帮助" | "help" | "?" => {
+                    "可用命令：\n- 博客：获取博客链接\n- 清除：清除对话历史\n\n其他消息我会用 AI 回复你！".to_string()
                 }
-                "博客" => "访问我的博客：https://blog.exquisitecore.xyz".to_string(),
-                _ => format!("收到：{}", msg.content),
+                "博客" | "blog" => "访问我的博客：https://blog.exquisitecore.xyz".to_string(),
+                "清除" | "clear" | "reset" => {
+                    // 清除对话历史
+                    if let Some(client) = llm_client {
+                        client.clear_history(&msg.from_user_name).await;
+                    }
+                    "对话历史已清除！".to_string()
+                }
+                _ => {
+                    // 使用 LLM 回复
+                    if let Some(client) = llm_client {
+                        match client.chat(&msg.from_user_name, &msg.content).await {
+                            Ok(response) => response,
+                            Err(e) => {
+                                error!("LLM 调用失败: {}", e);
+                                format!("抱歉，AI 服务暂时不可用：{}", e)
+                            }
+                        }
+                    } else {
+                        // 没有配置 LLM，使用简单回复
+                        format!("收到：{}", msg.content)
+                    }
+                }
             };
             TextReply::new(&msg.from_user_name, &msg.to_user_name, reply_content).to_xml()
         }
         IncomingMessage::SubscribeEvent(event) => {
             info!("用户关注: {}", event.from_user_name);
-            let welcome = "感谢关注！\n\n这里是我的个人博客公众号，会不定期分享技术文章。\n\n回复「博客」获取博客链接";
+            let welcome = "感谢关注！\n\n这里是我的个人博客公众号，会不定期分享技术文章。\n\n💡 你可以直接向我发消息，我会用 AI 回复你！\n\n回复「帮助」查看更多命令";
             TextReply::new(&event.from_user_name, &event.to_user_name, welcome).to_xml()
         }
         IncomingMessage::UnsubscribeEvent(event) => {

@@ -27,6 +27,18 @@ pub struct Config {
     pub cors: CorsConfig,
     #[serde(default)]
     pub wechat: Option<WeChatConfig>,
+    #[serde(default)]
+    pub llm: Option<LlmConfig>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct LlmConfig {
+    pub provider: String,      // "deepseek", "openai", etc.
+    pub api_key: String,
+    pub base_url: Option<String>,
+    pub model: Option<String>,
+    pub max_tokens: Option<u32>,
+    pub timeout_secs: Option<u64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -106,6 +118,7 @@ impl Default for Config {
                 allow_credentials: true,
             },
             wechat: None,
+            llm: None,
         }
     }
 }

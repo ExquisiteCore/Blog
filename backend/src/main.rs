@@ -1,4 +1,4 @@
-use backend::{config, logger, model, routes, state::AppState};
+use backend::{config, llm::LlmClient, logger, model, routes, state::AppState};
 use std::net::SocketAddr;
 use std::path::Path;
 use std::sync::Arc;
@@ -40,8 +40,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         WeChatClient::new(sdk_config)
     });
 
+    // 初始化 LLM 客户端（如果配置了）
+    let llm_client = config.llm.map(|lc| {
+        info!("初始化 LLM 客户端，provider: {}", lc.provider);
+        LlmClient::new(lc)
+    });
+
     // 创建应用状态
-    let app_state = AppState::new(pool, wechat_client);
+    let app_state = AppState::new(pool, wechat_client, llm_client);
 
     // 创建应用路由
     let app = routes::create_routes(app_state);

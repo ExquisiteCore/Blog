@@ -1,6 +1,7 @@
 pub mod api;
 pub mod config;
 pub mod error;
+pub mod llm;
 pub mod logger;
 pub mod middleware;
 pub mod model;
