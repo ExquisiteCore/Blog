@@ -19,3 +19,10 @@ allowed_origins = ["http://localhost:4321", "https://blog.exquisitecore.xyz"]
 allowed_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 allowed_headers = ["Authorization", "Content-Type"]
 allow_credentials = true
+
+# 微信公众号配置
+[wechat]
+app_id = "your_app_id"
+app_secret = "your_app_secret"
+token = "your_token"
+# encoding_aes_key = "your_encoding_aes_key"  # 可选，用于消息加解密

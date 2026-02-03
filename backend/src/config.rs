@@ -25,6 +25,16 @@ pub struct Config {
     pub database: DatabaseConfig,
     pub jwt: JwtConfig,
     pub cors: CorsConfig,
+    #[serde(default)]
+    pub wechat: Option<WeChatConfig>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct WeChatConfig {
+    pub app_id: String,
+    pub app_secret: String,
+    pub token: String,
+    pub encoding_aes_key: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -93,6 +103,7 @@ impl Config {
                 allowed_headers: vec!["Authorization".to_string(), "Content-Type".to_string()],
                 allow_credentials: true,
             },
+            wechat: None,
         }
     }
 }
