@@ -23,15 +23,15 @@ export default function WechatUsersPage() {
       }
       const data = await http.get<UserListResponse>('/wechat/user/list', params, { withToken: true });
 
-      if (data && data.data?.openid) {
+      if (data && data.data) {
         setTotal(data.total);
         setNextOpenid(data.next_openid || '');
 
         // 批量获取用户详情
-        if (data.data.openid.length > 0) {
+        if (data.data.length > 0) {
           const userInfos = await http.post<BatchUserInfoResponse>(
             '/wechat/user/batch',
-            { openids: data.data.openid },
+            { openids: data.data },
             { withToken: true }
           );
 

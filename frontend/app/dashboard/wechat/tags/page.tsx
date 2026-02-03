@@ -56,8 +56,8 @@ export default function WechatTagsPage() {
         setTags(tags.map(t => t.id === editingTag.id ? { ...t, name: tagName } : t));
       } else {
         const data = await http.post<CreateTagResponse>('/wechat/tags', { name: tagName }, { withToken: true });
-        if (data?.tag) {
-          setTags([...tags, data.tag]);
+        if (data) {
+          setTags([...tags, { id: data.id, name: data.name }]);
         }
       }
       setIsModalOpen(false);
