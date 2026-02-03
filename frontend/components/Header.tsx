@@ -39,6 +39,7 @@ const getTabClass = (isActive: boolean) => {
 interface UserData {
   username?: string;
   avatar_url?: string;
+  role?: string;
 }
 
 export default function Header() {
@@ -163,9 +164,11 @@ export default function Header() {
                     <span className="badge">个人资料</span>
                   </a>
                 </li>
-                <li>
-                  <Link href="/dashboard">控制面板</Link>
-                </li>
+                {userData?.role === 'admin' && (
+                  <li>
+                    <Link href="/dashboard">控制面板</Link>
+                  </li>
+                )}
                 <li>
                   <button onClick={handleLogout}>退出登录</button>
                 </li>
