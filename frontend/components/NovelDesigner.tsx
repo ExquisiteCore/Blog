@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { useState, useRef, useSyncExternalStore } from 'react';
 
 // 定义数据类型
 interface Novel {
@@ -63,17 +62,49 @@ type ViewMode = 'home' | 'detail';
 type ModalType = 'background' | 'characters' | 'relationships' | 'worldview' | 'timeline' | 'outline' | 'writing' | null;
 type RelationshipViewMode = 'list' | 'graph';
 
+const STORAGE_KEY = 'novel-designer-novels';
+
+// localStorage 存储函数
+function getStoredNovels(): Novel[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored) || [];
+    }
+  } catch (e) {
+    console.error('Failed to load data:', e);
+  }
+  return [];
+}
+
+function getServerSnapshot(): Novel[] {
+  return [];
+}
+
+function subscribeToStorage(callback: () => void): () => void {
+  window.addEventListener('storage', callback);
+  return () => window.removeEventListener('storage', callback);
+}
+
 export default function NovelDesigner() {
   // ID 生成计数器
-  let idCounter = 0;
+  const idCounterRef = useRef(0);
   const generateId = () => {
     const timestamp = Date.now();
-    idCounter = (idCounter + 1) % 1000;
-    return `${timestamp}-${idCounter}`;
+    idCounterRef.current = (idCounterRef.current + 1) % 1000;
+    return `${timestamp}-${idCounterRef.current}`;
   };
 
+  // 使用 useSyncExternalStore 从 localStorage 读取数据
+  const storedNovels = useSyncExternalStore(
+    subscribeToStorage,
+    getStoredNovels,
+    getServerSnapshot
+  );
+
   // 状态
-  const [novels, setNovels] = useState<Novel[]>([]);
+  const [novels, setNovels] = useState<Novel[]>(storedNovels);
   const [selectedNovel, setSelectedNovel] = useState<Novel | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('home');
@@ -92,35 +123,16 @@ export default function NovelDesigner() {
   const [selectedChapterId, setSelectedChapterId] = useState<string>('');
   const [chapterContent, setChapterContent] = useState<string>('');
 
-  // 从 localStorage 加载数据
-  const loadFromStorage = () => {
-    if (typeof window === 'undefined') return;
-    try {
-      const stored = localStorage.getItem('novel-designer-novels');
-      if (stored) {
-        const data = JSON.parse(stored);
-        setNovels(data || []);
-      }
-    } catch (e) {
-      console.error('Failed to load data:', e);
-    }
-  };
-
   // 保存到 localStorage
   const saveToStorage = (novelsData: Novel[]) => {
     if (typeof window === 'undefined') return;
     try {
-      localStorage.setItem('novel-designer-novels', JSON.stringify(novelsData));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(novelsData));
     } catch (e) {
       console.error('Failed to save data:', e);
       alert('保存失败,可能是存储空间不足');
     }
   };
-
-  // 初始化时加载数据
-  useEffect(() => {
-    loadFromStorage();
-  }, []);
 
   // 筛选小说
   const filteredNovels = () => {
@@ -478,20 +490,21 @@ export default function NovelDesigner() {
     URL.revokeObjectURL(url);
   };
 
-  const validateNovelData = (data: any): data is Novel[] => {
+  const validateNovelData = (data: unknown): data is Novel[] => {
     if (!Array.isArray(data)) return false;
 
-    return data.every((novel: any) => {
+    return data.every((novel: unknown) => {
+      if (typeof novel !== 'object' || novel === null) return false;
+      const n = novel as Record<string, unknown>;
       return (
-        typeof novel === 'object' &&
-        typeof novel.id === 'string' &&
-        typeof novel.title === 'string' &&
-        typeof novel.createdAt === 'string' &&
-        Array.isArray(novel.characters) &&
-        Array.isArray(novel.worldSettings) &&
-        Array.isArray(novel.relationships) &&
-        Array.isArray(novel.timeline) &&
-        Array.isArray(novel.outlines)
+        typeof n.id === 'string' &&
+        typeof n.title === 'string' &&
+        typeof n.createdAt === 'string' &&
+        Array.isArray(n.characters) &&
+        Array.isArray(n.worldSettings) &&
+        Array.isArray(n.relationships) &&
+        Array.isArray(n.timeline) &&
+        Array.isArray(n.outlines)
       );
     });
   };
@@ -518,7 +531,7 @@ export default function NovelDesigner() {
               saveToStorage(data);
               alert('导入成功！');
             }
-          } catch (err) {
+          } catch {
             alert('导入失败，文件格式错误');
           }
         };

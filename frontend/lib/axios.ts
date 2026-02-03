@@ -10,7 +10,7 @@ interface RequestConfig extends AxiosRequestConfig {
 }
 
 // 定义响应数据的通用接口
-type ApiResponse<T = any> = T;
+type ApiResponse<T = unknown> = T;
 
 /**
  * HTTP请求类，封装axios实例
@@ -125,9 +125,9 @@ class Http {
    * @param params 查询参数
    * @param config 请求配置，包含withToken选项
    */
-  public async get<T = any>(
+  public async get<T = unknown>(
     url: string,
-    params?: any,
+    params?: Record<string, unknown>,
     config: RequestConfig = {}
   ): Promise<ApiResponse<T>> {
     return this.instance.get(url, { ...config, params });
@@ -139,9 +139,9 @@ class Http {
    * @param data 请求体数据
    * @param config 请求配置，包含withToken选项
    */
-  public async post<T = any>(
+  public async post<T = unknown>(
     url: string,
-    data?: any,
+    data?: unknown,
     config: RequestConfig = {}
   ): Promise<ApiResponse<T>> {
     return this.instance.post(url, data, config);
@@ -153,9 +153,9 @@ class Http {
    * @param data 请求体数据
    * @param config 请求配置，包含withToken选项
    */
-  public async put<T = any>(
+  public async put<T = unknown>(
     url: string,
-    data?: any,
+    data?: unknown,
     config: RequestConfig = {}
   ): Promise<ApiResponse<T>> {
     return this.instance.put(url, data, config);
@@ -166,7 +166,7 @@ class Http {
    * @param url 请求地址
    * @param config 请求配置，包含withToken选项
    */
-  public async delete<T = any>(
+  public async delete<T = unknown>(
     url: string,
     config: RequestConfig = {}
   ): Promise<ApiResponse<T>> {

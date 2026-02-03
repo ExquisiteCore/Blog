@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, ReactNode } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, ReactNode } from 'react';
 
 interface ScrollHeaderProps {
   children: ReactNode;
@@ -8,12 +8,18 @@ interface ScrollHeaderProps {
 
 export default function ScrollHeader({ children }: ScrollHeaderProps) {
   const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
+  const lastScrollYRef = useRef(
+    typeof window !== 'undefined' ? window.scrollY : 0
+  );
   const [isAtTop, setIsAtTop] = useState(true);
-  const [theme, setTheme] = useState('light');
+  const [theme, setTheme] = useState(() =>
+    typeof window !== 'undefined'
+      ? localStorage.getItem('theme') || 'light'
+      : 'light'
+  );
 
   // Handle scroll events
-  const handleScroll = () => {
+  const handleScroll = useCallback(() => {
     const currentScrollY = window.scrollY;
 
     // Check if at top of page
@@ -22,12 +28,10 @@ export default function ScrollHeader({ children }: ScrollHeaderProps) {
       setIsVisible(true);
     } else {
       // Update at-top state if needed
-      if (isAtTop) {
-        setIsAtTop(false);
-      }
+      setIsAtTop(false);
 
       // Check scroll direction
-      const isScrollingUp = currentScrollY < lastScrollY;
+      const isScrollingUp = currentScrollY < lastScrollYRef.current;
 
       if (isScrollingUp) {
         // Scrolling up - show header
@@ -41,34 +45,24 @@ export default function ScrollHeader({ children }: ScrollHeaderProps) {
     }
 
     // Update last scroll position
-    setLastScrollY(currentScrollY);
-  };
+    lastScrollYRef.current = currentScrollY;
+  }, []);
 
   // Listen for theme changes in localStorage
-  const handleStorageChange = (e: StorageEvent) => {
+  const handleStorageChange = useCallback((e: StorageEvent) => {
     if (typeof localStorage !== 'undefined' && e.key === 'theme') {
       setTheme(e.newValue || 'light');
     }
-  };
+  }, []);
 
   useEffect(() => {
-    // Set initial scroll position
-    setLastScrollY(window.scrollY);
-    // Initialize header state
-    handleScroll();
-
-    // Set initial theme from localStorage
-    if (typeof localStorage !== 'undefined') {
-      setTheme(localStorage.getItem('theme') || 'light');
-    }
-
     // Listen for theme changes from other components
     window.addEventListener('storage', handleStorageChange);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, []);
+  }, [handleStorageChange]);
 
   useEffect(() => {
     // Throttle scroll events using requestAnimationFrame
@@ -91,7 +85,7 @@ export default function ScrollHeader({ children }: ScrollHeaderProps) {
       // Remove scroll event listener
       window.removeEventListener('scroll', onScroll);
     };
-  }, [lastScrollY, isAtTop]);
+  }, [handleScroll]);
 
   // Theme-based background color class
   const bgColorClass = useMemo(() => {

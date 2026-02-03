@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -27,17 +27,12 @@ const tools = [
 
 export default function ToolList() {
   const searchParams = useSearchParams();
-  const [filteredTools, setFilteredTools] = useState(tools);
 
-  useEffect(() => {
+  const filteredTools = useMemo(() => {
     const selectedCategory = searchParams.get('category') || 'all';
-
-    const result =
-      selectedCategory === 'all'
-        ? tools
-        : tools.filter((tool) => tool.type === selectedCategory);
-
-    setFilteredTools(result);
+    return selectedCategory === 'all'
+      ? tools
+      : tools.filter((tool) => tool.type === selectedCategory);
   }, [searchParams]);
 
   return (

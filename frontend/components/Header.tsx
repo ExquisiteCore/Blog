@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import ScrollHeader from './ScrollHeader';
@@ -48,7 +48,7 @@ interface AuthState {
 }
 
 // 从 localStorage 读取认证状态
-function getAuthState(): AuthState {
+function getAuthSnapshot(): AuthState {
   if (typeof window === 'undefined') {
     return { isLoggedIn: false, userData: null };
   }
@@ -67,18 +67,27 @@ function getAuthState(): AuthState {
   return { isLoggedIn: false, userData: null };
 }
 
+function getServerSnapshot(): AuthState {
+  return { isLoggedIn: false, userData: null };
+}
+
+// 订阅存储变化
+function subscribeToAuth(callback: () => void): () => void {
+  window.addEventListener('storage', callback);
+  return () => window.removeEventListener('storage', callback);
+}
+
 export default function Header() {
   const pathname = usePathname();
-  const [authState, setAuthState] = useState<AuthState>({ isLoggedIn: false, userData: null });
-
-  useEffect(() => {
-    setAuthState(getAuthState());
-  }, []);
+  const authState = useSyncExternalStore(
+    subscribeToAuth,
+    getAuthSnapshot,
+    getServerSnapshot
+  );
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    setAuthState({ isLoggedIn: false, userData: null });
     window.location.href = '/';
   };
 

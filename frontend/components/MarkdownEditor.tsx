@@ -6,6 +6,13 @@ import { pinyin } from 'pinyin-pro';
 import http from '@/lib/axios';
 import MarkdownRenderer from './MarkdownRenderer';
 
+interface Label {
+  id: string;
+  name: string;
+  slug?: string;
+  description?: string;
+}
+
 export default function MarkdownEditor() {
   // 编辑器内容
   const [text, setText] = useState(
@@ -20,13 +27,13 @@ export default function MarkdownEditor() {
   // 标签输入
   const [tagInput, setTagInput] = useState<string>('');
   // 所有可用标签列表
-  const [availableLabels, setAvailableLabels] = useState<any[]>([]);
+  const [availableLabels, setAvailableLabels] = useState<Label[]>([]);
   // 选中的标签ID列表
   const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>([]);
   // 是否显示标签下拉列表
   const [showTagDropdown, setShowTagDropdown] = useState<boolean>(false);
   // 过滤后的标签列表
-  const [filteredLabels, setFilteredLabels] = useState<any[]>([]);
+  const [filteredLabels, setFilteredLabels] = useState<Label[]>([]);
   // 文章标题
   const [title, setTitle] = useState<string>('');
   // 文章摘要
@@ -324,7 +331,7 @@ export default function MarkdownEditor() {
   };
 
   // 创建新标签
-  const createLabel = async (name: string): Promise<any | null> => {
+  const createLabel = async (name: string): Promise<Label | null> => {
     try {
       const labelSlug = generateSlug(name);
       const labelData = {
@@ -403,7 +410,7 @@ export default function MarkdownEditor() {
   };
 
   // 选择已有标签
-  const selectExistingLabel = (label: any) => {
+  const selectExistingLabel = (label: Label) => {
     if (!selectedLabelIds.includes(label.id)) {
       setSelectedLabelIds([...selectedLabelIds, label.id]);
       setTags([...tags, label.name]);

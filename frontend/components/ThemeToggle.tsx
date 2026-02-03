@@ -1,33 +1,37 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useSyncExternalStore } from 'react';
+
+// 获取主题的初始值
+function getThemeSnapshot(): boolean {
+  if (typeof window === 'undefined') return false;
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'dark') return true;
+  if (savedTheme === 'light') return false;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+function getServerSnapshot(): boolean {
+  return false;
+}
+
+// 订阅存储变化（用于跨标签页同步）
+function subscribeToTheme(callback: () => void): () => void {
+  window.addEventListener('storage', callback);
+  return () => window.removeEventListener('storage', callback);
+}
 
 export default function ThemeToggle() {
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  // Initialize theme based on localStorage or system preference
-  useEffect(() => {
-    if (typeof localStorage !== 'undefined') {
-      const savedTheme = localStorage.getItem('theme');
-      if (savedTheme === 'dark') {
-        setIsDarkMode(true);
-      } else if (savedTheme === 'light') {
-        setIsDarkMode(false);
-      } else {
-        // Check system preference if no saved preference
-        const prefersDark = window.matchMedia(
-          '(prefers-color-scheme: dark)'
-        ).matches;
-        setIsDarkMode(prefersDark);
-        localStorage.setItem('theme', prefersDark ? 'dark' : 'light');
-      }
-    }
-  }, []);
+  const isDarkMode = useSyncExternalStore(
+    subscribeToTheme,
+    getThemeSnapshot,
+    getServerSnapshot
+  );
+  const [, forceUpdate] = useState({});
 
   // Handle theme toggle
   const toggleTheme = () => {
     const newTheme = !isDarkMode;
-    setIsDarkMode(newTheme);
 
     // Update theme in localStorage and document
     const themeName = newTheme ? 'dark' : 'light';
@@ -35,6 +39,8 @@ export default function ThemeToggle() {
       localStorage.setItem('theme', themeName);
     }
     document.documentElement.setAttribute('data-theme', themeName);
+    // 触发重新渲染以反映新的主题状态
+    forceUpdate({});
   };
 
   return (
