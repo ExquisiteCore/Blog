@@ -3,12 +3,7 @@
 import { useState, useEffect } from 'react';
 import http from '@/lib/axios';
 import ConfirmModal from '@/components/dashboard/ConfirmModal';
-
-interface WechatTag {
-  id: number;
-  name: string;
-  count?: number;
-}
+import type { WechatTag, TagListResponse, CreateTagResponse } from '@/types/wechat';
 
 export default function WechatTagsPage() {
   const [tags, setTags] = useState<WechatTag[]>([]);
@@ -23,7 +18,7 @@ export default function WechatTagsPage() {
 
   const fetchTags = async () => {
     try {
-      const data = await http.get<{ tags: WechatTag[] }>('/wechat/tags', {}, { withToken: true });
+      const data = await http.get<TagListResponse>('/wechat/tags', {}, { withToken: true });
       if (data?.tags) {
         setTags(data.tags);
       }
@@ -60,7 +55,7 @@ export default function WechatTagsPage() {
         await http.put('/wechat/tags', { id: editingTag.id, name: tagName }, { withToken: true });
         setTags(tags.map(t => t.id === editingTag.id ? { ...t, name: tagName } : t));
       } else {
-        const data = await http.post<{ tag: WechatTag }>('/wechat/tags', { name: tagName }, { withToken: true });
+        const data = await http.post<CreateTagResponse>('/wechat/tags', { name: tagName }, { withToken: true });
         if (data?.tag) {
           setTags([...tags, data.tag]);
         }

@@ -44,6 +44,17 @@ export interface RegisterRequest {
   bio?: string;
 }
 
+/** 更新用户请求 */
+export interface UpdateUserRequest {
+  username?: string;
+  email?: string;
+  password?: string;
+  display_name?: string;
+  avatar_url?: string;
+  bio?: string;
+  role?: string;
+}
+
 // ==================== 标签相关 ====================
 
 /** 标签 */
@@ -60,6 +71,13 @@ export interface Label {
 export interface CreateLabelRequest {
   name: string;
   slug: string;
+  description?: string;
+}
+
+/** 更新标签请求 */
+export interface UpdateLabelRequest {
+  name?: string;
+  slug?: string;
   description?: string;
 }
 
@@ -114,6 +132,21 @@ export interface CreatePostRequest {
   published: boolean;
   author_id: string;
   labels?: string[];
+}
+
+/** 更新文章请求 */
+export interface UpdatePostRequest {
+  title?: string;
+  slug?: string;
+  content?: string;
+  excerpt?: string;
+  featured_image?: string;
+  published?: boolean;
+}
+
+/** 通用成功响应 */
+export interface SuccessResponse {
+  success: boolean;
 }
 
 // ==================== 评论相关 ====================

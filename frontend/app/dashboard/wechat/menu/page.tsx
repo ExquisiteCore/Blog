@@ -2,18 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import http from '@/lib/axios';
-
-interface MenuButton {
-  type?: string;
-  name: string;
-  key?: string;
-  url?: string;
-  sub_button?: MenuButton[];
-}
-
-interface Menu {
-  button: MenuButton[];
-}
+import type { Menu, GetMenuResponse } from '@/types/wechat';
 
 export default function WechatMenuPage() {
   const [menu, setMenu] = useState<Menu | null>(null);
@@ -25,7 +14,7 @@ export default function WechatMenuPage() {
 
   const fetchMenu = async () => {
     try {
-      const data = await http.get<{ menu?: Menu }>('/wechat/menu', {}, { withToken: true });
+      const data = await http.get<GetMenuResponse>('/wechat/menu', {}, { withToken: true });
       if (data?.menu) {
         setMenu(data.menu);
         setJsonInput(JSON.stringify(data.menu, null, 2));

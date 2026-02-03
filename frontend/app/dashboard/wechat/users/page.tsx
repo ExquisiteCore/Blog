@@ -2,26 +2,7 @@
 
 import { useState } from 'react';
 import http from '@/lib/axios';
-
-interface WechatUser {
-  openid: string;
-  nickname?: string;
-  sex?: number;
-  city?: string;
-  province?: string;
-  country?: string;
-  headimgurl?: string;
-  subscribe_time?: number;
-  remark?: string;
-  tagid_list?: number[];
-}
-
-interface UserListResponse {
-  total: number;
-  count: number;
-  data: { openid: string[] };
-  next_openid: string;
-}
+import type { WechatUser, UserListResponse, BatchUserInfoResponse } from '@/types/wechat';
 
 export default function WechatUsersPage() {
   const [users, setUsers] = useState<WechatUser[]>([]);
@@ -48,7 +29,7 @@ export default function WechatUsersPage() {
 
         // 批量获取用户详情
         if (data.data.openid.length > 0) {
-          const userInfos = await http.post<{ user_info_list: WechatUser[] }>(
+          const userInfos = await http.post<BatchUserInfoResponse>(
             '/wechat/user/batch',
             { openids: data.data.openid },
             { withToken: true }

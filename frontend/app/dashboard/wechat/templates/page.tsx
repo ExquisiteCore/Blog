@@ -3,20 +3,7 @@
 import { useState, useEffect } from 'react';
 import http from '@/lib/axios';
 import ConfirmModal from '@/components/dashboard/ConfirmModal';
-
-interface Template {
-  template_id: string;
-  title: string;
-  primary_industry?: string;
-  deputy_industry?: string;
-  content?: string;
-  example?: string;
-}
-
-interface Industry {
-  primary_industry?: { first_class: string; second_class: string };
-  secondary_industry?: { first_class: string; second_class: string };
-}
+import type { Template, TemplateListResponse, Industry } from '@/types/wechat';
 
 export default function WechatTemplatesPage() {
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -39,7 +26,7 @@ export default function WechatTemplatesPage() {
   const fetchData = async () => {
     try {
       const [templateData, industryData] = await Promise.all([
-        http.get<{ template_list: Template[] }>('/wechat/template/list', {}, { withToken: true }),
+        http.get<TemplateListResponse>('/wechat/template/list', {}, { withToken: true }),
         http.get<Industry>('/wechat/template/industry', {}, { withToken: true }),
       ]);
 
