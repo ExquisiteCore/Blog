@@ -2,12 +2,13 @@
 //!
 //! 提供用户相关的API端点
 
-use axum::{Json, extract::State};
+use axum::{Json, extract::{Path, State}};
 use bcrypt::{DEFAULT_COST, hash};
+use uuid::Uuid;
 
 use crate::error::{AppError, AppErrorType};
 use crate::middleware::auth;
-use crate::model::models::user::{CreateUserRequest, LoginRequest, User};
+use crate::model::models::user::{CreateUserRequest, LoginRequest, UpdateUserRequest, User};
 
 /// 用户注册API
 ///
@@ -80,5 +81,54 @@ pub async fn login_user(
             AppErrorType::IncorrectLogin,
         )),
         Err(e) => Err(AppError::new(e, AppErrorType::Db)),
+    }
+}
+
+/// 获取所有用户（管理员）
+///
+/// 返回系统中的所有用户列表
+pub async fn get_users(
+    State(state): State<crate::state::AppState>,
+) -> Result<Json<Vec<User>>, AppError> {
+    let users = User::find_all(&state.pool)
+        .await
+        .map_err(|e| AppError::new(e, AppErrorType::Db))?;
+
+    Ok(Json(users))
+}
+
+/// 更新用户（管理员）
+///
+/// 根据ID更新用户信息
+pub async fn update_user(
+    State(state): State<crate::state::AppState>,
+    Path(id): Path<Uuid>,
+    Json(req): Json<UpdateUserRequest>,
+) -> Result<Json<User>, AppError> {
+    let updated = User::update(&state.pool, id, req)
+        .await
+        .map_err(|e| AppError::new(e, AppErrorType::Db))?;
+
+    Ok(Json(updated))
+}
+
+/// 删除用户（管理员）
+///
+/// 根据ID删除用户
+pub async fn delete_user(
+    State(state): State<crate::state::AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<serde_json::Value>, AppError> {
+    let deleted = User::delete(&state.pool, id)
+        .await
+        .map_err(|e| AppError::new(e, AppErrorType::Db))?;
+
+    if deleted {
+        Ok(Json(serde_json::json!({ "success": true })))
+    } else {
+        Err(AppError::new_message(
+            &format!("未找到ID为{}的用户", id),
+            AppErrorType::Notfound,
+        ))
     }
 }

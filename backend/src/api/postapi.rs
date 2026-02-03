@@ -79,3 +79,53 @@ pub async fn get_post_labels(
     // 返回标签列表
     Ok(Json(labels))
 }
+
+/// 更新文章
+///
+/// 根据ID更新文章信息
+pub async fn update_post(
+    State(state): State<crate::state::AppState>,
+    Path(id): Path<Uuid>,
+    Json(req): Json<post::UpdatePostRequest>,
+) -> Result<Json<post::Post>, AppError> {
+    // 更新文章
+    let updated = post::Post::update(state.pool.as_ref(), id, req).await?;
+
+    // 返回更新后的文章
+    Ok(Json(updated))
+}
+
+/// 删除文章
+///
+/// 根据ID删除文章
+pub async fn delete_post(
+    State(state): State<crate::state::AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<serde_json::Value>, AppError> {
+    // 先删除文章的所有标签关联
+    post::Post::remove_all_labels(state.pool.as_ref(), id).await?;
+
+    // 删除文章
+    let deleted = post::Post::delete(state.pool.as_ref(), id).await?;
+
+    if deleted {
+        Ok(Json(serde_json::json!({ "success": true })))
+    } else {
+        Err(AppError::new_message(
+            &format!("未找到ID为{}的文章", id),
+            AppErrorType::Notfound,
+        ))
+    }
+}
+
+/// 获取所有文章（包括未发布）
+///
+/// 管理员接口，返回所有文章
+pub async fn get_all_posts(
+    State(state): State<crate::state::AppState>,
+) -> Result<Json<Vec<post::PostSummaryWithLabels>>, AppError> {
+    // 获取所有文章（包含标签）
+    let posts = post::Post::find_all_with_labels(state.pool.as_ref(), false).await?;
+
+    Ok(Json(posts))
+}

@@ -41,7 +41,16 @@ pub fn create_routes() -> Router<AppState> {
     let admin_routes = Router::new()
         // 博客管理
         .route("/posts", post(postapi::create_post))
+        .route("/posts/{id}", put(postapi::update_post))
+        .route("/posts/{id}", delete(postapi::delete_post))
+        .route("/admin/posts", get(postapi::get_all_posts))
         .route("/labels", post(labelapi::create_label))
+        .route("/labels/{id}", put(labelapi::update_label))
+        .route("/labels/{id}", delete(labelapi::delete_label))
+        // 用户管理
+        .route("/admin/users", get(userapi::get_users))
+        .route("/admin/users/{id}", put(userapi::update_user))
+        .route("/admin/users/{id}", delete(userapi::delete_user))
         // ============ 微信用户管理 ============
         .route("/wechat/user", get(wechatapi::get_user_info))
         .route("/wechat/user/batch", post(wechatapi::batch_get_user_info))

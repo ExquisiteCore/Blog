@@ -81,3 +81,43 @@ pub async fn get_posts_by_label(
     // 返回文章列表
     Ok(Json(posts))
 }
+
+/// 更新标签
+///
+/// 根据ID更新标签信息
+pub async fn update_label(
+    State(state): State<crate::state::AppState>,
+    Path(id): Path<Uuid>,
+    Json(req): Json<label::UpdateLabelRequest>,
+) -> Result<Json<label::Label>, AppError> {
+    let updated = label::Label::update(state.pool.as_ref(), id, req)
+        .await
+        .map_err(|e| {
+            AppError::new_message(&format!("更新标签失败: {}", e), AppErrorType::Internal)
+        })?;
+
+    Ok(Json(updated))
+}
+
+/// 删除标签
+///
+/// 根据ID删除标签
+pub async fn delete_label(
+    State(state): State<crate::state::AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<serde_json::Value>, AppError> {
+    let deleted = label::Label::delete(state.pool.as_ref(), id)
+        .await
+        .map_err(|e| {
+            AppError::new_message(&format!("删除标签失败: {}", e), AppErrorType::Internal)
+        })?;
+
+    if deleted {
+        Ok(Json(serde_json::json!({ "success": true })))
+    } else {
+        Err(AppError::new_message(
+            &format!("未找到ID为{}的标签", id),
+            AppErrorType::Notfound,
+        ))
+    }
+}
