@@ -5,13 +5,7 @@ import { Image, Edit, Eye, Download, Settings, Upload } from 'lucide-react';
 import { pinyin } from 'pinyin-pro';
 import http from '@/lib/axios';
 import MarkdownRenderer from './MarkdownRenderer';
-
-interface Label {
-  id: string;
-  name: string;
-  slug?: string;
-  description?: string;
-}
+import type { Label } from '@/types/api';
 
 export default function MarkdownEditor() {
   // 编辑器内容
@@ -68,7 +62,7 @@ export default function MarkdownEditor() {
   // 获取所有标签
   const fetchLabels = async () => {
     try {
-      const data = await http.get('/labels');
+      const data = await http.get<Label[]>('/labels');
       if (Array.isArray(data)) {
         setAvailableLabels(data);
       } else {
@@ -340,12 +334,11 @@ export default function MarkdownEditor() {
         description: `${name}相关文章`,
       };
 
-      const data = await http.post('/labels', labelData, {
+      const newLabel = await http.post<Label>('/labels', labelData, {
         withToken: true,
       });
 
-      if (data && typeof data === 'object' && 'id' in data) {
-        const newLabel = data;
+      if (newLabel && typeof newLabel === 'object' && 'id' in newLabel) {
         setAvailableLabels([...availableLabels, newLabel]);
         return newLabel;
       } else {

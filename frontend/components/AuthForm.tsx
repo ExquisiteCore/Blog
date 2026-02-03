@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import http from '@/lib/axios';
+import type { LoginResponse, User } from '@/types/api';
 
 type FormType = 'login' | 'register';
 
@@ -103,32 +104,25 @@ export default function AuthForm() {
     setApiError('');
 
     try {
-      let data;
-
       if (activeTab === 'login') {
         // 登录请求
-        data = await http.post('/users/login', {
+        const data = await http.post<LoginResponse>('/users/login', {
           username_or_email: formData.email,
           password: formData.password,
         });
-      } else {
-        // 注册请求
-        data = await http.post('/users/register', {
-          username: formData.username,
-          email: formData.email,
-          password: formData.password,
-          avatar_url: formData.avatar_url,
-        });
-      }
-
-      // 成功后的处理
-      if (activeTab === 'login') {
         // 登录成功后存储JWT令牌
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         // 重定向到首页
         window.location.href = '/';
       } else {
+        // 注册请求
+        await http.post<User>('/users/register', {
+          username: formData.username,
+          email: formData.email,
+          password: formData.password,
+          avatar_url: formData.avatar_url || undefined,
+        });
         // 注册成功后切换到登录页
         setActiveTab('login');
         // 重置表单，保留邮箱

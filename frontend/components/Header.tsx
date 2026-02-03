@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import ScrollHeader from './ScrollHeader';
 import ThemeToggle from './ThemeToggle';
+import type { User } from '@/types/api';
 
 // 定义导航菜单项
 const navItems = [
@@ -36,15 +37,9 @@ const getTabClass = (isActive: boolean) => {
   return isActive ? 'tab tab-active' : 'tab';
 };
 
-interface UserData {
-  username?: string;
-  avatar_url?: string;
-  role?: string;
-}
-
 interface AuthState {
   isLoggedIn: boolean;
-  userData: UserData | null;
+  userData: User | null;
 }
 
 // 从 localStorage 读取认证状态
