@@ -7,17 +7,36 @@ import http from '@/lib/axios';
 import MarkdownRenderer from './MarkdownRenderer';
 import type { Label, ImageUploadResponse } from '@/types/api';
 
-export default function MarkdownEditor() {
+interface InitialData {
+  id?: string;
+  title?: string;
+  slug?: string;
+  content?: string;
+  excerpt?: string;
+  coverImage?: string;
+  tags?: string[];
+  published?: boolean;
+}
+
+interface MarkdownEditorProps {
+  initialData?: InitialData;
+  /** 是否为博客管理模式（后台使用），false 则为纯编辑器模式（工具箱使用） */
+  blogMode?: boolean;
+}
+
+export default function MarkdownEditor({ initialData, blogMode = false }: MarkdownEditorProps) {
   // 编辑器内容
   const [text, setText] = useState(
-    "EC is too lazy to write a refresh button, because he thinks 'refresh' = 'edit' + 'preview'. Actually, that makes sense :D"
+    initialData?.content || ''
   );
+  // 文章ID（编辑模式）
+  const postId = initialData?.id;
   // 编辑器模式：edit - 编辑模式，preview - 预览模式
   const [mode, setMode] = useState<'edit' | 'preview'>('edit');
   // 封面图片URL
-  const [coverImage, setCoverImage] = useState<string>('');
+  const [coverImage, setCoverImage] = useState<string>(initialData?.coverImage || '');
   // 文章标签
-  const [tags, setTags] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>(initialData?.tags || []);
   // 标签输入
   const [tagInput, setTagInput] = useState<string>('');
   // 所有可用标签列表
@@ -29,12 +48,12 @@ export default function MarkdownEditor() {
   // 过滤后的标签列表
   const [filteredLabels, setFilteredLabels] = useState<Label[]>([]);
   // 文章标题
-  const [title, setTitle] = useState<string>('');
+  const [title, setTitle] = useState<string>(initialData?.title || '');
   // 文章摘要
-  const [summary, setSummary] = useState<string>('');
+  const [summary, setSummary] = useState<string>(initialData?.excerpt || '');
   // 文章slug
-  const [slug, setSlug] = useState<string>('');
-  // 发布状态
+  const [slug, setSlug] = useState<string>(initialData?.slug || '');
+  // 保存中状态
   const [isPublishing, setIsPublishing] = useState<boolean>(false);
   // 是否已挂载标志
   const [isMounted, setIsMounted] = useState(false);
@@ -451,7 +470,7 @@ export default function MarkdownEditor() {
   };
 
   // 处理发布文章
-  const handlePublish = async () => {
+  const handlePublish = async (publish: boolean = true) => {
     try {
       setIsPublishing(true);
 
@@ -470,11 +489,6 @@ export default function MarkdownEditor() {
         return;
       }
 
-      if (!coverImage) {
-        alert('请设置封面图片');
-        return;
-      }
-
       const userData = localStorage.getItem('user');
       if (!userData) {
         alert('请先登录');
@@ -488,26 +502,35 @@ export default function MarkdownEditor() {
         title: title,
         content: text,
         slug: slug,
-        summary: summary || title,
-        featured_image: coverImage,
+        excerpt: summary || title,
+        featured_image: coverImage || null,
         author_id: authorId,
-        published: true,
+        published: publish,
         labels: selectedLabelIds.length > 0 ? selectedLabelIds : [],
       };
 
-      await http.post('/posts', postData, {
-        withToken: true,
-      });
+      if (postId) {
+        // 编辑模式 - 更新文章
+        await http.put(`/posts/${postId}`, postData, {
+          withToken: true,
+        });
+        alert('文章更新成功！');
+      } else {
+        // 新建模式 - 创建文章
+        await http.post('/posts', postData, {
+          withToken: true,
+        });
+        alert(publish ? '文章发布成功！' : '草稿保存成功！');
 
-      alert('文章发布成功！');
-
-      setTitle('');
-      setText('');
-      setSlug('');
-      setSummary('');
-      setCoverImage('');
-      setTags([]);
-      setSelectedLabelIds([]);
+        // 新建成功后清空表单
+        setTitle('');
+        setText('');
+        setSlug('');
+        setSummary('');
+        setCoverImage('');
+        setTags([]);
+        setSelectedLabelIds([]);
+      }
     } catch (error) {
       console.error('发布文章失败:', error);
       alert(error instanceof Error ? error.message : '发布失败，请重试');
@@ -652,224 +675,233 @@ export default function MarkdownEditor() {
           )}
         </div>
 
-        {/* 底部区域 - 封面图片和标签 */}
-        <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
-          {/* 封面图片上传 */}
-          <div className="flex flex-col space-y-2">
-            <span className="text-sm font-medium">封面图片：</span>
-            <div className="flex gap-4">
-              <div className="flex-1 space-y-2">
-                <div className="flex w-full items-center space-x-2">
-                  <input
-                    type="text"
-                    placeholder="封面链接"
-                    className="input input-bordered w-full"
-                    value={coverImage}
-                    onChange={(e) => setCoverImage(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">
-                    随机图片调用于www.dmoe.cc的接口，不代表我的个人审美
-                  </p>
-                  <div className="flex gap-2">
-                    <button
-                      className="btn btn-primary btn-sm mt-2"
-                      onClick={() =>
-                        setCoverImage(
-                          `https://www.dmoe.cc/random.php?t=${Date.now()}`
-                        )
-                      }
-                    >
-                      <div className="flex items-center">
-                        <span className="mr-1">随机图片</span>
-                      </div>
-                    </button>
-                    <button
-                      className="btn btn-outline btn-sm mt-2"
-                      onClick={() => {
-                        const input =
-                          coverDropzoneRef.current?.querySelector('input[type="file"]');
-                        if (input) (input as HTMLInputElement).click();
-                      }}
-                      disabled={isUploading}
-                    >
-                      <div className="flex items-center">
-                        <Upload className="mr-1 h-4 w-4" />
-                        <span>上传图片</span>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div
-                ref={coverDropzoneRef}
-                className="relative h-[150px] w-[200px] overflow-hidden rounded-md border border-gray-200 bg-white dark:bg-gray-800"
-                onDrop={handleCoverDrop}
-                onDragOver={handleCoverDragOver}
-              >
-                {coverImage ? (
-                  <div className="group relative h-full w-full">
-                    <img
-                      src={coverImage}
-                      alt="封面图片"
-                      className="h-full w-full object-cover"
+        {/* 底部区域 - 仅在博客管理模式下显示 */}
+        {blogMode && (
+          <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+            {/* 封面图片上传 */}
+            <div className="flex flex-col space-y-2">
+              <span className="text-sm font-medium">封面图片：</span>
+              <div className="flex gap-4">
+                <div className="flex-1 space-y-2">
+                  <div className="flex w-full items-center space-x-2">
+                    <input
+                      type="text"
+                      placeholder="封面链接"
+                      className="input input-bordered w-full"
+                      value={coverImage}
+                      onChange={(e) => setCoverImage(e.target.value)}
                     />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 transition-opacity group-hover:opacity-100">
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">
+                      随机图片调用于www.dmoe.cc的接口，不代表我的个人审美
+                    </p>
+                    <div className="flex gap-2">
                       <button
-                        className="btn btn-circle btn-ghost btn-sm text-white"
+                        className="btn btn-primary btn-sm mt-2"
+                        onClick={() =>
+                          setCoverImage(
+                            `https://www.dmoe.cc/random.php?t=${Date.now()}`
+                          )
+                        }
+                      >
+                        <div className="flex items-center">
+                          <span className="mr-1">随机图片</span>
+                        </div>
+                      </button>
+                      <button
+                        className="btn btn-outline btn-sm mt-2"
                         onClick={() => {
                           const input =
-                            coverDropzoneRef.current?.querySelector(
-                              'input[type="file"]'
-                            );
+                            coverDropzoneRef.current?.querySelector('input[type="file"]');
                           if (input) (input as HTMLInputElement).click();
                         }}
+                        disabled={isUploading}
                       >
-                        <Upload className="h-4 w-4" />
-                      </button>
-                    </div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleCoverFileSelect}
-                    />
-                  </div>
-                ) : (
-                  <div className="flex h-full w-full flex-col items-center justify-center text-gray-500">
-                    <Image className="mb-2 h-8 w-8" />
-                    <p className="text-xs">拖拽或点击上传</p>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="absolute inset-0 cursor-pointer opacity-0"
-                      onChange={handleCoverFileSelect}
-                    />
-                  </div>
-                )}
-                {isUploading && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
-                    <div className="loading loading-spinner loading-md text-primary"></div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* 文章标签和标题 */}
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <div className="relative">
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium">文章标签：</span>
-                  <input
-                    ref={tagInputRef}
-                    type="text"
-                    placeholder="输入标签名搜索或按回车创建新标签"
-                    className="input input-bordered w-full"
-                    value={tagInput}
-                    onChange={handleTagInput}
-                    onKeyDown={handleTagKeyDown}
-                    onFocus={handleTagInputFocus}
-                  />
-                </div>
-                {/* 标签下拉列表 */}
-                {showTagDropdown && (
-                  <div
-                    ref={tagDropdownRef}
-                    className="absolute left-[72px] right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-md border border-base-300 bg-base-100 shadow-lg"
-                  >
-                    {filteredLabels.length > 0 ? (
-                      <>
-                        <div className="px-3 py-2 text-xs text-gray-500 border-b border-base-200">
-                          点击选择已有标签
+                        <div className="flex items-center">
+                          <Upload className="mr-1 h-4 w-4" />
+                          <span>上传图片</span>
                         </div>
-                        {filteredLabels.map((label) => (
-                          <div
-                            key={label.id}
-                            className="cursor-pointer px-3 py-2 hover:bg-base-200 transition-colors"
-                            onClick={() => selectExistingLabel(label)}
-                          >
-                            <span className="font-medium">{label.name}</span>
-                            {label.description && (
-                              <span className="ml-2 text-xs text-gray-500">
-                                {label.description}
-                              </span>
-                            )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  ref={coverDropzoneRef}
+                  className="relative h-[150px] w-[200px] overflow-hidden rounded-md border border-gray-200 bg-white dark:bg-gray-800"
+                  onDrop={handleCoverDrop}
+                  onDragOver={handleCoverDragOver}
+                >
+                  {coverImage ? (
+                    <div className="group relative h-full w-full">
+                      <img
+                        src={coverImage}
+                        alt="封面图片"
+                        className="h-full w-full object-cover"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 transition-opacity group-hover:opacity-100">
+                        <button
+                          className="btn btn-circle btn-ghost btn-sm text-white"
+                          onClick={() => {
+                            const input =
+                              coverDropzoneRef.current?.querySelector(
+                                'input[type="file"]'
+                              );
+                            if (input) (input as HTMLInputElement).click();
+                          }}
+                        >
+                          <Upload className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleCoverFileSelect}
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex h-full w-full flex-col items-center justify-center text-gray-500">
+                      <Image className="mb-2 h-8 w-8" />
+                      <p className="text-xs">拖拽或点击上传</p>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="absolute inset-0 cursor-pointer opacity-0"
+                        onChange={handleCoverFileSelect}
+                      />
+                    </div>
+                  )}
+                  {isUploading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                      <div className="loading loading-spinner loading-md text-primary"></div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* 文章标签和标题 */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="relative">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-medium">文章标签：</span>
+                    <input
+                      ref={tagInputRef}
+                      type="text"
+                      placeholder="输入标签名搜索或按回车创建新标签"
+                      className="input input-bordered w-full"
+                      value={tagInput}
+                      onChange={handleTagInput}
+                      onKeyDown={handleTagKeyDown}
+                      onFocus={handleTagInputFocus}
+                    />
+                  </div>
+                  {/* 标签下拉列表 */}
+                  {showTagDropdown && (
+                    <div
+                      ref={tagDropdownRef}
+                      className="absolute left-[72px] right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-md border border-base-300 bg-base-100 shadow-lg"
+                    >
+                      {filteredLabels.length > 0 ? (
+                        <>
+                          <div className="px-3 py-2 text-xs text-gray-500 border-b border-base-200">
+                            点击选择已有标签
                           </div>
-                        ))}
-                      </>
-                    ) : tagInput.trim() ? (
-                      <div className="px-3 py-2 text-sm text-gray-500">
-                        没有匹配的标签，按回车创建 &quot;{tagInput.trim()}&quot;
+                          {filteredLabels.map((label) => (
+                            <div
+                              key={label.id}
+                              className="cursor-pointer px-3 py-2 hover:bg-base-200 transition-colors"
+                              onClick={() => selectExistingLabel(label)}
+                            >
+                              <span className="font-medium">{label.name}</span>
+                              {label.description && (
+                                <span className="ml-2 text-xs text-gray-500">
+                                  {label.description}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </>
+                      ) : tagInput.trim() ? (
+                        <div className="px-3 py-2 text-sm text-gray-500">
+                          没有匹配的标签，按回车创建 &quot;{tagInput.trim()}&quot;
+                        </div>
+                      ) : (
+                        <div className="px-3 py-2 text-sm text-gray-500">
+                          暂无可用标签
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                {tags.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {tags.map((tag, index) => (
+                      <div key={index} className="badge badge-primary gap-1">
+                        <span>{tag}</span>
+                        <button
+                          type="button"
+                          className="text-purple-600 hover:text-purple-800 dark:text-purple-300 dark:hover:text-purple-100"
+                          onClick={() => removeTag(index)}
+                        >
+                          ×
+                        </button>
                       </div>
-                    ) : (
-                      <div className="px-3 py-2 text-sm text-gray-500">
-                        暂无可用标签
-                      </div>
-                    )}
+                    ))}
                   </div>
                 )}
               </div>
-              {tags.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {tags.map((tag, index) => (
-                    <div key={index} className="badge badge-primary gap-1">
-                      <span>{tag}</span>
-                      <button
-                        type="button"
-                        className="text-purple-600 hover:text-purple-800 dark:text-purple-300 dark:hover:text-purple-100"
-                        onClick={() => removeTag(index)}
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-sm font-medium">文章标题：</span>
-              <input
-                type="text"
-                placeholder="输入文章标题"
-                className="input input-bordered w-full"
-                value={title}
-                onChange={handleTitleChange}
-              />
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-sm font-medium">文章别名：</span>
-              <input
-                type="text"
-                placeholder="输入文章别名，用于URL"
-                className="input input-bordered w-full"
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-              />
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-sm font-medium">文章摘要：</span>
-              <input
-                type="text"
-                placeholder="输入文章摘要（可选）"
-                className="input input-bordered w-full"
-                value={summary}
-                onChange={(e) => setSummary(e.target.value)}
-              />
-            </div>
-            <div className="flex justify-end">
-              <button
-                className="btn btn-primary mt-2"
-                onClick={handlePublish}
-                disabled={isPublishing}
-              >
-                {isPublishing ? '发布中...' : '发布'}
-              </button>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-medium">文章标题：</span>
+                <input
+                  type="text"
+                  placeholder="输入文章标题"
+                  className="input input-bordered w-full"
+                  value={title}
+                  onChange={handleTitleChange}
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-medium">文章别名：</span>
+                <input
+                  type="text"
+                  placeholder="输入文章别名，用于URL"
+                  className="input input-bordered w-full"
+                  value={slug}
+                  onChange={(e) => setSlug(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-medium">文章摘要：</span>
+                <input
+                  type="text"
+                  placeholder="输入文章摘要（可选）"
+                  className="input input-bordered w-full"
+                  value={summary}
+                  onChange={(e) => setSummary(e.target.value)}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  className="btn btn-ghost mt-2"
+                  onClick={() => handlePublish(false)}
+                  disabled={isPublishing}
+                >
+                  {isPublishing ? '保存中...' : '保存草稿'}
+                </button>
+                <button
+                  className="btn btn-primary mt-2"
+                  onClick={() => handlePublish(true)}
+                  disabled={isPublishing}
+                >
+                  {isPublishing ? '发布中...' : (postId ? '更新并发布' : '发布')}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
