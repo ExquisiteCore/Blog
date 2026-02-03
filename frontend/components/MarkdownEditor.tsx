@@ -5,7 +5,7 @@ import { Image, Edit, Eye, Download, Settings, Upload } from 'lucide-react';
 import { pinyin } from 'pinyin-pro';
 import http from '@/lib/axios';
 import MarkdownRenderer from './MarkdownRenderer';
-import type { Label } from '@/types/api';
+import type { Label, ImageUploadResponse } from '@/types/api';
 
 export default function MarkdownEditor() {
   // 编辑器内容
@@ -93,7 +93,7 @@ export default function MarkdownEditor() {
         headers['Authorization'] = `Bearer ${uploadToken}`;
       }
       const baseUrl = uploadApiUrl || 'http://121.62.28.11:40027/api/v1';
-      const response = await http.post('/upload', formData, {
+      const response = await http.post<ImageUploadResponse>('/upload', formData, {
         baseURL: baseUrl,
         headers: headers,
       });

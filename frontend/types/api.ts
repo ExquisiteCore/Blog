@@ -177,3 +177,17 @@ export interface ApiError {
   message: string;
   error_type?: string;
 }
+
+// ==================== 文件上传相关 ====================
+
+/** 图片上传响应 */
+export interface ImageUploadResponse {
+  status: boolean;
+  data: {
+    links: {
+      markdown: string;
+      html?: string;
+      url?: string;
+    };
+  };
+}
