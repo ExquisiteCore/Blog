@@ -42,33 +42,47 @@ interface UserData {
   role?: string;
 }
 
+interface AuthState {
+  isLoggedIn: boolean;
+  userData: UserData | null;
+}
+
+// 从 localStorage 读取认证状态
+function getAuthState(): AuthState {
+  if (typeof window === 'undefined') {
+    return { isLoggedIn: false, userData: null };
+  }
+
+  const token = localStorage.getItem('token');
+  const user = localStorage.getItem('user');
+
+  if (token && user) {
+    try {
+      return { isLoggedIn: true, userData: JSON.parse(user) };
+    } catch {
+      return { isLoggedIn: false, userData: null };
+    }
+  }
+
+  return { isLoggedIn: false, userData: null };
+}
+
 export default function Header() {
   const pathname = usePathname();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userData, setUserData] = useState<UserData | null>(null);
+  const [authState, setAuthState] = useState<AuthState>({ isLoggedIn: false, userData: null });
 
   useEffect(() => {
-    // 检查用户是否已登录
-    const token = localStorage.getItem('token');
-    const user = localStorage.getItem('user');
-
-    if (token && user) {
-      setIsLoggedIn(true);
-      try {
-        setUserData(JSON.parse(user));
-      } catch (e) {
-        console.error('解析用户数据失败', e);
-      }
-    }
+    setAuthState(getAuthState());
   }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    setIsLoggedIn(false);
-    setUserData(null);
+    setAuthState({ isLoggedIn: false, userData: null });
     window.location.href = '/';
   };
+
+  const { isLoggedIn, userData } = authState;
 
   return (
     <ScrollHeader>
