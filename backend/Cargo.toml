@@ -45,4 +45,4 @@ anyhow = "1"
 # 认证
 jsonwebtoken = "9.3.1"
 bcrypt = "0.17.0"
-wechat-oa-sdk = "1.0.2"
+wechat-oa-sdk = "1.0.3"
