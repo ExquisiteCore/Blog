@@ -64,22 +64,36 @@ type RelationshipViewMode = 'list' | 'graph';
 
 const STORAGE_KEY = 'novel-designer-novels';
 
+// 缓存 novels 数据，避免每次返回新数组
+let cachedNovels: Novel[] = [];
+let cachedNovelsJson = '';
+
 // localStorage 存储函数
 function getStoredNovels(): Novel[] {
-  if (typeof window === 'undefined') return [];
+  if (typeof window === 'undefined') return cachedNovels;
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      return JSON.parse(stored) || [];
+      // 只有当数据真正变化时才更新缓存
+      if (stored !== cachedNovelsJson) {
+        cachedNovelsJson = stored;
+        cachedNovels = JSON.parse(stored) || [];
+      }
+      return cachedNovels;
     }
   } catch (e) {
     console.error('Failed to load data:', e);
   }
-  return [];
+  if (cachedNovels.length > 0) {
+    cachedNovels = [];
+    cachedNovelsJson = '';
+  }
+  return cachedNovels;
 }
 
+const serverSnapshot: Novel[] = [];
 function getServerSnapshot(): Novel[] {
-  return [];
+  return serverSnapshot;
 }
 
 function subscribeToStorage(callback: () => void): () => void {

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import StatsCard from '@/components/dashboard/StatsCard';
 import http from '@/lib/axios';
-import type { PostSummaryWithLabels, Label, User } from '@/types/api';
+import type { PostSummaryWithLabels, Label } from '@/types/api';
 
 interface DashboardStats {
   posts: number;
