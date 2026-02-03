@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/dashboard/Sidebar';
 import type { User } from '@/types/api';
 
+// 缓存上一次的 snapshot，避免每次返回新对象导致无限循环
+let cachedSnapshot: { user: User | null; isValid: boolean } = { user: null, isValid: false };
+
 function getAuthSnapshot(): { user: User | null; isValid: boolean } {
   if (typeof window === 'undefined') {
     return { user: null, isValid: false };
@@ -12,16 +15,29 @@ function getAuthSnapshot(): { user: User | null; isValid: boolean } {
   const token = localStorage.getItem('token');
   const userStr = localStorage.getItem('user');
   if (!token || !userStr) {
-    return { user: null, isValid: false };
+    if (cachedSnapshot.isValid || cachedSnapshot.user !== null) {
+      cachedSnapshot = { user: null, isValid: false };
+    }
+    return cachedSnapshot;
   }
   try {
     const userData = JSON.parse(userStr) as User;
     if (userData.role !== 'admin') {
-      return { user: null, isValid: false };
+      if (cachedSnapshot.isValid || cachedSnapshot.user !== null) {
+        cachedSnapshot = { user: null, isValid: false };
+      }
+      return cachedSnapshot;
     }
-    return { user: userData, isValid: true };
+    // 只有当用户变化时才更新缓存
+    if (!cachedSnapshot.isValid || cachedSnapshot.user?.id !== userData.id) {
+      cachedSnapshot = { user: userData, isValid: true };
+    }
+    return cachedSnapshot;
   } catch {
-    return { user: null, isValid: false };
+    if (cachedSnapshot.isValid || cachedSnapshot.user !== null) {
+      cachedSnapshot = { user: null, isValid: false };
+    }
+    return cachedSnapshot;
   }
 }
 

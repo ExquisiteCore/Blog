@@ -42,10 +42,13 @@ interface AuthState {
   userData: User | null;
 }
 
+// 缓存 snapshot，避免每次返回新对象导致无限循环
+let cachedAuthState: AuthState = { isLoggedIn: false, userData: null };
+
 // 从 localStorage 读取认证状态
 function getAuthSnapshot(): AuthState {
   if (typeof window === 'undefined') {
-    return { isLoggedIn: false, userData: null };
+    return cachedAuthState;
   }
 
   const token = localStorage.getItem('token');
@@ -53,17 +56,29 @@ function getAuthSnapshot(): AuthState {
 
   if (token && user) {
     try {
-      return { isLoggedIn: true, userData: JSON.parse(user) };
+      const userData = JSON.parse(user) as User;
+      // 只有当状态真正变化时才更新缓存
+      if (!cachedAuthState.isLoggedIn || cachedAuthState.userData?.id !== userData.id) {
+        cachedAuthState = { isLoggedIn: true, userData };
+      }
+      return cachedAuthState;
     } catch {
-      return { isLoggedIn: false, userData: null };
+      if (cachedAuthState.isLoggedIn) {
+        cachedAuthState = { isLoggedIn: false, userData: null };
+      }
+      return cachedAuthState;
     }
   }
 
-  return { isLoggedIn: false, userData: null };
+  if (cachedAuthState.isLoggedIn) {
+    cachedAuthState = { isLoggedIn: false, userData: null };
+  }
+  return cachedAuthState;
 }
 
+const serverSnapshot: AuthState = { isLoggedIn: false, userData: null };
 function getServerSnapshot(): AuthState {
-  return { isLoggedIn: false, userData: null };
+  return serverSnapshot;
 }
 
 // 订阅存储变化
