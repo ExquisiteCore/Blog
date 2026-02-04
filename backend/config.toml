@@ -11,18 +11,29 @@ max_connections = 5
 # JWT配置
 [jwt]
 secret = "your_secret_key_change_this_in_production"
-expiration = 1140                                    # 过期时间（分钟）
+expiration = 15                                          # access token 过期时间（分钟）
+refresh_secret = "your_refresh_secret_key_change_this"   # refresh token 签名密钥
+refresh_expiration = 10080                               # refresh token 过期时间（分钟）= 7天
 
 #跨域配置
 [cors]
-allowed_origins = ["http://localhost:4321", "https://blog.exquisitecore.xyz"]
+allowed_origins = ["http://localhost:3000", "https://blog.exquisitecore.xyz"]
 allowed_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 allowed_headers = ["Authorization", "Content-Type"]
 allow_credentials = true
 
 # 微信公众号配置
 [wechat]
-app_id = "your_app_id"
-app_secret = "your_app_secret"
-token = "your_token"
-# encoding_aes_key = "your_encoding_aes_key"  # 可选，用于消息加解密
+app_id = ""
+app_secret = ""
+token = ""
+# encoding_aes_key = ""
+
+# LLM 配置（硅基流动 SiliconFlow）
+[llm]
+provider = "siliconflow"
+api_key = "your_siliconflow_api_key_here"  # 替换为你的硅基流动 API Key
+base_url = "https://api.siliconflow.cn"    # 硅基流动 API 地址
+model = "deepseek-ai/DeepSeek-V3"          # 或 deepseek-ai/DeepSeek-R1
+max_tokens = 300                            # 限制回复长度，加快响应
+timeout_secs = 10                           # HTTP 超时（代码层面有4秒微信超时保护）

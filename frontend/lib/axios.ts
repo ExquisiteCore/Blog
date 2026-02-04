@@ -65,7 +65,7 @@ class Http {
           if (token) {
             // 检查 token 是否过期，如果过期先尝试刷新
             if (isTokenExpired(token)) {
-              const newToken = await tryRefreshToken(token);
+              const newToken = await tryRefreshToken();
               if (newToken) {
                 token = newToken;
               } else {
@@ -100,13 +100,10 @@ class Http {
           // 处理 401：尝试刷新 token 后重试
           if (status === 401 && originalRequest.withToken && !originalRequest._retry) {
             originalRequest._retry = true;
-            const token = this.getToken();
-            if (token) {
-              const newToken = await tryRefreshToken(token);
-              if (newToken) {
-                originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
-                return this.instance(originalRequest);
-              }
+            const newToken = await tryRefreshToken();
+            if (newToken) {
+              originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+              return this.instance(originalRequest);
             }
             // 刷新失败，清除登录态并跳转登录页
             clearAuth();

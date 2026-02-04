@@ -2,6 +2,8 @@
 //!
 //! 提供用户相关的API端点
 
+use axum::http::header::SET_COOKIE;
+use axum::response::{IntoResponse, Response};
 use axum::{Json, extract::{Path, State}};
 use bcrypt::{DEFAULT_COST, hash};
 use uuid::Uuid;
@@ -105,21 +107,33 @@ pub async fn register_user(
 /// 用户登录API
 ///
 /// 验证用户凭据并生成JWT令牌
+/// 返回 access token 在 JSON body，refresh token 在 Set-Cookie
 pub async fn login_user(
     State(state): State<crate::state::AppState>,
     Json(req): Json<LoginRequest>,
-) -> Result<Json<serde_json::Value>, AppError> {
+) -> Result<Response, AppError> {
     // 尝试登录用户
     match User::login(&state.pool, req).await {
         Ok(Some(user)) => {
-            // 生成JWT令牌
-            let token = auth::generate_token(&user)?;
+            // 生成 access token（短期）
+            let access_token = auth::generate_token(&user)?;
+            // 生成 refresh token（长期）
+            let refresh_token = auth::generate_refresh_token(&user)?;
 
-            // 返回用户信息和令牌
-            Ok(Json(serde_json::json!({
+            // 构建响应 body
+            let body = serde_json::json!({
                 "user": user,
-                "token": token
-            })))
+                "token": access_token
+            });
+
+            // 构建响应，设置 refresh token 到 cookie
+            let mut response = Json(body).into_response();
+            response.headers_mut().insert(
+                SET_COOKIE,
+                auth::build_refresh_cookie(&refresh_token).parse().unwrap(),
+            );
+
+            Ok(response)
         }
         Ok(None) => Err(AppError::new_message(
             "用户名/邮箱或密码错误",

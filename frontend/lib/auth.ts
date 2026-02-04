@@ -59,18 +59,39 @@ export function clearAuth(): void {
 }
 
 /**
- * 尝试刷新 token（带锁，防止并发）
- * @param oldToken 旧的 JWT
- * @returns 新的 token，刷新失败返回 null
+ * 退出登录（调用服务端清除 cookie + 清除本地存储）
  */
-export async function tryRefreshToken(oldToken: string): Promise<string | null> {
+export async function logout(): Promise<void> {
+  try {
+    const apiUrl =
+      typeof window === 'undefined'
+        ? process.env.INTERNAL_API_BASE_URL
+        : process.env.NEXT_PUBLIC_API_BASE_URL;
+    const baseURL = apiUrl || 'https://api.exquisitecore.xyz/api';
+
+    await fetch(`${baseURL}/auth/logout`, {
+      method: 'POST',
+      credentials: 'include', // 让服务端清除 cookie
+    });
+  } catch {
+    // 忽略网络错误
+  }
+  clearAuth();
+}
+
+/**
+ * 尝试刷新 token（带锁，防止并发）
+ * 调用 /auth/refresh，cookie 自动携带 refresh_token
+ * @returns 新的 access token，刷新失败返回 null
+ */
+export async function tryRefreshToken(): Promise<string | null> {
   // 如果已经有刷新请求在进行，等待它完成
   if (refreshPromise) {
     return refreshPromise;
   }
 
   // 创建刷新 Promise
-  refreshPromise = doRefreshToken(oldToken);
+  refreshPromise = doRefreshToken();
 
   try {
     return await refreshPromise;
@@ -83,7 +104,7 @@ export async function tryRefreshToken(oldToken: string): Promise<string | null> 
 /**
  * 实际执行刷新 token 的逻辑
  */
-async function doRefreshToken(oldToken: string): Promise<string | null> {
+async function doRefreshToken(): Promise<string | null> {
   try {
     const apiUrl =
       typeof window === 'undefined'
@@ -93,8 +114,8 @@ async function doRefreshToken(oldToken: string): Promise<string | null> {
 
     const response = await fetch(`${baseURL}/auth/refresh`, {
       method: 'POST',
+      credentials: 'include', // 携带 cookie
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: oldToken }),
     });
 
     if (!response.ok) {

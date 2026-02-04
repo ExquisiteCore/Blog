@@ -11,7 +11,9 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
-use tracing::{error, info};
+use std::time::Duration;
+use tokio::time::timeout;
+use tracing::{error, info, warn};
 use wechat_oa_sdk::{
     WeChatClient,
     api::message::IncomingMessage,
@@ -201,13 +203,18 @@ async fn handle_message(message: IncomingMessage, llm_client: Option<&Arc<LlmCli
                     "对话历史已清除！".to_string()
                 }
                 _ => {
-                    // 使用 LLM 回复
+                    // 使用 LLM 回复（4秒超时，微信要求5秒内响应）
                     if let Some(client) = llm_client {
-                        match client.chat(&msg.from_user_name, &msg.content).await {
-                            Ok(response) => response,
-                            Err(e) => {
+                        let llm_timeout = Duration::from_secs(4);
+                        match timeout(llm_timeout, client.chat(&msg.from_user_name, &msg.content)).await {
+                            Ok(Ok(response)) => response,
+                            Ok(Err(e)) => {
                                 error!("LLM 调用失败: {}", e);
                                 format!("抱歉，AI 服务暂时不可用：{}", e)
+                            }
+                            Err(_) => {
+                                warn!("LLM 调用超时 for user {}", msg.from_user_name);
+                                "AI 正在思考中，请稍后再试...".to_string()
                             }
                         }
                     } else {

@@ -318,4 +318,20 @@ impl User {
             Ok(None) // 用户不存在
         }
     }
+
+    /// 从 token claims 数据构造临时 User（用于生成 access token）
+    pub fn from_claims(sub: &str, username: &str, role: &str) -> Self {
+        Self {
+            id: Uuid::parse_str(sub).unwrap_or_default(),
+            username: username.to_string(),
+            email: String::new(),
+            password_hash: String::new(),
+            display_name: None,
+            avatar_url: None,
+            bio: None,
+            role: role.to_string(),
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+        }
+    }
 }

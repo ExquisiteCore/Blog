@@ -6,7 +6,7 @@ import Link from 'next/link';
 import ScrollHeader from './ScrollHeader';
 import ThemeToggle from './ThemeToggle';
 import type { User } from '@/types/api';
-import { isTokenExpired, clearAuth, startTokenExpiryWatch, stopTokenExpiryWatch } from '@/lib/auth';
+import { isTokenExpired, clearAuth, startTokenExpiryWatch, stopTokenExpiryWatch, logout } from '@/lib/auth';
 
 // 定义导航菜单项
 const navItems = [
@@ -58,7 +58,8 @@ function getAuthSnapshot(): AuthState {
   if (token && user) {
     // 检查 token 是否已过期
     if (isTokenExpired(token, 0)) {
-      clearAuth();
+      // 不要清除 localStorage，让 axios 拦截器有机会刷新
+      // 只返回未登录状态，下次请求时会尝试刷新
       if (cachedAuthState.isLoggedIn) {
         cachedAuthState = { isLoggedIn: false, userData: null };
       }
@@ -119,9 +120,8 @@ export default function Header() {
     return () => stopTokenExpiryWatch();
   }, [isLoggedIn]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+  const handleLogout = async () => {
+    await logout();
     window.location.href = '/';
   };
 

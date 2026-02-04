@@ -64,7 +64,9 @@ pub struct DatabaseConfig {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct JwtConfig {
     pub secret: String,
-    pub expiration: u64, // 过期时间（分钟）
+    pub expiration: u64, // access token 过期时间（分钟）
+    pub refresh_secret: String,
+    pub refresh_expiration: u64, // refresh token 过期时间（分钟）
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -103,7 +105,9 @@ impl Default for Config {
             },
             jwt: JwtConfig {
                 secret: "default_secret_key_change_in_production".to_string(),
-                expiration: 60, // 60分钟
+                expiration: 15, // 15分钟
+                refresh_secret: "default_refresh_secret_change_in_production".to_string(),
+                refresh_expiration: 10080, // 7天
             },
             cors: CorsConfig {
                 allowed_origins: vec!["http://localhost:4321".to_string()],

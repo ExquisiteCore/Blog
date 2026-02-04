@@ -105,12 +105,12 @@ export default function AuthForm() {
 
     try {
       if (activeTab === 'login') {
-        // 登录请求
+        // 登录请求（需要 credentials 以接收 Set-Cookie）
         const data = await http.post<LoginResponse>('/users/login', {
           username_or_email: formData.email,
           password: formData.password,
-        });
-        // 登录成功后存储JWT令牌
+        }, { withCredentials: true });
+        // 登录成功后存储 access token
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         // 重定向到首页
