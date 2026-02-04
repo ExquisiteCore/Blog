@@ -45,7 +45,7 @@ anyhow = "1"
 # 认证
 jsonwebtoken = "9.3.1"
 bcrypt = "0.17.0"
-wechat-oa-sdk = "1.0.3"
+wechat-oa-sdk = "1.0.5"
 
 # HTTP 客户端（LLM API 调用）
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }

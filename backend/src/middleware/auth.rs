@@ -150,8 +150,8 @@ pub fn build_refresh_cookie(token: &str) -> String {
     let config = config::get_config();
     let max_age = config.jwt.refresh_expiration * 60; // 分钟转秒
 
-    // 检查是否为开发环境（localhost）
-    let is_dev = config.cors.allowed_origins.iter().any(|o| o.contains("localhost"));
+    // 检查是否为纯开发环境（只有 localhost，没有其他域名）
+    let is_dev = config.cors.allowed_origins.iter().all(|o| o.contains("localhost"));
 
     if is_dev {
         // 开发环境：不设置 Secure，使用 SameSite=Lax
@@ -171,7 +171,7 @@ pub fn build_refresh_cookie(token: &str) -> String {
 /// 构建清除 refresh token 的 Set-Cookie header 值
 pub fn build_clear_refresh_cookie() -> String {
     let config = config::get_config();
-    let is_dev = config.cors.allowed_origins.iter().any(|o| o.contains("localhost"));
+    let is_dev = config.cors.allowed_origins.iter().all(|o| o.contains("localhost"));
 
     if is_dev {
         "refresh_token=; HttpOnly; SameSite=Lax; Path=/api/auth; Max-Age=0".to_string()
