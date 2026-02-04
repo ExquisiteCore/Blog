@@ -6,7 +6,7 @@ import Link from 'next/link';
 import ScrollHeader from './ScrollHeader';
 import ThemeToggle from './ThemeToggle';
 import type { User } from '@/types/api';
-import { isTokenExpired, clearAuth, startTokenExpiryWatch, stopTokenExpiryWatch, logout } from '@/lib/auth';
+import { isTokenExpired, startTokenExpiryWatch, stopTokenExpiryWatch, logout } from '@/lib/auth';
 
 // 定义导航菜单项
 const navItems = [

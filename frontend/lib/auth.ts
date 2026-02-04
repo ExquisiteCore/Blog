@@ -126,6 +126,26 @@ async function doRefreshToken(): Promise<string | null> {
     const data = await response.json();
     if (data.token) {
       localStorage.setItem('token', data.token);
+
+      // 如果 user 信息丢失，从 token payload 恢复基本信息
+      if (!localStorage.getItem('user')) {
+        const payload = parseJwtPayload(data.token);
+        if (payload && payload.sub) {
+          const basicUser = {
+            id: payload.sub,
+            username: (payload as { username?: string }).username || '',
+            role: (payload as { role?: string }).role || 'user',
+            email: '',
+            display_name: null,
+            avatar_url: null,
+            bio: null,
+            created_at: '',
+            updated_at: '',
+          };
+          localStorage.setItem('user', JSON.stringify(basicUser));
+        }
+      }
+
       // 触发 storage 事件
       window.dispatchEvent(new StorageEvent('storage', { key: 'token' }));
       return data.token;
@@ -184,8 +204,13 @@ function scheduleNextCheck(): void {
   const timeUntilExpiry = exp - now;
 
   if (timeUntilExpiry <= 0) {
-    // 已过期，立即触发
-    authCheckCallback?.();
+    // 已过期，尝试刷新
+    tryRefreshToken().then((newToken) => {
+      if (!newToken) {
+        clearAuth();
+      }
+      authCheckCallback?.();
+    });
     return;
   }
 
@@ -193,10 +218,15 @@ function scheduleNextCheck(): void {
   // 最多等待 60 秒（避免 setTimeout 溢出问题，也保证定期检查）
   const delay = Math.min(timeUntilExpiry, 60) * 1000;
 
-  checkTimer = setTimeout(() => {
+  checkTimer = setTimeout(async () => {
     const currentToken = localStorage.getItem('token');
     if (currentToken && isTokenExpired(currentToken, 0)) {
-      clearAuth();
+      // 尝试刷新而不是直接清除
+      const newToken = await tryRefreshToken();
+      if (!newToken) {
+        // 刷新失败才清除
+        clearAuth();
+      }
       authCheckCallback?.();
     } else {
       // 还没过期，安排下一次检查
