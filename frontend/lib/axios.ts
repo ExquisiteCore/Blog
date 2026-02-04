@@ -2,11 +2,14 @@ import axios, {
   type AxiosInstance,
   type AxiosRequestConfig,
   type AxiosResponse,
+  type InternalAxiosRequestConfig,
 } from 'axios';
+import { isTokenExpired, tryRefreshToken, clearAuth } from './auth';
 
 // 定义请求配置接口，扩展AxiosRequestConfig以支持可选的withToken参数
 interface RequestConfig extends AxiosRequestConfig {
   withToken?: boolean; // 是否在请求中包含token
+  _retry?: boolean; // 标记是否为重试请求（内部使用）
 }
 
 // 定义响应数据的通用接口
@@ -53,13 +56,23 @@ class Http {
   private setupInterceptors(): void {
     // 请求拦截器
     this.instance.interceptors.request.use(
-      (config) => {
-        const requestConfig = config as RequestConfig;
+      async (config) => {
+        const requestConfig = config as RequestConfig & InternalAxiosRequestConfig;
 
         // 只有当withToken为true时才添加token
         if (requestConfig.withToken) {
-          const token = this.getToken();
+          let token = this.getToken();
           if (token) {
+            // 检查 token 是否过期，如果过期先尝试刷新
+            if (isTokenExpired(token)) {
+              const newToken = await tryRefreshToken(token);
+              if (newToken) {
+                token = newToken;
+              } else {
+                // 刷新失败，不带 token 发请求（让后端返回 401）
+                return config;
+              }
+            }
             config.headers['Authorization'] = `Bearer ${token}`;
           }
         }
@@ -76,16 +89,30 @@ class Http {
       (response: AxiosResponse) => {
         return response.data;
       },
-      (error) => {
+      async (error) => {
+        const originalRequest = error.config as RequestConfig & InternalAxiosRequestConfig;
+
         // 处理错误响应
         if (error.response) {
           // 服务器返回了错误状态码
           const { status } = error.response;
 
-          // 处理特定状态码
-          if (status === 401) {
-            // 未授权，可以在这里处理登出逻辑
-            console.error('未授权访问，请重新登录');
+          // 处理 401：尝试刷新 token 后重试
+          if (status === 401 && originalRequest.withToken && !originalRequest._retry) {
+            originalRequest._retry = true;
+            const token = this.getToken();
+            if (token) {
+              const newToken = await tryRefreshToken(token);
+              if (newToken) {
+                originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+                return this.instance(originalRequest);
+              }
+            }
+            // 刷新失败，清除登录态并跳转登录页
+            clearAuth();
+            if (typeof window !== 'undefined') {
+              window.location.href = '/auth';
+            }
           } else if (status === 403) {
             console.error('没有权限访问该资源');
           } else if (status === 404) {

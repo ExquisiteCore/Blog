@@ -1,11 +1,12 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import ScrollHeader from './ScrollHeader';
 import ThemeToggle from './ThemeToggle';
 import type { User } from '@/types/api';
+import { isTokenExpired, clearAuth, startTokenExpiryWatch, stopTokenExpiryWatch } from '@/lib/auth';
 
 // 定义导航菜单项
 const navItems = [
@@ -55,6 +56,15 @@ function getAuthSnapshot(): AuthState {
   const user = localStorage.getItem('user');
 
   if (token && user) {
+    // 检查 token 是否已过期
+    if (isTokenExpired(token, 0)) {
+      clearAuth();
+      if (cachedAuthState.isLoggedIn) {
+        cachedAuthState = { isLoggedIn: false, userData: null };
+      }
+      return cachedAuthState;
+    }
+
     try {
       const userData = JSON.parse(user) as User;
       // 只有当状态真正变化时才更新缓存
@@ -95,13 +105,25 @@ export default function Header() {
     getServerSnapshot
   );
 
+  const { isLoggedIn, userData } = authState;
+
+  // 启动 token 过期定时检查（登录状态变化时重新启动）
+  useEffect(() => {
+    if (!isLoggedIn) return;
+
+    // 触发 storage 事件来更新 UI
+    const onExpiry = () => {
+      window.dispatchEvent(new StorageEvent('storage', { key: 'token' }));
+    };
+    startTokenExpiryWatch(onExpiry);
+    return () => stopTokenExpiryWatch();
+  }, [isLoggedIn]);
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     window.location.href = '/';
   };
-
-  const { isLoggedIn, userData } = authState;
 
   return (
     <ScrollHeader>
