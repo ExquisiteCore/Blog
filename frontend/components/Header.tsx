@@ -6,7 +6,7 @@ import Link from 'next/link';
 import ScrollHeader from './ScrollHeader';
 import ThemeToggle from './ThemeToggle';
 import type { User } from '@/types/api';
-import { isTokenExpired, startTokenExpiryWatch, stopTokenExpiryWatch, logout } from '@/lib/auth';
+import { isTokenExpired, startTokenExpiryWatch, stopTokenExpiryWatch, logout, tryRefreshToken } from '@/lib/auth';
 
 // 定义导航菜单项
 const navItems = [
@@ -107,6 +107,20 @@ export default function Header() {
   );
 
   const { isLoggedIn, userData } = authState;
+
+  // 页面加载时，如果 token 过期但 localStorage 有数据，尝试刷新
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+
+    // 如果有 token 和 user 数据，但 token 已过期，尝试刷新
+    if (token && user && isTokenExpired(token, 0)) {
+      tryRefreshToken().then(() => {
+        // 刷新完成后触发 UI 更新
+        window.dispatchEvent(new StorageEvent('storage', { key: 'token' }));
+      });
+    }
+  }, []); // 只在挂载时执行
 
   // 启动 token 过期定时检查（登录状态变化时重新启动）
   useEffect(() => {
