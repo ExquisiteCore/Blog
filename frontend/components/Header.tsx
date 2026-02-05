@@ -6,7 +6,7 @@ import Link from 'next/link';
 import ScrollHeader from './ScrollHeader';
 import ThemeToggle from './ThemeToggle';
 import type { User } from '@/types/api';
-import { isTokenExpired, startTokenExpiryWatch, stopTokenExpiryWatch, logout, tryRefreshToken } from '@/lib/auth';
+import { isTokenExpired, tryRefreshToken, clearAuth, logout } from '@/lib/auth';
 
 // 定义导航菜单项
 const navItems = [
@@ -108,31 +108,27 @@ export default function Header() {
 
   const { isLoggedIn, userData } = authState;
 
-  // 页面加载时，如果 token 过期但 localStorage 有数据，尝试刷新
+  // 检查 token 是否过期，过期则自动刷新，刷新失败则清除登录状态
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const user = localStorage.getItem('user');
+    const checkAndRefresh = async () => {
+      const token = localStorage.getItem('token');
+      if (!token || !localStorage.getItem('user')) return;
 
-    // 如果有 token 和 user 数据，但 token 已过期，尝试刷新
-    if (token && user && isTokenExpired(token, 0)) {
-      tryRefreshToken().then(() => {
-        // 刷新完成后触发 UI 更新
-        window.dispatchEvent(new StorageEvent('storage', { key: 'token' }));
-      });
-    }
-  }, []); // 只在挂载时执行
-
-  // 启动 token 过期定时检查（登录状态变化时重新启动）
-  useEffect(() => {
-    if (!isLoggedIn) return;
-
-    // 触发 storage 事件来更新 UI
-    const onExpiry = () => {
-      window.dispatchEvent(new StorageEvent('storage', { key: 'token' }));
+      if (isTokenExpired(token, 0)) {
+        const newToken = await tryRefreshToken();
+        if (!newToken) {
+          clearAuth();
+        }
+        // tryRefreshToken 和 clearAuth 内部都会触发 storage 事件更新 UI
+      }
     };
-    startTokenExpiryWatch(onExpiry);
-    return () => stopTokenExpiryWatch();
-  }, [isLoggedIn]);
+
+    checkAndRefresh();
+
+    // 每 60 秒检查一次
+    const interval = setInterval(checkAndRefresh, 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleLogout = async () => {
     await logout();
