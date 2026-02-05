@@ -119,7 +119,11 @@ async function doRefreshToken(): Promise<string | null> {
     });
 
     if (!response.ok) {
-      clearAuth();
+      // 只有认证相关错误才清除登录状态
+      if (response.status === 401 || response.status === 403) {
+        clearAuth();
+      }
+      // 其他错误（网络、500等）保留登录状态，下次再试
       return null;
     }
 
@@ -150,10 +154,11 @@ async function doRefreshToken(): Promise<string | null> {
       window.dispatchEvent(new StorageEvent('storage', { key: 'token' }));
       return data.token;
     }
+    // token 为空视为认证失败
     clearAuth();
     return null;
   } catch {
-    clearAuth();
+    // 网络错误不清除登录状态，保留重试机会
     return null;
   }
 }
@@ -206,8 +211,9 @@ function scheduleNextCheck(): void {
   if (timeUntilExpiry <= 0) {
     // 已过期，尝试刷新
     tryRefreshToken().then((newToken) => {
-      if (!newToken) {
-        clearAuth();
+      if (newToken) {
+        // 刷新成功，重新调度下一次检查
+        scheduleNextCheck();
       }
       authCheckCallback?.();
     });
@@ -223,9 +229,9 @@ function scheduleNextCheck(): void {
     if (currentToken && isTokenExpired(currentToken, 0)) {
       // 尝试刷新而不是直接清除
       const newToken = await tryRefreshToken();
-      if (!newToken) {
-        // 刷新失败才清除
-        clearAuth();
+      if (newToken) {
+        // 刷新成功，重新调度下一次检查
+        scheduleNextCheck();
       }
       authCheckCallback?.();
     } else {
