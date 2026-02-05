@@ -156,13 +156,13 @@ pub fn build_refresh_cookie(token: &str) -> String {
     if is_dev {
         // 开发环境：不设置 Secure，使用 SameSite=Lax
         format!(
-            "refresh_token={}; HttpOnly; SameSite=Lax; Path=/api/auth; Max-Age={}",
+            "refresh_token={}; HttpOnly; SameSite=Lax; Path=/; Max-Age={}",
             token, max_age
         )
     } else {
         // 生产环境：设置 Domain 使 Cookie 在主域下共享，避免被浏览器当作第三方 Cookie 拦截
         format!(
-            "refresh_token={}; HttpOnly; Secure; SameSite=None; Domain=.exquisitecore.xyz; Path=/api/auth; Max-Age={}",
+            "refresh_token={}; HttpOnly; Secure; SameSite=None; Domain=.exquisitecore.xyz; Path=/; Max-Age={}",
             token, max_age
         )
     }
@@ -174,9 +174,9 @@ pub fn build_clear_refresh_cookie() -> String {
     let is_dev = config.cors.allowed_origins.iter().all(|o| o.contains("localhost"));
 
     if is_dev {
-        "refresh_token=; HttpOnly; SameSite=Lax; Path=/api/auth; Max-Age=0".to_string()
+        "refresh_token=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0".to_string()
     } else {
-        "refresh_token=; HttpOnly; Secure; SameSite=None; Domain=.exquisitecore.xyz; Path=/api/auth; Max-Age=0".to_string()
+        "refresh_token=; HttpOnly; Secure; SameSite=None; Domain=.exquisitecore.xyz; Path=/; Max-Age=0".to_string()
     }
 }
 
