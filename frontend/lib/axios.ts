@@ -45,6 +45,7 @@ class Http {
       headers: {
         'Content-Type': 'application/json',
       },
+      withCredentials: true, // 允许跨域请求携带 cookie
     });
 
     this.setupInterceptors();
