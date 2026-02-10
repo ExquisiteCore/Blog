@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { notFound } from "next/navigation";
 import BlogPost from "@/components/BlogPost";
 import type { PostDetail } from "@/types/api";
 
@@ -108,17 +109,19 @@ export default async function BlogPostPage({
   const { id } = await params;
   const post = await getPost(id);
 
+  if (!post) {
+    notFound();
+  }
+
   return (
     <>
-      {post && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(generateArticleJsonLd(post)),
-          }}
-        />
-      )}
-      <BlogPost id={id} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(generateArticleJsonLd(post)),
+        }}
+      />
+      <BlogPost post={post} />
     </>
   );
 }
