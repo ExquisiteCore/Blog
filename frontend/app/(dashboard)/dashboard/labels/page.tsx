@@ -61,14 +61,14 @@ export default function LabelsPage() {
       if (editingLabel) {
         // 更新标签
         const updated = await http.put<Label>(
-          `/labels/${editingLabel.id}`,
+          `/admin/labels/${editingLabel.id}`,
           formData,
           { withToken: true }
         );
         setLabels(labels.map((l) => (l.id === editingLabel.id ? updated : l)));
       } else {
         // 创建标签
-        const created = await http.post<Label>('/labels', formData, { withToken: true });
+        const created = await http.post<Label>('/admin/labels', formData, { withToken: true });
         setLabels([...labels, created]);
       }
       setIsModalOpen(false);
@@ -85,7 +85,7 @@ export default function LabelsPage() {
 
     setIsDeleting(true);
     try {
-      await http.delete(`/labels/${deleteId}`, { withToken: true });
+      await http.delete(`/admin/labels/${deleteId}`, { withToken: true });
       setLabels(labels.filter((l) => l.id !== deleteId));
       (document.getElementById('delete-modal') as HTMLDialogElement)?.close();
     } catch (error) {

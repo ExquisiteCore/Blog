@@ -353,7 +353,7 @@ export default function MarkdownEditor({ initialData, blogMode = false }: Markdo
         description: `${name}相关文章`,
       };
 
-      const newLabel = await http.post<Label>('/labels', labelData, {
+      const newLabel = await http.post<Label>('/admin/labels', labelData, {
         withToken: true,
       });
 
@@ -507,13 +507,13 @@ export default function MarkdownEditor({ initialData, blogMode = false }: Markdo
 
       if (postId) {
         // 编辑模式 - 更新文章
-        await http.put(`/posts/${postId}`, postData, {
+        await http.put(`/admin/posts/${postId}`, postData, {
           withToken: true,
         });
         alert('文章更新成功！');
       } else {
         // 新建模式 - 创建文章
-        await http.post('/posts', postData, {
+        await http.post('/admin/posts', postData, {
           withToken: true,
         });
         alert(publish ? '文章发布成功！' : '草稿保存成功！');

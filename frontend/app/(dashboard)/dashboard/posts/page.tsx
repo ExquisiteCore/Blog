@@ -34,7 +34,7 @@ export default function PostsPage() {
 
     setIsDeleting(true);
     try {
-      await http.delete(`/posts/${deleteId}`, { withToken: true });
+      await http.delete(`/admin/posts/${deleteId}`, { withToken: true });
       setPosts(posts.filter((p) => p.id !== deleteId));
       (document.getElementById('delete-modal') as HTMLDialogElement)?.close();
     } catch (error) {
