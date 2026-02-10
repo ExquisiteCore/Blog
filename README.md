@@ -1,63 +1,82 @@
-# blog
+# ExquisiteCore Blog
 
-**本项目是 EC 的个小站**
+EC 的个人博客，采用 Rust 网关 + Next.js 前端架构。
 
-# blog
-## 简介
+## 技术栈
 
-一个简单的个人网站采用前后端分离架构
+| 层级 | 技术 |
+|------|------|
+| 前端 | Next.js 16 + React 19 + TypeScript + TailwindCSS v4 + DaisyUI v5 |
+| 后端 | Rust + Axum + SeaORM |
+| 数据库 | PostgreSQL |
 
-前端使用 Nextjs + React + TypeScript + shadcnui + Tailwind CSS 开发
+## 架构
 
-后端使用 Rust + Axum + Sqlx
-
-数据库使用 postgresql
-
-## 部署方式
-
-### Docker 部署
-
-本项目支持使用 Docker 进行部署，详细说明请参考 [Docker 部署指南](DOCKER.md)。
-
-```bash
-# 使用 Docker Compose 启动所有服务
-docker-compose up -d
+```
+浏览器 → Rust Gateway (:8080)
+              ├── /api/*  → Axum API (Rust)
+              └── /*      → 反向代理 → Next.js (:3000)
 ```
 
-### 1Panel + OpenResty 集成部署
+Rust 后端作为统一入口，同时承担 API 服务和反向代理职责，用户只需访问一个端口。
 
-如果您使用 1Panel 面板管理服务器，本项目提供了专门的 OpenResty 集成方案：
+## 功能
+
+- 文章管理（Markdown 编辑器，多语言内容支持）
+- 标签系统
+- 点赞 / 评论（支持匿名身份追踪）
+- JWT 认证（access token + refresh token）
+- SEO（SSR、sitemap、JSON-LD 结构化数据）
+- 管理后台（文章 / 标签 / 用户管理）
+
+## 本地开发
+
+### 前置条件
+
+- Rust (edition 2024)
+- Node.js 20+
+- PostgreSQL 16+
+
+### 启动
 
 ```bash
-# 初始化环境
-./deploy-1panel.sh setup
+# 1. 启动后端（自动执行数据库迁移）
+cd backend
+cp config.example.toml config.toml  # 编辑数据库连接等配置
+cargo run
 
-# 构建镜像
-./deploy-1panel.sh build
+# 2. 启动前端
+cd frontend
+npm install
+npm run dev
 
-# 启动服务
-./deploy-1panel.sh start
-
-# 配置 OpenResty (替换为您的域名)
-./deploy-1panel.sh install yourdomain.com
+# 3. 访问 http://localhost:8080（通过 Rust 网关）
 ```
 
-详细的 1Panel 集成说明请参考 [1Panel 集成指南](1PANEL-INTEGRATION.md)。
+## 项目结构
 
-#### 1Panel 集成的优势
-
-- **统一管理**: 通过 1Panel 面板统一管理 Web 服务器配置
-- **SSL 自动化**: 利用 1Panel 的 SSL 证书自动申请和更新功能
-- **性能优化**: OpenResty 的高性能和 Lua 脚本支持
-- **安全增强**: 1Panel 内置的安全防护功能
-- **监控便利**: 集成的监控和日志查看功能
+```
+backend/
+  src/
+    api/          # API 路由处理 (postapi, labelapi, userapi)
+    entity/       # SeaORM 实体定义
+    migration/    # 数据库迁移
+    middleware/   # 身份认证中间件
+    routes.rs     # 路由注册 + 反向代理
+    wrapper.rs    # ApiResponse 统一响应封装
+    state.rs      # 应用状态
+frontend/
+  app/
+    (site)/       # 公开页面 (首页, 博客, 关于, 工具)
+    (dashboard)/  # 管理后台
+  components/     # React 组件
+  lib/            # 工具函数 (axios, auth)
+  types/          # TypeScript 类型定义
+```
 
 ## 感谢
 
-本项目开发时，借鉴了以下这些优秀网站（排名不分先后）的很多设计
-
-- [shadcn/ui](https://ui.shadcn.com/)
-- [shadcn-vue](https://www.shadcn-vue.com/)
+- [DaisyUI](https://daisyui.com/)
 - [付小晨](https://fuxiaochen.com/)
 
 ## LICENCE

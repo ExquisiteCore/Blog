@@ -14,12 +14,10 @@ on:
 env:
   CARGO_TERM_COLOR: always
   BINARY_NAME: backend
-  DATABASE_URL: ${{ secrets.DATABASE_URL }}
-  SQLX_OFFLINE: true
 
 jobs:
-  test:
-    name: Test
+  check:
+    name: Check & Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,7 +26,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Cache Rust dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
@@ -37,30 +35,15 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
 
-      - name: Cache SQLx metadata
-        uses: actions/cache@v3
-        with:
-          path: backend/.sqlx
-          key: ${{ runner.os }}-sqlx-${{ hashFiles('**/*.rs', '**/migrations/**') }}
-          restore-keys: ${{ runner.os }}-sqlx-
-
-      - name: Install SQLx CLI
-        run: cargo install sqlx-cli --no-default-features --features postgres
-
-      - name: Prepare SQLx metadata
-        run: |
-          cd backend
-          cargo sqlx prepare -- --tests
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          SQLX_OFFLINE: true
+      - name: Check
+        run: cd backend && cargo check --verbose
 
       - name: Run tests
         run: cd backend && cargo test --verbose
 
   build:
     name: Build ${{ matrix.target.name }}
-    needs: test
+    needs: check
     runs-on: ${{ matrix.target.os }}
     strategy:
       fail-fast: false
@@ -88,7 +71,6 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
           targets: ${{ matrix.target.target }}
 
       - name: Install cross compile tools (Linux ARM64 only)
@@ -96,7 +78,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
 
       - name: Cache Rust dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
@@ -105,28 +87,8 @@ jobs:
           key: ${{ runner.os }}-${{ matrix.target.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-${{ matrix.target.target }}-cargo-
 
-      - name: Cache SQLx metadata
-        uses: actions/cache@v3
-        with:
-          path: backend/.sqlx
-          key: ${{ runner.os }}-sqlx-${{ hashFiles('**/*.rs', '**/migrations/**') }}
-          restore-keys: ${{ runner.os }}-sqlx-
-
-      - name: Install SQLx CLI
-        run: cargo install sqlx-cli --no-default-features --features postgres
-
-      - name: Prepare SQLx metadata
-        run: |
-          cd backend
-          cargo sqlx prepare -- --tests
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          SQLX_OFFLINE: true
-
       - name: Build release binary
-        run: |
-          cd backend
-          cargo build --release --target ${{ matrix.target.target }}
+        run: cd backend && cargo build --release --target ${{ matrix.target.target }}
         env:
           CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
