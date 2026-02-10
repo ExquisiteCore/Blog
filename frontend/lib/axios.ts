@@ -108,8 +108,8 @@ class Http {
           // 从 ApiResponse 中提取错误信息
           const message = data?.message || `请求失败 (${status})`;
           const apiError = new Error(message);
-          (apiError as Record<string, unknown>).statusCode = status;
-          (apiError as Record<string, unknown>).response = error.response;
+          (apiError as unknown as Record<string, unknown>).statusCode = status;
+          (apiError as unknown as Record<string, unknown>).response = error.response;
           return Promise.reject(apiError);
         } else if (error.request) {
           return Promise.reject(new Error('网络错误，无法连接到服务器'));
