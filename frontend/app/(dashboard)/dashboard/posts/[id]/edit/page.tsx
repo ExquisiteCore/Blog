@@ -18,7 +18,7 @@ export default function EditPostPage() {
   useEffect(() => {
     const fetchPost = async () => {
       try {
-        const data = await http.get<PostDetail>(`/posts/${postId}`);
+        const data = await http.get<PostDetail>(`/posts/id/${postId}`);
         if (data) {
           setPost(data);
         } else {

@@ -91,7 +91,7 @@ export default function BlogPosts() {
       {posts.map((post) => (
         <Link
           key={post.id}
-          href={`/blog/${post.slug}`}
+          href={`/blog/${post.id}`}
           className="card bg-base-100 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1"
         >
           {post.cover_images && post.cover_images.length > 0 && (

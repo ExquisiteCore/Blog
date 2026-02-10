@@ -6,15 +6,14 @@ function getApiBaseUrl(): string {
   return process.env.INTERNAL_API_BASE_URL || "http://localhost:8080/api";
 }
 
-async function getPost(slug: string): Promise<PostDetail | null> {
+async function getPost(id: string): Promise<PostDetail | null> {
   try {
-    const response = await fetch(`${getApiBaseUrl()}/posts/${slug}`, {
+    const response = await fetch(`${getApiBaseUrl()}/posts/id/${id}`, {
       next: { revalidate: 60 },
     });
 
     if (response.ok) {
       const body = await response.json();
-      // 解包 ApiResponse
       return body?.data || body;
     }
   } catch (error) {
@@ -27,10 +26,10 @@ async function getPost(slug: string): Promise<PostDetail | null> {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ id: string }>;
 }): Promise<Metadata> {
-  const { slug } = await params;
-  const post = await getPost(slug);
+  const { id } = await params;
+  const post = await getPost(id);
 
   if (post) {
     const coverImage = post.cover_images && post.cover_images.length > 0 ? post.cover_images[0] : null;
@@ -47,7 +46,7 @@ export async function generateMetadata({
         authors: ["ExquisiteCore"],
         tags: post.labels || [],
         images: coverImage ? [coverImage] : [],
-        url: `https://blog.exquisitecore.xyz/blog/${post.slug}`,
+        url: `https://blog.exquisitecore.xyz/blog/${post.id}`,
       },
       twitter: {
         card: "summary_large_image",
@@ -56,7 +55,7 @@ export async function generateMetadata({
         images: coverImage ? [coverImage] : [],
       },
       alternates: {
-        canonical: `https://blog.exquisitecore.xyz/blog/${post.slug}`,
+        canonical: `https://blog.exquisitecore.xyz/blog/${post.id}`,
       },
     };
   }
@@ -93,7 +92,7 @@ function generateArticleJsonLd(post: PostDetail) {
     },
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": `https://blog.exquisitecore.xyz/blog/${post.slug}`,
+      "@id": `https://blog.exquisitecore.xyz/blog/${post.id}`,
     },
     keywords: post.labels?.join(", ") || "",
     articleSection: "技术博客",
@@ -104,10 +103,10 @@ function generateArticleJsonLd(post: PostDetail) {
 export default async function BlogPostPage({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ id: string }>;
 }) {
-  const { slug } = await params;
-  const post = await getPost(slug);
+  const { id } = await params;
+  const post = await getPost(id);
 
   return (
     <>
@@ -119,7 +118,7 @@ export default async function BlogPostPage({
           }}
         />
       )}
-      <BlogPost slug={slug} />
+      <BlogPost id={id} />
     </>
   );
 }

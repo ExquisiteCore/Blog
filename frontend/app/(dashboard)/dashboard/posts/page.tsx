@@ -125,7 +125,7 @@ export default function PostsPage() {
                       <td>
                         <div className="flex gap-2">
                           <Link
-                            href={`/blog/${post.slug}`}
+                            href={`/blog/${post.id}`}
                             target="_blank"
                             className="btn btn-ghost btn-sm"
                             title="查看"

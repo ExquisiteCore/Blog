@@ -15,10 +15,10 @@ function formatDate(dateString: string) {
 }
 
 interface BlogPostProps {
-  slug: string;
+  id: string;
 }
 
-export default function BlogPost({ slug }: BlogPostProps) {
+export default function BlogPost({ id }: BlogPostProps) {
   const [post, setPost] = useState<PostDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +27,7 @@ export default function BlogPost({ slug }: BlogPostProps) {
     async function fetchPost() {
       try {
         setLoading(true);
-        const response = await http.get<PostDetail>(`/posts/${slug}`, undefined, {
+        const response = await http.get<PostDetail>(`/posts/id/${id}`, undefined, {
           withToken: false,
         });
 
@@ -38,7 +38,7 @@ export default function BlogPost({ slug }: BlogPostProps) {
           setError('文章不存在');
         }
       } catch (err) {
-        console.error(`获取文章 ${slug} 失败:`, err);
+        console.error(`获取文章 ${id} 失败:`, err);
         setError('获取文章失败');
       } finally {
         setLoading(false);
@@ -46,7 +46,7 @@ export default function BlogPost({ slug }: BlogPostProps) {
     }
 
     fetchPost();
-  }, [slug]);
+  }, [id]);
 
   if (loading) {
     return (
