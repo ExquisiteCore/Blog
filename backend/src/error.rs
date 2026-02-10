@@ -1,4 +1,8 @@
-use anyhow;
+//! 错误处理模块
+//!
+//! 注意：新代码应使用 wrapper.rs 中的 ApiError/ApiResponse。
+//! 此模块保留以兼容可能的遗留引用。
+
 use axum::{
     Json,
     http::StatusCode,
@@ -45,10 +49,6 @@ impl AppError {
             types,
         }
     }
-
-    pub fn notfound() -> Self {
-        Self::new_message("没有找到符合条件的数据", AppErrorType::Notfound)
-    }
 }
 
 impl std::fmt::Display for AppError {
@@ -75,8 +75,8 @@ impl IntoResponse for AppError {
             .map_or("有错误发生".to_string(), |e| e.to_string());
 
         let body = json!({
-            "code": format!("{:?}", self.types), // 例如 "Notfound"
-            "error": self.types.to_string(),    // 例如 "资源未找到"
+            "code": format!("{:?}", self.types),
+            "error": self.types.to_string(),
             "message": msg
         });
 
@@ -100,17 +100,9 @@ impl std::fmt::Display for AppErrorType {
     }
 }
 
-impl From<sqlx::Error> for AppError {
-    fn from(err: sqlx::Error) -> Self {
-        match err {
-            sqlx::Error::RowNotFound => {
-                AppError::new_message("查询的数据不存在", AppErrorType::Notfound)
-            }
-            sqlx::Error::Database(db_err) if db_err.is_unique_violation() => {
-                AppError::new_message("数据已存在", AppErrorType::Duplicate)
-            }
-            _ => AppError::new(err, AppErrorType::Db),
-        }
+impl From<sea_orm::DbErr> for AppError {
+    fn from(err: sea_orm::DbErr) -> Self {
+        AppError::new_message(&err.to_string(), AppErrorType::Db)
     }
 }
 

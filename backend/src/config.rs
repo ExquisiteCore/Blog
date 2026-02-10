@@ -26,27 +26,17 @@ pub struct Config {
     pub jwt: JwtConfig,
     pub cors: CorsConfig,
     #[serde(default)]
-    pub wechat: Option<WeChatConfig>,
-    #[serde(default)]
     pub llm: Option<LlmConfig>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LlmConfig {
-    pub provider: String,      // "deepseek", "openai", etc.
+    pub provider: String,
     pub api_key: String,
     pub base_url: Option<String>,
     pub model: Option<String>,
     pub max_tokens: Option<u32>,
     pub timeout_secs: Option<u64>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct WeChatConfig {
-    pub app_id: String,
-    pub app_secret: String,
-    pub token: String,
-    pub encoding_aes_key: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -64,9 +54,9 @@ pub struct DatabaseConfig {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct JwtConfig {
     pub secret: String,
-    pub expiration: u64, // access token 过期时间（分钟）
+    pub expiration: u64,
     pub refresh_secret: String,
-    pub refresh_expiration: u64, // refresh token 过期时间（分钟）
+    pub refresh_expiration: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -78,11 +68,6 @@ pub struct CorsConfig {
 }
 
 impl Config {
-    #[allow(dead_code)]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, Box<dyn std::error::Error>> {
         let mut file = File::open(path)?;
         let mut contents = String::new();
@@ -105,12 +90,12 @@ impl Default for Config {
             },
             jwt: JwtConfig {
                 secret: "default_secret_key_change_in_production".to_string(),
-                expiration: 15, // 15分钟
+                expiration: 15,
                 refresh_secret: "default_refresh_secret_change_in_production".to_string(),
-                refresh_expiration: 10080, // 7天
+                refresh_expiration: 10080,
             },
             cors: CorsConfig {
-                allowed_origins: vec!["http://localhost:4321".to_string()],
+                allowed_origins: vec!["http://localhost:3000".to_string()],
                 allowed_methods: vec![
                     "GET".to_string(),
                     "POST".to_string(),
@@ -121,7 +106,6 @@ impl Default for Config {
                 allowed_headers: vec!["Authorization".to_string(), "Content-Type".to_string()],
                 allow_credentials: true,
             },
-            wechat: None,
             llm: None,
         }
     }

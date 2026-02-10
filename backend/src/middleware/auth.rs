@@ -1,52 +1,168 @@
 //! 认证中间件模块
 //!
-//! 提供JWT认证和权限验证功能
+//! 提供 JWT 认证、匿名身份追踪和权限验证功能。
+//!
+
 use axum::extract::Request;
 use axum::http::header::SET_COOKIE;
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
+use sea_orm::*;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::config;
-use crate::error::{AppError, AppErrorType};
-use crate::model::models::user::User;
+use crate::entity::{identity, user};
+use crate::wrapper::{ApiError, ApiResponse};
 
-/// JWT声明结构（access token）
+// ========== JWT Claims ==========
+
+/// JWT 声明结构（access token）
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
-    /// 用户ID
+    /// 用户 ID
     pub sub: String,
     /// 用户名
     pub username: String,
     /// 用户角色
     pub role: String,
-    /// 过期时间（Unix时间戳）
+    /// 过期时间（Unix 时间戳）
     pub exp: u64,
-    /// 签发时间（Unix时间戳）
+    /// 签发时间（Unix 时间戳）
     pub iat: u64,
 }
 
-/// JWT声明结构（refresh token，只含必要信息）
+/// JWT 声明结构（refresh token）
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RefreshClaims {
-    /// 用户ID
+    /// 用户 ID
     pub sub: String,
     /// 用户名
     pub username: String,
     /// 用户角色
     pub role: String,
-    /// 过期时间（Unix时间戳）
+    /// 过期时间
     pub exp: u64,
-    /// 签发时间（Unix时间戳）
+    /// 签发时间
     pub iat: u64,
 }
 
-// ============ Access Token ============
+// ========== Identity 系统 ==========
 
-/// 生成 access token（短期）
-pub fn generate_token(user: &User) -> Result<String, AppError> {
+/// 统一身份枚举
+///
+/// 中间件将请求者的身份注入到 request extensions 中，
+/// 各 handler 根据 Identity 变体决定授权。
+#[derive(Clone, Debug)]
+pub enum Identity {
+    /// 管理员（已认证 + role == "admin"）
+    Admin {
+        user: user::Model,
+        identity: Option<identity::Model>,
+    },
+    /// 已认证用户
+    Authenticated {
+        user: user::Model,
+        identity: Option<identity::Model>,
+    },
+    /// 匿名用户（通过 Cookie 中的 UUID 追踪）
+    Anonymous {
+        uuid: Uuid,
+        identity: Option<identity::Model>,
+    },
+    /// 无身份
+    None,
+}
+
+impl Identity {
+    /// 确保 identity 记录存在，不存在则懒创建。
+    /// 用于点赞、评论等需要追踪身份的操作。
+    /// 返回 identity 的 UUID（id 字段）。
+    pub async fn ensure_identity(&mut self, db: &DatabaseConnection) -> Result<Uuid, ApiError> {
+        match self {
+            Identity::Anonymous { uuid, identity } => match identity {
+                Some(id) => Ok(id.id),
+                None => {
+                    let now = Utc::now().fixed_offset();
+                    let new_identity = identity::ActiveModel {
+                        id: Set(Uuid::new_v4()),
+                        uuid: Set(Some(*uuid)),
+                        user_id: Set(None),
+                        created_at: Set(now),
+                        updated_at: Set(now),
+                    };
+                    let model = new_identity.insert(db).await.map_err(|e| {
+                        ApiError::internal_server_error(format!("创建身份失败: {e}"))
+                    })?;
+                    let id = model.id;
+                    *identity = Some(model);
+                    Ok(id)
+                }
+            },
+            Identity::Authenticated { identity, user } | Identity::Admin { identity, user } => {
+                match identity {
+                    Some(id) => Ok(id.id),
+                    None => {
+                        let user_id = user.id;
+                        let now = Utc::now().fixed_offset();
+                        let new_identity = identity::ActiveModel {
+                            id: Set(Uuid::new_v4()),
+                            uuid: Set(None),
+                            user_id: Set(Some(user_id)),
+                            created_at: Set(now),
+                            updated_at: Set(now),
+                        };
+                        let model = new_identity.insert(db).await.map_err(|e| {
+                            ApiError::internal_server_error(format!("创建身份失败: {e}"))
+                        })?;
+                        let id = model.id;
+                        *identity = Some(model);
+                        Ok(id)
+                    }
+                }
+            }
+            Identity::None => Err(ApiError::unauthorized("需要身份信息才能执行此操作")),
+        }
+    }
+
+    /// 获取 identity_id（如果存在）
+    pub fn identity_id(&self) -> Option<Uuid> {
+        match self {
+            Identity::Admin { identity, .. }
+            | Identity::Authenticated { identity, .. }
+            | Identity::Anonymous { identity, .. } => identity.as_ref().map(|i| i.id),
+            Identity::None => None,
+        }
+    }
+
+    /// 是否为管理员
+    pub fn is_admin(&self) -> bool {
+        matches!(self, Identity::Admin { .. })
+    }
+
+    /// 要求管理员权限，否则返回错误
+    pub fn require_admin(&self) -> Result<&user::Model, ApiError> {
+        match self {
+            Identity::Admin { user, .. } => Ok(user),
+            _ => Err(ApiError::forbidden("需要管理员权限")),
+        }
+    }
+
+    /// 要求已认证，否则返回错误
+    pub fn require_authenticated(&self) -> Result<&user::Model, ApiError> {
+        match self {
+            Identity::Admin { user, .. } | Identity::Authenticated { user, .. } => Ok(user),
+            _ => Err(ApiError::unauthorized("需要登录")),
+        }
+    }
+}
+
+// ========== Access Token ==========
+
+/// 生成 access token
+pub fn generate_token(user: &user::Model) -> Result<String, ApiError> {
     let config = config::get_config();
 
     let now = Utc::now();
@@ -61,18 +177,16 @@ pub fn generate_token(user: &User) -> Result<String, AppError> {
         iat,
     };
 
-    let token = encode(
+    encode(
         &Header::default(),
         &claims,
         &EncodingKey::from_secret(config.jwt.secret.as_bytes()),
     )
-    .map_err(|e| AppError::new(e, AppErrorType::Crypt))?;
-
-    Ok(token)
+    .map_err(|e| ApiError::internal_server_error(format!("生成令牌失败: {e}")))
 }
 
 /// 验证 access token
-pub fn verify_token(token: &str) -> Result<Claims, AppError> {
+pub fn verify_token(token: &str) -> Result<Claims, ApiError> {
     let config = config::get_config();
 
     let token_data = decode::<Claims>(
@@ -81,22 +195,20 @@ pub fn verify_token(token: &str) -> Result<Claims, AppError> {
         &Validation::default(),
     )
     .map_err(|e| match e.kind() {
-        jsonwebtoken::errors::ErrorKind::ExpiredSignature => {
-            AppError::new_message("令牌已过期", AppErrorType::Forbidden)
-        }
+        jsonwebtoken::errors::ErrorKind::ExpiredSignature => ApiError::unauthorized("令牌已过期"),
         jsonwebtoken::errors::ErrorKind::InvalidSignature => {
-            AppError::new_message("无效的令牌签名", AppErrorType::Forbidden)
+            ApiError::unauthorized("无效的令牌签名")
         }
-        _ => AppError::new(e, AppErrorType::Crypt),
+        _ => ApiError::internal_server_error(format!("令牌验证失败: {e}")),
     })?;
 
     Ok(token_data.claims)
 }
 
-// ============ Refresh Token ============
+// ========== Refresh Token ==========
 
-/// 生成 refresh token（长期）
-pub fn generate_refresh_token(user: &User) -> Result<String, AppError> {
+/// 生成 refresh token
+pub fn generate_refresh_token(user: &user::Model) -> Result<String, ApiError> {
     let config = config::get_config();
 
     let now = Utc::now();
@@ -111,18 +223,16 @@ pub fn generate_refresh_token(user: &User) -> Result<String, AppError> {
         iat,
     };
 
-    let token = encode(
+    encode(
         &Header::default(),
         &claims,
         &EncodingKey::from_secret(config.jwt.refresh_secret.as_bytes()),
     )
-    .map_err(|e| AppError::new(e, AppErrorType::Crypt))?;
-
-    Ok(token)
+    .map_err(|e| ApiError::internal_server_error(format!("生成刷新令牌失败: {e}")))
 }
 
 /// 验证 refresh token
-pub fn verify_refresh_token(token: &str) -> Result<RefreshClaims, AppError> {
+pub fn verify_refresh_token(token: &str) -> Result<RefreshClaims, ApiError> {
     let config = config::get_config();
 
     let token_data = decode::<RefreshClaims>(
@@ -132,38 +242,35 @@ pub fn verify_refresh_token(token: &str) -> Result<RefreshClaims, AppError> {
     )
     .map_err(|e| match e.kind() {
         jsonwebtoken::errors::ErrorKind::ExpiredSignature => {
-            AppError::new_message("刷新令牌已过期，请重新登录", AppErrorType::Forbidden)
+            ApiError::unauthorized("刷新令牌已过期，请重新登录")
         }
         jsonwebtoken::errors::ErrorKind::InvalidSignature => {
-            AppError::new_message("无效的刷新令牌", AppErrorType::Forbidden)
+            ApiError::unauthorized("无效的刷新令牌")
         }
-        _ => AppError::new(e, AppErrorType::Crypt),
+        _ => ApiError::internal_server_error(format!("刷新令牌验证失败: {e}")),
     })?;
 
     Ok(token_data.claims)
 }
 
-// ============ Cookie 工具 ============
+// ========== Cookie 工具 ==========
 
 /// 构建 refresh token 的 Set-Cookie header 值
 pub fn build_refresh_cookie(token: &str) -> String {
     let config = config::get_config();
-    let max_age = config.jwt.refresh_expiration * 60; // 分钟转秒
+    let max_age = config.jwt.refresh_expiration * 60;
 
-    // 检查是否为纯开发环境（只有 localhost，没有其他域名）
-    let is_dev = config.cors.allowed_origins.iter().all(|o| o.contains("localhost"));
+    let is_dev = config
+        .cors
+        .allowed_origins
+        .iter()
+        .all(|o| o.contains("localhost"));
 
     if is_dev {
-        // 开发环境：不设置 Secure，使用 SameSite=Lax
-        format!(
-            "refresh_token={}; HttpOnly; SameSite=Lax; Path=/; Max-Age={}",
-            token, max_age
-        )
+        format!("refresh_token={token}; HttpOnly; SameSite=Lax; Path=/; Max-Age={max_age}")
     } else {
-        // 生产环境：设置 Domain 使 Cookie 在主域下共享，避免被浏览器当作第三方 Cookie 拦截
         format!(
-            "refresh_token={}; HttpOnly; Secure; SameSite=None; Domain=.exquisitecore.xyz; Path=/; Max-Age={}",
-            token, max_age
+            "refresh_token={token}; HttpOnly; Secure; SameSite=None; Domain=.exquisitecore.xyz; Path=/; Max-Age={max_age}"
         )
     }
 }
@@ -171,7 +278,11 @@ pub fn build_refresh_cookie(token: &str) -> String {
 /// 构建清除 refresh token 的 Set-Cookie header 值
 pub fn build_clear_refresh_cookie() -> String {
     let config = config::get_config();
-    let is_dev = config.cors.allowed_origins.iter().all(|o| o.contains("localhost"));
+    let is_dev = config
+        .cors
+        .allowed_origins
+        .iter()
+        .all(|o| o.contains("localhost"));
 
     if is_dev {
         "refresh_token=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0".to_string()
@@ -180,11 +291,31 @@ pub fn build_clear_refresh_cookie() -> String {
     }
 }
 
-/// 从 Cookie header 中提取 refresh_token
-fn extract_refresh_token_from_cookies(cookie_header: &str) -> Option<String> {
+/// 构建匿名 UUID 的 Set-Cookie header 值
+pub fn build_anonymous_cookie(uuid: &Uuid) -> String {
+    let config = config::get_config();
+    let is_dev = config
+        .cors
+        .allowed_origins
+        .iter()
+        .all(|o| o.contains("localhost"));
+
+    let max_age = 365 * 24 * 60 * 60; // 1 年
+    if is_dev {
+        format!("anonymous={uuid}; HttpOnly; SameSite=Lax; Path=/; Max-Age={max_age}")
+    } else {
+        format!(
+            "anonymous={uuid}; HttpOnly; Secure; SameSite=None; Domain=.exquisitecore.xyz; Path=/; Max-Age={max_age}"
+        )
+    }
+}
+
+/// 从 Cookie header 中提取指定 cookie 值
+fn extract_cookie(cookie_header: &str, name: &str) -> Option<String> {
+    let prefix = format!("{name}=");
     for cookie in cookie_header.split(';') {
         let cookie = cookie.trim();
-        if let Some(value) = cookie.strip_prefix("refresh_token=") {
+        if let Some(value) = cookie.strip_prefix(&prefix) {
             let value = value.trim();
             if !value.is_empty() {
                 return Some(value.to_string());
@@ -194,97 +325,192 @@ fn extract_refresh_token_from_cookies(cookie_header: &str) -> Option<String> {
     None
 }
 
-// ============ 中间件 ============
+// ========== 身份认证中间件 ==========
 
-/// 从认证头中提取令牌
-pub fn extract_token_from_header(auth_header: &str) -> Option<&str> {
-    if auth_header.starts_with("Bearer ") {
-        Some(auth_header.trim_start_matches("Bearer ").trim())
-    } else {
-        None
-    }
-}
-
-/// 从请求中提取并验证 token，返回 Claims
-fn extract_and_verify_token(req: &Request) -> Result<Claims, Response> {
-    let auth_header = req
-        .headers()
-        .get("Authorization")
-        .and_then(|value| value.to_str().ok());
-
-    match auth_header {
-        Some(auth_header) => {
-            if let Some(token) = extract_token_from_header(auth_header) {
-                verify_token(token).map_err(|e| e.into_response())
-            } else {
-                Err(AppError::new_message("无效的认证头格式", AppErrorType::Forbidden).into_response())
-            }
-        }
-        None => Err(AppError::new_message("需要认证", AppErrorType::Forbidden).into_response()),
-    }
-}
-
-/// 认证中间件
-pub async fn auth_middleware(req: Request, next: Next) -> Result<Response, Response> {
-    let claims = extract_and_verify_token(&req)?;
-    let mut req = req;
-    req.extensions_mut().insert(claims);
-    Ok(next.run(req).await)
-}
-
-/// 管理员权限中间件
-pub async fn admin_middleware(req: Request, next: Next) -> Result<Response, Response> {
-    let claims = extract_and_verify_token(&req)?;
-
-    if claims.role != "admin" {
-        return Err(
-            AppError::new_message("需要管理员权限", AppErrorType::Forbidden).into_response()
-        );
-    }
-
-    let mut req = req;
-    req.extensions_mut().insert(claims);
-    Ok(next.run(req).await)
-}
-
-// ============ 处理函数 ============
-
-/// 刷新令牌处理函数
+/// 统一认证中间件 — 永远成功
 ///
-/// 从 Cookie 中读取 refresh_token，验证后生成新的 access token
-pub async fn refresh_token_handler(req: Request) -> Result<Response, AppError> {
-    // 从 Cookie 中提取 refresh_token
+/// 从请求中识别身份（JWT / anonymous UUID / None），
+/// 注入 Identity 到 request extensions。各 handler 根据需要检查。
+pub async fn identity_middleware(mut req: Request, next: Next) -> Response {
     let cookie_header = req
         .headers()
         .get("Cookie")
         .and_then(|v| v.to_str().ok())
-        .ok_or_else(|| AppError::new_message("缺少 Cookie", AppErrorType::Forbidden))?;
+        .unwrap_or("");
 
-    let refresh_token = extract_refresh_token_from_cookies(cookie_header)
-        .ok_or_else(|| AppError::new_message("缺少 refresh_token", AppErrorType::Forbidden))?;
+    let auth_header = req
+        .headers()
+        .get("Authorization")
+        .and_then(|v| v.to_str().ok());
 
-    // 验证 refresh token
+    let db = req.extensions().get::<DatabaseConnection>().cloned();
+
+    let identity = if let Some(auth) = auth_header {
+        // 尝试从 Authorization header 验证 JWT
+        if let Some(token) = auth.strip_prefix("Bearer ").map(str::trim) {
+            match verify_token(token) {
+                Ok(claims) => resolve_authenticated_identity(&db, &claims).await,
+                Err(_) => Identity::None,
+            }
+        } else {
+            Identity::None
+        }
+    } else if let Some(refresh) = extract_cookie(cookie_header, "refresh_token") {
+        // 尝试从 refresh token Cookie 解析身份（备用）
+        match verify_refresh_token(&refresh) {
+            Ok(claims) => {
+                let fake_claims = Claims {
+                    sub: claims.sub,
+                    username: claims.username,
+                    role: claims.role,
+                    exp: claims.exp,
+                    iat: claims.iat,
+                };
+                resolve_authenticated_identity(&db, &fake_claims).await
+            }
+            Err(_) => resolve_anonymous_identity(cookie_header, &db).await,
+        }
+    } else {
+        resolve_anonymous_identity(cookie_header, &db).await
+    };
+
+    req.extensions_mut().insert(identity);
+    next.run(req).await
+}
+
+/// 从 JWT Claims 解析已认证的 Identity
+async fn resolve_authenticated_identity(
+    db: &Option<DatabaseConnection>,
+    claims: &Claims,
+) -> Identity {
+    let user_id = match Uuid::parse_str(&claims.sub) {
+        Ok(id) => id,
+        Err(_) => return Identity::None,
+    };
+
+    if let Some(db) = db {
+        match user::Entity::find_by_id(user_id).one(db).await {
+            Ok(Some(user)) => {
+                // 查找关联的 identity 记录
+                let identity_model = identity::Entity::find()
+                    .filter(identity::Column::UserId.eq(user_id))
+                    .one(db)
+                    .await
+                    .ok()
+                    .flatten();
+
+                if user.role == "admin" {
+                    Identity::Admin {
+                        user,
+                        identity: identity_model,
+                    }
+                } else {
+                    Identity::Authenticated {
+                        user,
+                        identity: identity_model,
+                    }
+                }
+            }
+            _ => Identity::None,
+        }
+    } else {
+        Identity::None
+    }
+}
+
+/// 解析匿名 Identity
+async fn resolve_anonymous_identity(
+    cookie_header: &str,
+    db: &Option<DatabaseConnection>,
+) -> Identity {
+    if let Some(anonymous_str) = extract_cookie(cookie_header, "anonymous") {
+        if let Ok(uuid) = Uuid::parse_str(&anonymous_str) {
+            let identity_model = if let Some(db) = db {
+                identity::Entity::find()
+                    .filter(identity::Column::Uuid.eq(uuid))
+                    .one(db)
+                    .await
+                    .ok()
+                    .flatten()
+            } else {
+                None
+            };
+
+            return Identity::Anonymous {
+                uuid,
+                identity: identity_model,
+            };
+        }
+    }
+    Identity::None
+}
+
+// ========== 处理函数 ==========
+
+/// 刷新令牌处理函数
+pub async fn refresh_token_handler(req: Request) -> Result<Response, ApiError> {
+    let cookie_header = req
+        .headers()
+        .get("Cookie")
+        .and_then(|v| v.to_str().ok())
+        .ok_or_else(|| ApiError::unauthorized("缺少 Cookie"))?;
+
+    let refresh_token = extract_cookie(cookie_header, "refresh_token")
+        .ok_or_else(|| ApiError::unauthorized("缺少 refresh_token"))?;
+
     let claims = verify_refresh_token(&refresh_token)?;
 
-    // 构造临时 User 用于生成 access token
-    let user = User::from_claims(&claims.sub, &claims.username, &claims.role);
+    // 构造临时 user Model 用于生成 access token
+    let now = Utc::now().fixed_offset();
+    let temp_user = user::Model {
+        id: Uuid::parse_str(&claims.sub).map_err(|_| ApiError::unauthorized("无效的用户 ID"))?,
+        username: claims.username,
+        email: String::new(),
+        password_hash: String::new(),
+        display_name: None,
+        avatar_url: None,
+        bio: None,
+        role: claims.role,
+        created_at: now,
+        updated_at: now,
+    };
 
-    // 生成新的 access token
-    let access_token = generate_token(&user)?;
+    let access_token = generate_token(&temp_user)?;
 
-    let body = serde_json::json!({ "token": access_token });
-
-    Ok(axum::Json(body).into_response())
+    Ok(ApiResponse::ok(serde_json::json!({ "token": access_token })).into_response())
 }
 
 /// 退出登录处理函数
-///
-/// 清除 refresh_token cookie
 pub async fn logout_handler() -> Response {
-    let mut response = axum::Json(serde_json::json!({ "success": true })).into_response();
-    response.headers_mut().insert(
-        SET_COOKIE,
-        build_clear_refresh_cookie().parse().unwrap(),
-    );
+    let mut response = ApiResponse::ok(serde_json::json!({ "success": true })).into_response();
     response
+        .headers_mut()
+        .insert(SET_COOKIE, build_clear_refresh_cookie().parse().unwrap());
+    response
+}
+
+/// 获取当前身份信息
+pub async fn me_handler(identity: axum::Extension<Identity>) -> Result<Response, ApiError> {
+    match &*identity {
+        Identity::Admin { user, .. } | Identity::Authenticated { user, .. } => {
+            Ok(ApiResponse::ok(serde_json::json!({
+                "authenticated": true,
+                "id": user.id,
+                "username": user.username,
+                "role": user.role,
+                "display_name": user.display_name,
+                "avatar_url": user.avatar_url,
+            }))
+            .into_response())
+        }
+        Identity::Anonymous { uuid, .. } => Ok(ApiResponse::ok(serde_json::json!({
+            "authenticated": false,
+            "anonymous_id": uuid,
+        }))
+        .into_response()),
+        Identity::None => Ok(ApiResponse::ok(serde_json::json!({
+            "authenticated": false,
+        }))
+        .into_response()),
+    }
 }

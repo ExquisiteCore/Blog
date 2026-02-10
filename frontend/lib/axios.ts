@@ -6,38 +6,32 @@ import axios, {
 } from 'axios';
 import { isTokenExpired, tryRefreshToken, clearAuth } from './auth';
 
-// 定义请求配置接口，扩展AxiosRequestConfig以支持可选的withToken参数
 interface RequestConfig extends AxiosRequestConfig {
-  withToken?: boolean; // 是否在请求中包含token
-  _retry?: boolean; // 标记是否为重试请求（内部使用）
+  withToken?: boolean;
+  _retry?: boolean;
 }
 
-// 定义响应数据的通用接口
-type ApiResponse<T = unknown> = T;
-
 /**
- * HTTP请求类，封装axios实例
- * 支持Next.js环境下选择是否传入token
+ * HTTP 请求类，封装 axios 实例
+ *
+ * 网关模式：所有请求通过 Rust 网关
+ * - 客户端：相对路径 /api（浏览器发到同源 Rust 网关）
+ * - 服务端 SSR：http://localhost:8080/api（直连网关）
  */
 class Http {
   private instance: AxiosInstance;
   private baseURL: string;
 
   constructor(baseURL?: string) {
-    // 默认 API URL（如果未设置环境变量）
-    const defaultApiUrl = 'https://api.exquisitecore.xyz/api';
-    let apiUrl: string | undefined;
-
-    // Next.js 中通过 typeof window 判断是否为服务器端渲染
-    if (typeof window === 'undefined') {
-      // 服务器端渲染时，使用内部 Docker 网络地址
-      apiUrl = process.env.INTERNAL_API_BASE_URL;
+    if (baseURL) {
+      this.baseURL = baseURL;
+    } else if (typeof window === 'undefined') {
+      // SSR：直连 Rust 网关
+      this.baseURL = process.env.INTERNAL_API_BASE_URL || 'http://localhost:8080/api';
     } else {
-      // 客户端渲染时，使用公共可访问地址
-      apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+      // 客户端：相对路径，自动走同源网关
+      this.baseURL = '/api';
     }
-
-    this.baseURL = baseURL || apiUrl || defaultApiUrl;
 
     this.instance = axios.create({
       baseURL: this.baseURL,
@@ -45,32 +39,26 @@ class Http {
       headers: {
         'Content-Type': 'application/json',
       },
-      withCredentials: true, // 允许跨域请求携带 cookie
+      withCredentials: true,
     });
 
     this.setupInterceptors();
   }
 
-  /**
-   * 设置请求和响应拦截器
-   */
   private setupInterceptors(): void {
     // 请求拦截器
     this.instance.interceptors.request.use(
       async (config) => {
         const requestConfig = config as RequestConfig & InternalAxiosRequestConfig;
 
-        // 只有当withToken为true时才添加token
         if (requestConfig.withToken) {
           let token = this.getToken();
           if (token) {
-            // 检查 token 是否过期，如果过期先尝试刷新
             if (isTokenExpired(token)) {
               const newToken = await tryRefreshToken();
               if (newToken) {
                 token = newToken;
               } else {
-                // 刷新失败，不带 token 发请求（让后端返回 401）
                 return config;
               }
             }
@@ -85,18 +73,23 @@ class Http {
       }
     );
 
-    // 响应拦截器
+    // 响应拦截器：解包 ApiResponse
     this.instance.interceptors.response.use(
       (response: AxiosResponse) => {
-        return response.data;
+        // 后端统一包装为 { statusCode, data, message }
+        // 解包返回 data 字段的内容
+        const body = response.data;
+        if (body && typeof body === 'object' && 'statusCode' in body) {
+          return body.data;
+        }
+        // 兼容：非标准响应直接返回
+        return body;
       },
       async (error) => {
         const originalRequest = error.config as RequestConfig & InternalAxiosRequestConfig;
 
-        // 处理错误响应
         if (error.response) {
-          // 服务器返回了错误状态码
-          const { status } = error.response;
+          const { status, data } = error.response;
 
           // 处理 401：尝试刷新 token 后重试
           if (status === 401 && originalRequest.withToken && !originalRequest._retry) {
@@ -106,24 +99,20 @@ class Http {
               originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
               return this.instance(originalRequest);
             }
-            // 刷新失败，清除登录态并跳转登录页
             clearAuth();
             if (typeof window !== 'undefined') {
               window.location.href = '/auth';
             }
-          } else if (status === 403) {
-            console.error('没有权限访问该资源');
-          } else if (status === 404) {
-            console.error('请求的资源不存在');
-          } else if (status >= 500) {
-            console.error('服务器错误，请稍后再试');
           }
+
+          // 从 ApiResponse 中提取错误信息
+          const message = data?.message || `请求失败 (${status})`;
+          const apiError = new Error(message);
+          (apiError as Record<string, unknown>).statusCode = status;
+          (apiError as Record<string, unknown>).response = error.response;
+          return Promise.reject(apiError);
         } else if (error.request) {
-          // 请求已发送但没有收到响应
-          console.error('网络错误，无法连接到服务器');
-        } else {
-          // 请求配置出错
-          console.error('请求配置错误:', error.message);
+          return Promise.reject(new Error('网络错误，无法连接到服务器'));
         }
 
         return Promise.reject(error);
@@ -131,78 +120,47 @@ class Http {
     );
   }
 
-  /**
-   * 获取存储的token
-   * 在客户端从localStorage获取，在服务端返回null
-   */
   private getToken(): string | null {
-    // 检查是否在浏览器环境
     if (typeof window !== 'undefined') {
       return localStorage.getItem('token');
     }
-    // 在服务端渲染时返回null
     return null;
   }
 
-  /**
-   * 发送GET请求
-   * @param url 请求地址
-   * @param params 查询参数
-   * @param config 请求配置，包含withToken选项
-   */
   public async get<T = unknown>(
     url: string,
     params?: Record<string, unknown>,
     config: RequestConfig = {}
-  ): Promise<ApiResponse<T>> {
+  ): Promise<T> {
     return this.instance.get(url, { ...config, params });
   }
 
-  /**
-   * 发送POST请求
-   * @param url 请求地址
-   * @param data 请求体数据
-   * @param config 请求配置，包含withToken选项
-   */
   public async post<T = unknown>(
     url: string,
     data?: unknown,
     config: RequestConfig = {}
-  ): Promise<ApiResponse<T>> {
+  ): Promise<T> {
     return this.instance.post(url, data, config);
   }
 
-  /**
-   * 发送PUT请求
-   * @param url 请求地址
-   * @param data 请求体数据
-   * @param config 请求配置，包含withToken选项
-   */
   public async put<T = unknown>(
     url: string,
     data?: unknown,
     config: RequestConfig = {}
-  ): Promise<ApiResponse<T>> {
+  ): Promise<T> {
     return this.instance.put(url, data, config);
   }
 
-  /**
-   * 发送DELETE请求
-   * @param url 请求地址
-   * @param config 请求配置，包含withToken选项
-   */
   public async delete<T = unknown>(
     url: string,
     config: RequestConfig = {}
-  ): Promise<ApiResponse<T>> {
+  ): Promise<T> {
     return this.instance.delete(url, config);
   }
 }
 
-// 创建默认实例
 const http = new Http();
 
 export default http;
 
-// 导出类型和类，方便创建自定义实例
-export { Http, type ApiResponse, type RequestConfig };
+export { Http, type RequestConfig };

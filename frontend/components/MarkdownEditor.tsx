@@ -495,16 +495,12 @@ export default function MarkdownEditor({ initialData, blogMode = false }: Markdo
         return;
       }
 
-      const user = JSON.parse(userData);
-      const authorId = user.id;
-
       const postData = {
         title: title,
         content: text,
         slug: slug,
-        excerpt: summary || title,
-        featured_image: coverImage || null,
-        author_id: authorId,
+        summary: summary || title,
+        cover_images: coverImage ? [coverImage] : undefined,
         published: publish,
         labels: selectedLabelIds.length > 0 ? selectedLabelIds : [],
       };

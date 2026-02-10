@@ -3,24 +3,8 @@
 import { useState, useEffect } from 'react';
 import http from '@/lib/axios';
 import MarkdownRenderer from './MarkdownRenderer';
+import type { PostDetail } from '@/types/api';
 
-// 定义文章接口
-interface Post {
-  id: string;
-  title: string;
-  slug: string;
-  content: string;
-  excerpt: string | null;
-  featured_image: string | null;
-  published: boolean;
-  author_id: string;
-  created_at: string;
-  updated_at: string;
-  published_at: string;
-  labels: string[];
-}
-
-// 格式化日期函数
 function formatDate(dateString: string) {
   const date = new Date(dateString);
   return date.toLocaleDateString('zh-CN', {
@@ -35,7 +19,7 @@ interface BlogPostProps {
 }
 
 export default function BlogPost({ slug }: BlogPostProps) {
-  const [post, setPost] = useState<Post | null>(null);
+  const [post, setPost] = useState<PostDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,17 +27,12 @@ export default function BlogPost({ slug }: BlogPostProps) {
     async function fetchPost() {
       try {
         setLoading(true);
-        const response = await http.get<Post>(`/posts/${slug}`, undefined, {
+        const response = await http.get<PostDetail>(`/posts/${slug}`, undefined, {
           withToken: false,
         });
 
         if (response && response.id) {
-          setPost({
-            ...response,
-            featured_image: response.featured_image
-              ? response.featured_image.replace(/`/g, '').trim()
-              : null,
-          });
+          setPost(response);
         } else {
           console.error('API响应格式不符合预期:', response);
           setError('文章不存在');
@@ -100,12 +79,14 @@ export default function BlogPost({ slug }: BlogPostProps) {
     );
   }
 
+  const coverImage = post.cover_images && post.cover_images.length > 0 ? post.cover_images[0] : null;
+
   return (
     <div className="container mx-auto px-4 py-8">
       <article className="prose prose-lg dark:prose-invert max-w-none">
-        {post.featured_image && (
+        {coverImage && (
           <img
-            src={post.featured_image}
+            src={coverImage}
             alt={post.title}
             className="w-full h-64 md:h-96 rounded-lg object-cover shadow-md mb-8"
           />
@@ -114,7 +95,7 @@ export default function BlogPost({ slug }: BlogPostProps) {
         <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
 
         <div className="flex items-center text-sm opacity-70 mb-8">
-          <span>{formatDate(post.published_at)}</span>
+          {post.published_at && <span>{formatDate(post.published_at)}</span>}
           {post.labels && post.labels.length > 0 && (
             <div className="flex gap-2 ml-4">
               {post.labels.map((tag) => (

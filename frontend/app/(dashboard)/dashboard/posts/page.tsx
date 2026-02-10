@@ -4,17 +4,17 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import http from '@/lib/axios';
 import ConfirmModal from '@/components/dashboard/ConfirmModal';
-import type { PostSummaryWithLabels } from '@/types/api';
+import type { PostSummary } from '@/types/api';
 
 export default function PostsPage() {
-  const [posts, setPosts] = useState<PostSummaryWithLabels[]>([]);
+  const [posts, setPosts] = useState<PostSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchPosts = async () => {
     try {
-      const data = await http.get<PostSummaryWithLabels[]>('/posts');
+      const data = await http.get<PostSummary[]>('/posts');
       if (Array.isArray(data)) {
         setPosts(data);
       }

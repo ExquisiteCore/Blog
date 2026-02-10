@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import StatsCard from '@/components/dashboard/StatsCard';
 import http from '@/lib/axios';
-import type { PostSummaryWithLabels, Label } from '@/types/api';
+import type { PostSummary, Label } from '@/types/api';
 
 interface DashboardStats {
   posts: number;
@@ -14,14 +14,14 @@ interface DashboardStats {
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({ posts: 0, labels: 0, users: 0 });
-  const [recentPosts, setRecentPosts] = useState<PostSummaryWithLabels[]>([]);
+  const [recentPosts, setRecentPosts] = useState<PostSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         // 获取文章列表
-        const posts = await http.get<PostSummaryWithLabels[]>('/posts');
+        const posts = await http.get<PostSummary[]>('/posts');
         // 获取标签列表
         const labels = await http.get<Label[]>('/labels');
 
@@ -101,9 +101,6 @@ export default function DashboardPage() {
             </Link>
             <Link href="/dashboard/labels" className="btn btn-outline btn-sm">
               管理标签
-            </Link>
-            <Link href="/dashboard/wechat" className="btn btn-outline btn-sm">
-              微信管理
             </Link>
           </div>
         </div>

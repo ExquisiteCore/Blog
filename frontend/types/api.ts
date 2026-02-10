@@ -4,6 +4,15 @@
  * 与后端 Rust 模型对应的 TypeScript 类型
  */
 
+// ==================== 统一响应格式 ====================
+
+/** 后端统一响应包装 */
+export interface ApiResponse<T = unknown> {
+  statusCode: number;
+  data?: T;
+  message?: string;
+}
+
 // ==================== 用户相关 ====================
 
 /** 用户角色 */
@@ -83,43 +92,50 @@ export interface UpdateLabelRequest {
 
 // ==================== 文章相关 ====================
 
-/** 文章详情 */
-export interface Post {
-  id: string;
-  title: string;
-  slug: string;
-  content: string;
-  excerpt: string | null;
-  featured_image: string | null;
-  published: boolean;
-  author_id: string;
-  created_at: string;
-  updated_at: string;
-  published_at: string | null;
-}
-
-/** 文章详情（包含标签） */
-export interface PostWithLabels extends Post {
-  labels: string[];
-}
-
-/** 文章摘要（不含 content） */
+/** 文章摘要（列表用） */
 export interface PostSummary {
   id: string;
-  title: string;
   slug: string;
-  excerpt: string | null;
-  featured_image: string | null;
+  title: string;
+  summary: string | null;
+  cover_images: string[] | null;
   published: boolean;
+  view_count: number;
+  comment_count: number;
+  like_count: number;
   author_id: string;
+  labels: string[];
+  published_at: string | null;
   created_at: string;
   updated_at: string;
-  published_at: string | null;
 }
 
-/** 文章摘要（包含标签） */
-export interface PostSummaryWithLabels extends PostSummary {
+/** 文章详情 */
+export interface PostDetail {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string | null;
+  content: string;
+  rendered_html: string | null;
+  toc: TocItem[] | null;
+  cover_images: string[] | null;
+  published: boolean;
+  view_count: number;
+  comment_count: number;
+  like_count: number;
+  author_id: string;
   labels: string[];
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** 目录项 */
+export interface TocItem {
+  id: string;
+  text: string;
+  level: number;
 }
 
 /** 创建文章请求 */
@@ -127,10 +143,9 @@ export interface CreatePostRequest {
   title: string;
   slug: string;
   content: string;
-  excerpt?: string;
-  featured_image?: string;
-  published: boolean;
-  author_id: string;
+  summary?: string;
+  cover_images?: string[];
+  published?: boolean;
   labels?: string[];
 }
 
@@ -139,9 +154,10 @@ export interface UpdatePostRequest {
   title?: string;
   slug?: string;
   content?: string;
-  excerpt?: string;
-  featured_image?: string;
+  summary?: string;
+  cover_images?: string[];
   published?: boolean;
+  labels?: string[];
 }
 
 /** 通用成功响应 */
@@ -155,30 +171,46 @@ export interface SuccessResponse {
 export interface Comment {
   id: string;
   content: string;
-  post_id: string;
-  user_id: string;
   parent_id: string | null;
+  identity_id: string;
+  is_deleted: boolean;
   created_at: string;
-  updated_at: string;
 }
 
 /** 创建评论请求 */
 export interface CreateCommentRequest {
   content: string;
-  post_id: string;
-  user_id: string;
   parent_id?: string;
 }
 
-// ==================== 通用响应 ====================
+// ==================== 点赞相关 ====================
+
+/** 点赞状态 */
+export interface LikeStatus {
+  liked: boolean;
+  like_count: number;
+}
+
+// ==================== 身份相关 ====================
+
+/** 当前身份信息 */
+export interface MeResponse {
+  authenticated: boolean;
+  id?: string;
+  username?: string;
+  role?: string;
+  display_name?: string | null;
+  avatar_url?: string | null;
+  anonymous_id?: string;
+}
+
+// ==================== 通用 ====================
 
 /** API 错误响应 */
 export interface ApiError {
-  message: string;
-  error_type?: string;
+  statusCode: number;
+  message?: string;
 }
-
-// ==================== 文件上传相关 ====================
 
 /** 图片上传响应 */
 export interface ImageUploadResponse {

@@ -1,26 +1,19 @@
 import { MetadataRoute } from 'next';
+import type { PostSummary } from '@/types/api';
 
-interface Post {
-  id: string;
-  title: string;
-  slug: string;
-  updated_at: string;
-  published_at: string;
+function getApiBaseUrl(): string {
+  return process.env.INTERNAL_API_BASE_URL || 'http://localhost:8080/api';
 }
 
-async function getBlogPosts(): Promise<Post[]> {
+async function getBlogPosts(): Promise<PostSummary[]> {
   try {
-    const apiUrl =
-      process.env.INTERNAL_API_BASE_URL ||
-      process.env.NEXT_PUBLIC_API_BASE_URL ||
-      'https://api.exquisitecore.xyz/api';
-
-    const response = await fetch(`${apiUrl}/posts`, {
-      next: { revalidate: 3600 }, // 1小时缓存
+    const response = await fetch(`${getApiBaseUrl()}/posts`, {
+      next: { revalidate: 3600 },
     });
 
     if (response.ok) {
-      return await response.json();
+      const body = await response.json();
+      return body?.data || body || [];
     }
   } catch (error) {
     console.error('获取博客文章列表失败:', error);
@@ -31,7 +24,6 @@ async function getBlogPosts(): Promise<Post[]> {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://blog.exquisitecore.xyz';
 
-  // 静态页面
   const staticPages: MetadataRoute.Sitemap = [
     {
       url: baseUrl,
@@ -77,11 +69,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // 动态博客文章
   const posts = await getBlogPosts();
   const blogPages: MetadataRoute.Sitemap = posts.map((post) => ({
-    url: `${baseUrl}/blog/${post.id}`,
-    lastModified: new Date(post.updated_at || post.published_at),
+    url: `${baseUrl}/blog/${post.slug}`,
+    lastModified: new Date(post.updated_at || post.published_at || post.created_at),
     changeFrequency: 'weekly',
     priority: 0.7,
   }));

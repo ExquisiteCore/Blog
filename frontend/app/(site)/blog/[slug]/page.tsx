@@ -1,34 +1,21 @@
 import { Metadata } from "next";
 import BlogPost from "@/components/BlogPost";
+import type { PostDetail } from "@/types/api";
 
-interface Post {
-  id: string;
-  title: string;
-  slug: string;
-  content: string;
-  excerpt: string | null;
-  featured_image: string | null;
-  published: boolean;
-  author_id: string;
-  created_at: string;
-  updated_at: string;
-  published_at: string;
-  labels: string[];
+function getApiBaseUrl(): string {
+  return process.env.INTERNAL_API_BASE_URL || "http://localhost:8080/api";
 }
 
-async function getPost(slug: string): Promise<Post | null> {
+async function getPost(slug: string): Promise<PostDetail | null> {
   try {
-    const apiUrl =
-      process.env.INTERNAL_API_BASE_URL ||
-      process.env.NEXT_PUBLIC_API_BASE_URL ||
-      "https://api.exquisitecore.xyz/api";
-
-    const response = await fetch(`${apiUrl}/posts/${slug}`, {
+    const response = await fetch(`${getApiBaseUrl()}/posts/${slug}`, {
       next: { revalidate: 60 },
     });
 
     if (response.ok) {
-      return await response.json();
+      const body = await response.json();
+      // 解包 ApiResponse
+      return body?.data || body;
     }
   } catch (error) {
     console.error("获取文章失败:", error);
@@ -46,29 +33,30 @@ export async function generateMetadata({
   const post = await getPost(slug);
 
   if (post) {
+    const coverImage = post.cover_images && post.cover_images.length > 0 ? post.cover_images[0] : null;
     return {
       title: post.title,
-      description: post.excerpt || `阅读ExquisiteCore的文章：${post.title}`,
+      description: post.summary || `阅读ExquisiteCore的文章：${post.title}`,
       keywords: `${post.title},${post.labels?.join(",") || ""},ExquisiteCore,技术博客`,
       openGraph: {
         title: post.title,
-        description: post.excerpt || `阅读ExquisiteCore的文章：${post.title}`,
+        description: post.summary || `阅读ExquisiteCore的文章：${post.title}`,
         type: "article",
-        publishedTime: post.published_at,
+        publishedTime: post.published_at || undefined,
         modifiedTime: post.updated_at,
         authors: ["ExquisiteCore"],
         tags: post.labels || [],
-        images: post.featured_image ? [post.featured_image] : [],
-        url: `https://blog.exquisitecore.xyz/blog/${post.id}`,
+        images: coverImage ? [coverImage] : [],
+        url: `https://blog.exquisitecore.xyz/blog/${post.slug}`,
       },
       twitter: {
         card: "summary_large_image",
         title: post.title,
-        description: post.excerpt || `阅读ExquisiteCore的文章：${post.title}`,
-        images: post.featured_image ? [post.featured_image] : [],
+        description: post.summary || `阅读ExquisiteCore的文章：${post.title}`,
+        images: coverImage ? [coverImage] : [],
       },
       alternates: {
-        canonical: `https://blog.exquisitecore.xyz/blog/${post.id}`,
+        canonical: `https://blog.exquisitecore.xyz/blog/${post.slug}`,
       },
     };
   }
@@ -80,13 +68,14 @@ export async function generateMetadata({
 }
 
 // 生成 Article JSON-LD 结构化数据
-function generateArticleJsonLd(post: Post) {
+function generateArticleJsonLd(post: PostDetail) {
+  const coverImage = post.cover_images && post.cover_images.length > 0 ? post.cover_images[0] : null;
   return {
     "@context": "https://schema.org",
     "@type": "Article",
     headline: post.title,
-    description: post.excerpt || `阅读ExquisiteCore的文章：${post.title}`,
-    image: post.featured_image || "https://blog.exquisitecore.xyz/logo.svg",
+    description: post.summary || `阅读ExquisiteCore的文章：${post.title}`,
+    image: coverImage || "https://blog.exquisitecore.xyz/logo.svg",
     datePublished: post.published_at,
     dateModified: post.updated_at,
     author: {
@@ -104,7 +93,7 @@ function generateArticleJsonLd(post: Post) {
     },
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": `https://blog.exquisitecore.xyz/blog/${post.id}`,
+      "@id": `https://blog.exquisitecore.xyz/blog/${post.slug}`,
     },
     keywords: post.labels?.join(", ") || "",
     articleSection: "技术博客",

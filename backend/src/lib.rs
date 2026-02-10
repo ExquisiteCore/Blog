@@ -1,11 +1,11 @@
 pub mod api;
 pub mod config;
+pub mod entity;
 pub mod error;
 pub mod llm;
 pub mod logger;
 pub mod middleware;
-pub mod model;
+pub mod migration;
 pub mod routes;
 pub mod state;
-
-pub type Result<T> = std::result::Result<T, error::AppError>;
+pub mod wrapper;

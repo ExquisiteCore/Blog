@@ -5,20 +5,20 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import http from '@/lib/axios';
 import MarkdownEditor from '@/components/MarkdownEditor';
-import type { PostWithLabels } from '@/types/api';
+import type { PostDetail } from '@/types/api';
 
 export default function EditPostPage() {
   const params = useParams();
   const postId = params.id as string;
 
-  const [post, setPost] = useState<PostWithLabels | null>(null);
+  const [post, setPost] = useState<PostDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPost = async () => {
       try {
-        const data = await http.get<PostWithLabels>(`/posts/${postId}`);
+        const data = await http.get<PostDetail>(`/posts/${postId}`);
         if (data) {
           setPost(data);
         } else {
@@ -88,8 +88,8 @@ export default function EditPostPage() {
               title: post.title,
               slug: post.slug,
               content: post.content,
-              excerpt: post.excerpt || '',
-              coverImage: post.featured_image || '',
+              excerpt: post.summary || '',
+              coverImage: post.cover_images && post.cover_images.length > 0 ? post.cover_images[0] : '',
               tags: post.labels || [],
               published: post.published,
             }}

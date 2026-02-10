@@ -136,12 +136,10 @@ export default function AuthForm() {
       }
     } catch (error: unknown) {
       console.error('提交表单出错:', error);
-      // 处理axios错误响应
-      const axiosError = error as { response?: { data?: { message?: string } } };
-      if (axiosError.response?.data) {
-        setApiError(axiosError.response.data.message || '请求失败');
+      if (error instanceof Error) {
+        setApiError(error.message);
       } else {
-        setApiError(error instanceof Error ? error.message : '请求失败，请稍后重试');
+        setApiError('请求失败，请稍后重试');
       }
     } finally {
       setIsLoading(false);

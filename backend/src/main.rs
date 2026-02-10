@@ -1,10 +1,11 @@
-use backend::{config, llm::LlmClient, logger, model, routes, state::AppState};
+use backend::{config, llm::LlmClient, logger, migration, routes, state::AppState};
+use sea_orm::{ConnectOptions, Database};
+use sea_orm_migration::MigratorTrait;
 use std::net::SocketAddr;
 use std::path::Path;
-use std::sync::Arc;
+use std::time::Duration;
 use tokio::net::TcpListener;
 use tracing::info;
-use wechat_oa_sdk::{Config as WeChatConfig, WeChatClient};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -24,21 +25,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 初始化全局配置
     config::init_config(config.clone());
 
-    // 初始化数据库连接池
-    let pool = model::get_db_pool(config::get_config()).await?;
-    let pool = Arc::new(pool);
+    // 初始化 SeaORM 数据库连接
+    let mut opt = ConnectOptions::new(&config.database.url);
+    opt.max_connections(config.database.max_connections)
+        .min_connections(1)
+        .connect_timeout(Duration::from_secs(10))
+        .idle_timeout(Duration::from_secs(600));
 
-    // 初始化微信客户端（如果配置了）
-    let wechat_client = config.wechat.map(|wc| {
-        info!("初始化微信客户端，AppID: {}", wc.app_id);
-        let sdk_config = WeChatConfig::new(&wc.app_id, &wc.app_secret, &wc.token);
-        let sdk_config = if let Some(ref aes_key) = wc.encoding_aes_key {
-            sdk_config.with_encoding_aes_key(aes_key)
-        } else {
-            sdk_config
-        };
-        WeChatClient::new(sdk_config)
-    });
+    let conn = Database::connect(opt).await?;
+    info!("数据库连接成功");
+
+    // 运行数据库迁移
+    migration::Migrator::up(&conn, None).await?;
+    info!("数据库迁移完成");
 
     // 初始化 LLM 客户端（如果配置了）
     let llm_client = config.llm.map(|lc| {
@@ -47,7 +46,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     // 创建应用状态
-    let app_state = AppState::new(pool, wechat_client, llm_client);
+    let app_state = AppState::new(conn, llm_client);
 
     // 创建应用路由
     let app = routes::create_routes(app_state);

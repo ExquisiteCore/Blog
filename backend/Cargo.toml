@@ -1,6 +1,6 @@
 [package]
 name = "backend"
-version = "1.1.0"
+version = "2.0.0"
 edition = "2024"
 
 [dependencies]
@@ -9,20 +9,21 @@ tokio = { version = "1", features = ["full"] }
 
 # Web框架
 axum = { version = "0.8", features = ["macros", "multipart", "tracing"] }
-axum-extra = { version = "0.10.0", features = ["typed-header"] }
+axum-extra = { version = "0.10.0", features = ["typed-header", "cookie"] }
+axum-reverse-proxy = { version = "1.0.3", default-features = false }
 tower = "0.5.2"
-tower-http = { version = "0.6.2", features = ["cors", "trace"] }
+tower-http = { version = "0.6.2", features = ["cors", "trace", "compression-full"] }
 
-# 数据库
-sqlx = { version = "0.8.5", features = [
-  "runtime-tokio",
-  "tls-rustls",
-  "postgres",
-  "any",
-  "uuid",
-  "chrono",
-  "json",
+# 数据库 (SeaORM)
+sea-orm = { version = "1.1.0", default-features = false, features = [
+  "sqlx-postgres",
+  "runtime-tokio-rustls",
+  "macros",
+  "with-chrono",
+  "with-json",
+  "with-uuid",
 ] }
+sea-orm-migration = "1.1.0"
 
 # 序列化/反序列化
 serde = { version = "1.0", features = ["derive"] }
@@ -45,7 +46,6 @@ anyhow = "1"
 # 认证
 jsonwebtoken = "9.3.1"
 bcrypt = "0.17.0"
-wechat-oa-sdk = "1.0.5"
 
 # HTTP 客户端（LLM API 调用）
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }

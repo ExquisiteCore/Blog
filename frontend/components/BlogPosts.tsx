@@ -3,20 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import http from '@/lib/axios';
+import type { PostSummary } from '@/types/api';
 
-// 定义文章类型
-interface Post {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt: string | null;
-  featured_image: string | null;
-  published: boolean;
-  published_at: string;
-  labels: string[];
-}
-
-// 格式化日期函数
 function formatDate(dateString: string) {
   const date = new Date(dateString);
   return date.toLocaleDateString('zh-CN', {
@@ -27,7 +15,7 @@ function formatDate(dateString: string) {
 }
 
 export default function BlogPosts() {
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [posts, setPosts] = useState<PostSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,19 +23,12 @@ export default function BlogPosts() {
     async function fetchPosts() {
       try {
         setLoading(true);
-        const response = await http.get<Post[]>('/posts', undefined, {
+        const response = await http.get<PostSummary[]>('/posts', undefined, {
           withToken: false,
         });
 
         if (Array.isArray(response)) {
-          // 处理图片URL
-          const processedPosts = response.map((post) => ({
-            ...post,
-            featured_image: post.featured_image
-              ? post.featured_image.replace(/`/g, '').trim()
-              : null,
-          }));
-          setPosts(processedPosts);
+          setPosts(response);
         } else {
           console.error('API响应格式不符合预期:', response);
           setError('获取文章列表失败');
@@ -110,13 +91,13 @@ export default function BlogPosts() {
       {posts.map((post) => (
         <Link
           key={post.id}
-          href={`/blog/${post.id}`}
+          href={`/blog/${post.slug}`}
           className="card bg-base-100 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1"
         >
-          {post.featured_image && (
+          {post.cover_images && post.cover_images.length > 0 && (
             <figure>
               <img
-                src={post.featured_image}
+                src={post.cover_images[0]}
                 alt={post.title}
                 className="w-full h-48 object-cover"
                 loading="lazy"
@@ -125,13 +106,15 @@ export default function BlogPosts() {
           )}
           <div className="card-body">
             <h2 className="card-title line-clamp-2">{post.title}</h2>
-            {post.excerpt && (
-              <p className="text-base-content/70 line-clamp-3">{post.excerpt}</p>
+            {post.summary && (
+              <p className="text-base-content/70 line-clamp-3">{post.summary}</p>
             )}
             <div className="flex items-center justify-between mt-4">
-              <span className="text-sm text-base-content/60">
-                {formatDate(post.published_at)}
-              </span>
+              {post.published_at && (
+                <span className="text-sm text-base-content/60">
+                  {formatDate(post.published_at)}
+                </span>
+              )}
               {post.labels && post.labels.length > 0 && (
                 <div className="flex gap-1">
                   {post.labels.slice(0, 2).map((label) => (
