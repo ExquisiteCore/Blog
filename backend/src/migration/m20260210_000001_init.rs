@@ -19,11 +19,7 @@ impl MigrationTrait for Migration {
                     .col(string_len_null(Users::DisplayName, 100))
                     .col(string_null(Users::AvatarUrl))
                     .col(text_null(Users::Bio))
-                    .col(
-                        string_len(Users::Role, 20)
-                            .not_null()
-                            .default("user"),
-                    )
+                    .col(string_len(Users::Role, 20).not_null().default("user"))
                     .col(
                         timestamp_with_time_zone(Users::CreatedAt)
                             .not_null()
@@ -62,21 +58,9 @@ impl MigrationTrait for Migration {
                             .not_null()
                             .default("zh-CN"),
                     )
-                    .col(
-                        integer(ContentMetadata::ViewCount)
-                            .not_null()
-                            .default(0),
-                    )
-                    .col(
-                        integer(ContentMetadata::CommentCount)
-                            .not_null()
-                            .default(0),
-                    )
-                    .col(
-                        integer(ContentMetadata::LikeCount)
-                            .not_null()
-                            .default(0),
-                    )
+                    .col(integer(ContentMetadata::ViewCount).not_null().default(0))
+                    .col(integer(ContentMetadata::CommentCount).not_null().default(0))
+                    .col(integer(ContentMetadata::LikeCount).not_null().default(0))
                     .col(uuid(ContentMetadata::AuthorId).not_null())
                     .col(
                         boolean(ContentMetadata::Published)
@@ -291,11 +275,7 @@ impl MigrationTrait for Migration {
                     .col(uuid(Comments::ContentMetadataId).not_null())
                     .col(uuid_null(Comments::ParentId))
                     .col(text(Comments::Content).not_null())
-                    .col(
-                        boolean(Comments::IsDeleted)
-                            .not_null()
-                            .default(false),
-                    )
+                    .col(boolean(Comments::IsDeleted).not_null().default(false))
                     .col(
                         timestamp_with_time_zone(Comments::CreatedAt)
                             .not_null()

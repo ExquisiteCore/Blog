@@ -15,8 +15,8 @@ pub fn create_routes(state: AppState) -> Router {
     let conn = state.conn.clone();
 
     // 前端地址（Next.js）
-    let frontend_origin = std::env::var("FRONTEND_ORIGIN")
-        .unwrap_or_else(|_| "http://localhost:3000".to_string());
+    let frontend_origin =
+        std::env::var("FRONTEND_ORIGIN").unwrap_or_else(|_| "http://localhost:3000".to_string());
 
     Router::new()
         // API 路由

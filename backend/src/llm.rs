@@ -4,10 +4,10 @@
 
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
-use std::collections::HashMap;
 use tracing::{error, info};
 
 use crate::config::LlmConfig;
@@ -22,7 +22,7 @@ pub struct LlmClient {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChatMessage {
-    pub role: String,      // "system", "user", "assistant"
+    pub role: String, // "system", "user", "assistant"
     pub content: String,
 }
 
@@ -80,7 +80,8 @@ impl LlmClient {
         let history = conversations.entry(user_id.to_string()).or_insert_with(|| {
             vec![ChatMessage {
                 role: "system".to_string(),
-                content: "你是一个友好的助手，用简洁的中文回复用户问题。回复尽量控制在100字以内。".to_string(),
+                content: "你是一个友好的助手，用简洁的中文回复用户问题。回复尽量控制在100字以内。"
+                    .to_string(),
             }]
         });
 
@@ -91,7 +92,8 @@ impl LlmClient {
         });
 
         // 限制历史长度（保留最近10轮对话）
-        if history.len() > 21 {  // 1 system + 20 user/assistant
+        if history.len() > 21 {
+            // 1 system + 20 user/assistant
             let system_msg = history[0].clone();
             let recent: Vec<_> = history.iter().skip(history.len() - 20).cloned().collect();
             history.clear();
@@ -100,10 +102,12 @@ impl LlmClient {
         }
 
         // 构建请求
-        let base_url = self.config.base_url.as_deref()
+        let base_url = self
+            .config
+            .base_url
+            .as_deref()
             .unwrap_or("https://api.deepseek.com");
-        let model = self.config.model.as_deref()
-            .unwrap_or("deepseek-chat");
+        let model = self.config.model.as_deref().unwrap_or("deepseek-chat");
 
         let request = ChatRequest {
             model: model.to_string(),
@@ -116,7 +120,8 @@ impl LlmClient {
         info!("Calling LLM API for user {}", user_id);
 
         // 发送请求
-        let response = self.http
+        let response = self
+            .http
             .post(format!("{}/v1/chat/completions", base_url))
             .header("Authorization", format!("Bearer {}", self.config.api_key))
             .header("Content-Type", "application/json")
@@ -129,7 +134,10 @@ impl LlmClient {
             })?;
 
         let status = response.status();
-        let body = response.text().await.map_err(|e| format!("读取响应失败: {}", e))?;
+        let body = response
+            .text()
+            .await
+            .map_err(|e| format!("读取响应失败: {}", e))?;
 
         if !status.is_success() {
             error!("LLM API error: {} - {}", status, body);
@@ -141,13 +149,13 @@ impl LlmClient {
         }
 
         // 解析响应
-        let chat_response: ChatResponse = serde_json::from_str(&body)
-            .map_err(|e| {
-                error!("Failed to parse LLM response: {} - {}", e, body);
-                format!("解析响应失败: {}", e)
-            })?;
+        let chat_response: ChatResponse = serde_json::from_str(&body).map_err(|e| {
+            error!("Failed to parse LLM response: {} - {}", e, body);
+            format!("解析响应失败: {}", e)
+        })?;
 
-        let assistant_message = chat_response.choices
+        let assistant_message = chat_response
+            .choices
             .first()
             .map(|c| c.message.content.clone())
             .unwrap_or_else(|| "抱歉，我没有生成回复。".to_string());
@@ -158,7 +166,11 @@ impl LlmClient {
             content: assistant_message.clone(),
         });
 
-        info!("LLM response for user {}: {} chars", user_id, assistant_message.len());
+        info!(
+            "LLM response for user {}: {} chars",
+            user_id,
+            assistant_message.len()
+        );
 
         Ok(assistant_message)
     }

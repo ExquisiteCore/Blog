@@ -4,7 +4,10 @@
 
 use axum::http::header::SET_COOKIE;
 use axum::response::{IntoResponse, Response};
-use axum::{Extension, Json, extract::{Path, State}};
+use axum::{
+    Extension, Json,
+    extract::{Path, State},
+};
 use bcrypt::{DEFAULT_COST, hash, verify};
 use chrono::Utc;
 use sea_orm::*;
@@ -113,8 +116,8 @@ pub async fn register_user(
         return Err(ApiError::conflict("邮箱已被注册"));
     }
 
-    let password_hash =
-        hash(&req.password, DEFAULT_COST).map_err(|_| ApiError::internal_server_error("密码加密失败"))?;
+    let password_hash = hash(&req.password, DEFAULT_COST)
+        .map_err(|_| ApiError::internal_server_error("密码加密失败"))?;
 
     let now = Utc::now().fixed_offset();
     let new_user = user::ActiveModel {
@@ -244,9 +247,7 @@ pub async fn delete_user(
 ) -> Result<impl IntoResponse, ApiError> {
     identity.require_admin()?;
 
-    let result = user::Entity::delete_by_id(id)
-        .exec(&state.conn)
-        .await?;
+    let result = user::Entity::delete_by_id(id).exec(&state.conn).await?;
 
     if result.rows_affected == 0 {
         return Err(ApiError::not_found(format!("未找到 ID 为 {id} 的用户")));

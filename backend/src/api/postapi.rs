@@ -11,6 +11,7 @@ use axum::{
 use chrono::Utc;
 use sea_orm::*;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use uuid::Uuid;
 
 use crate::entity::{comment, content, content_label, content_metadata, label, like};
@@ -116,18 +117,16 @@ pub async fn get_posts(
         .all(&state.conn)
         .await?;
 
-    let mut results = Vec::new();
-    for meta in posts {
-        let content_record = content::Entity::find()
-            .filter(content::Column::ContentMetadataId.eq(meta.id))
-            .filter(content::Column::LangCode.eq(&lang))
-            .one(&state.conn)
-            .await?;
+    let metadata_ids: Vec<Uuid> = posts.iter().map(|m| m.id).collect();
+    let mut content_map = batch_load_content(&state.conn, &metadata_ids, &lang).await?;
+    let mut labels_map = batch_load_labels(&state.conn, &metadata_ids).await?;
 
-        let labels = get_labels_for_metadata(&state.conn, meta.id).await?;
-
-        if let Some(c) = content_record {
-            results.push(PostSummaryResponse {
+    let results: Vec<PostSummaryResponse> = posts
+        .into_iter()
+        .filter_map(|meta| {
+            let c = content_map.remove(&meta.id)?;
+            let labels = labels_map.remove(&meta.id).unwrap_or_default();
+            Some(PostSummaryResponse {
                 id: meta.id,
                 slug: meta.slug,
                 title: c.title,
@@ -142,9 +141,9 @@ pub async fn get_posts(
                 published_at: meta.published_at,
                 created_at: meta.created_at,
                 updated_at: meta.updated_at,
-            });
-        }
-    }
+            })
+        })
+        .collect();
 
     Ok(ApiResponse::ok(results))
 }
@@ -163,18 +162,16 @@ pub async fn get_all_posts(
         .all(&state.conn)
         .await?;
 
-    let mut results = Vec::new();
-    for meta in posts {
-        let content_record = content::Entity::find()
-            .filter(content::Column::ContentMetadataId.eq(meta.id))
-            .filter(content::Column::LangCode.eq(&lang))
-            .one(&state.conn)
-            .await?;
+    let metadata_ids: Vec<Uuid> = posts.iter().map(|m| m.id).collect();
+    let mut content_map = batch_load_content(&state.conn, &metadata_ids, &lang).await?;
+    let mut labels_map = batch_load_labels(&state.conn, &metadata_ids).await?;
 
-        let labels = get_labels_for_metadata(&state.conn, meta.id).await?;
-
-        if let Some(c) = content_record {
-            results.push(PostSummaryResponse {
+    let results: Vec<PostSummaryResponse> = posts
+        .into_iter()
+        .filter_map(|meta| {
+            let c = content_map.remove(&meta.id)?;
+            let labels = labels_map.remove(&meta.id).unwrap_or_default();
+            Some(PostSummaryResponse {
                 id: meta.id,
                 slug: meta.slug,
                 title: c.title,
@@ -189,9 +186,9 @@ pub async fn get_all_posts(
                 published_at: meta.published_at,
                 created_at: meta.created_at,
                 updated_at: meta.updated_at,
-            });
-        }
-    }
+            })
+        })
+        .collect();
 
     Ok(ApiResponse::ok(results))
 }
@@ -304,7 +301,10 @@ pub async fn create_post(
         id: Set(meta_id),
         slug: Set(req.slug.clone()),
         content_type: Set("article".to_string()),
-        cover_images: Set(req.cover_images.as_ref().map(|imgs| serde_json::json!(imgs))),
+        cover_images: Set(req
+            .cover_images
+            .as_ref()
+            .map(|imgs| serde_json::json!(imgs))),
         tags: Set(None),
         original_lang: Set("zh-CN".to_string()),
         view_count: Set(0),
@@ -366,6 +366,7 @@ pub async fn update_post(
         .await?
         .ok_or_else(|| ApiError::not_found(format!("未找到 ID 为 {id} 的文章")))?;
 
+    let had_published_at = meta.published_at.is_some();
     let mut meta_update: content_metadata::ActiveModel = meta.into();
     if let Some(slug) = req.slug {
         meta_update.slug = Set(slug);
@@ -375,14 +376,9 @@ pub async fn update_post(
     }
     if let Some(published) = req.published {
         meta_update.published = Set(published);
-        if published {
+        if published && !had_published_at {
             // 首次发布时设置 published_at
-            let existing = content_metadata::Entity::find_by_id(id)
-                .one(&state.conn)
-                .await?;
-            if existing.map_or(true, |m| m.published_at.is_none()) {
-                meta_update.published_at = Set(Some(now));
-            }
+            meta_update.published_at = Set(Some(now));
         }
     }
     meta_update.updated_at = Set(now);
@@ -662,7 +658,9 @@ pub async fn delete_comment(
 
     // 只有管理员或评论作者可以删除
     let can_delete = identity.is_admin()
-        || identity.identity_id().map_or(false, |id| id == c.identity_id);
+        || identity
+            .identity_id()
+            .map_or(false, |id| id == c.identity_id);
 
     if !can_delete {
         return Err(ApiError::forbidden("无权删除此评论"));
@@ -674,15 +672,75 @@ pub async fn delete_comment(
     c_update.update(&state.conn).await?;
 
     // 更新评论计数
-    let _meta = content_metadata::Entity::find()
+    if let Some(meta) = content_metadata::Entity::find()
         .filter(content_metadata::Column::Slug.eq(&slug))
         .one(&state.conn)
-        .await?;
+        .await?
+    {
+        let new_count = (meta.comment_count - 1).max(0);
+        let mut meta_update: content_metadata::ActiveModel = meta.into();
+        meta_update.comment_count = Set(new_count);
+        meta_update.update(&state.conn).await?;
+    }
 
     Ok(ApiResponse::ok(serde_json::json!({ "success": true })))
 }
 
 // ========== 辅助函数 ==========
+
+/// 批量加载多个 content_metadata 的 content 记录
+async fn batch_load_content(
+    db: &DatabaseConnection,
+    metadata_ids: &[Uuid],
+    lang: &str,
+) -> Result<HashMap<Uuid, content::Model>, DbErr> {
+    let contents = content::Entity::find()
+        .filter(content::Column::ContentMetadataId.is_in(metadata_ids.to_vec()))
+        .filter(content::Column::LangCode.eq(lang))
+        .all(db)
+        .await?;
+    Ok(contents
+        .into_iter()
+        .map(|c| (c.content_metadata_id, c))
+        .collect())
+}
+
+/// 批量加载多个 content_metadata 的标签名列表
+async fn batch_load_labels(
+    db: &DatabaseConnection,
+    metadata_ids: &[Uuid],
+) -> Result<HashMap<Uuid, Vec<String>>, DbErr> {
+    let relations = content_label::Entity::find()
+        .filter(content_label::Column::ContentMetadataId.is_in(metadata_ids.to_vec()))
+        .all(db)
+        .await?;
+
+    let label_ids: Vec<Uuid> = relations
+        .iter()
+        .map(|r| r.label_id)
+        .collect::<std::collections::HashSet<_>>()
+        .into_iter()
+        .collect();
+
+    let labels = label::Entity::find()
+        .filter(label::Column::Id.is_in(label_ids))
+        .all(db)
+        .await?;
+
+    let label_map: HashMap<Uuid, String> = labels.into_iter().map(|l| (l.id, l.name)).collect();
+
+    let mut result: HashMap<Uuid, Vec<String>> = HashMap::new();
+    for rel in relations {
+        if let Some(name) = label_map.get(&rel.label_id) {
+            result
+                .entry(rel.content_metadata_id)
+                .or_default()
+                .push(name.clone());
+        }
+    }
+
+    Ok(result)
+}
 
 /// 获取 content_metadata 关联的标签名列表
 async fn get_labels_for_metadata(

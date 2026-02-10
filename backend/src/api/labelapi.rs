@@ -184,9 +184,7 @@ pub async fn delete_label(
 ) -> Result<impl IntoResponse, ApiError> {
     identity.require_admin()?;
 
-    let result = label::Entity::delete_by_id(id)
-        .exec(&state.conn)
-        .await?;
+    let result = label::Entity::delete_by_id(id).exec(&state.conn).await?;
 
     if result.rows_affected == 0 {
         return Err(ApiError::not_found(format!("未找到 ID 为 {id} 的标签")));

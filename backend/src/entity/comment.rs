@@ -31,11 +31,7 @@ pub enum Relation {
         to = "super::content_metadata::Column::Id"
     )]
     ContentMetadata,
-    #[sea_orm(
-        belongs_to = "Entity",
-        from = "Column::ParentId",
-        to = "Column::Id"
-    )]
+    #[sea_orm(belongs_to = "Entity", from = "Column::ParentId", to = "Column::Id")]
     Parent,
 }
 
